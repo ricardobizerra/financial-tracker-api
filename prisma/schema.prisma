@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator nestgraphql {
+  provider   = "node node_modules/prisma-nestjs-graphql"
+  output     = "../src/lib/graphql/prisma-client"
+  reExport   = None
+  emitSingle = true
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+  name     String
+  role     Role
+}
+
+enum Role {
+  ADMIN
+  USER
+}
