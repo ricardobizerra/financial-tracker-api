@@ -19,10 +19,47 @@ model User {
   email    String @unique
   password String
   name     String
-  role     Role
+
+  role Role
+
+  investments Investment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Investment {
+  id        String   @id @default(uuid())
+  amount    Float
+  startDate DateTime
+  duration  Int
+
+  regime InvestmentRegime[]
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model InvestmentRegime {
+  id         String @id @default(uuid())
+  regime     Regime
+  percentage Float? @default(100)
+
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  investmentId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }
 
 enum Role {
   ADMIN
   USER
+}
+
+enum Regime {
+  CDI
 }
