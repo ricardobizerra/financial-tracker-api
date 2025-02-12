@@ -12,6 +12,7 @@ import { HealthModule } from '@/health/health.module';
 import { UserModule } from '@/user/user.module';
 import { RedisModule } from '@/lib/redis/redis.module';
 import { AuthModule } from './auth/auth.module';
+import { IpeadataModule } from './external/ipeadata/ipeadata.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AuthModule } from './auth/auth.module';
     UserModule,
     RedisModule,
     AuthModule,
+    IpeadataModule,
   ],
   controllers: [AppController],
   providers: [AppService],
