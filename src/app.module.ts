@@ -15,6 +15,7 @@ import { AuthModule } from './auth/auth.module';
 import { IpeadataModule } from './external/ipeadata/ipeadata.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { redisStore } from 'cache-manager-redis-store';
       }),
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     HealthModule,
     PrismaModule,
     UserModule,

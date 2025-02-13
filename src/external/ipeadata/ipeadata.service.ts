@@ -2,11 +2,17 @@ import { catchError, firstValueFrom } from 'rxjs';
 import { CdiValuesResponse } from './types/cdi-values-response';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class IpeadataService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
+  ) {}
 
   async getCdiValues(): Promise<CdiValuesResponse['value']> {
     const { data } = await firstValueFrom(
@@ -23,5 +29,11 @@ export class IpeadataService {
     );
 
     return data.value;
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cacheCdiValues() {
+    const cdiValues = await this.getCdiValues();
+    await this.cacheService.set('external-ipeadata-cdi-daily', cdiValues);
   }
 }
