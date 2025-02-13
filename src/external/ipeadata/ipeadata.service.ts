@@ -34,6 +34,13 @@ export class IpeadataService {
   @Cron(CronExpression.EVERY_HOUR)
   async cacheCdiValues() {
     const cdiValues = await this.getCdiValues();
-    await this.cacheService.set('external-ipeadata-cdi-daily', cdiValues);
+
+    await Promise.all([
+      this.cacheService.set('external-ipeadata-cdi-daily', cdiValues),
+      this.cacheService.set(
+        'external-ipeadata-cdi-last-date',
+        cdiValues?.[cdiValues?.length - 1]?.VALDATA,
+      ),
+    ]);
   }
 }
