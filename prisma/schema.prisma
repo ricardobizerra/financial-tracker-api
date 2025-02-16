@@ -34,22 +34,11 @@ model Investment {
   startDate DateTime
   duration  Int
 
-  regime InvestmentRegime[]
+  regimeName       Regime
+  regimePercentage Float? @default(100)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-}
-
-model InvestmentRegime {
-  id         String @id @default(uuid())
-  regime     Regime
-  percentage Float? @default(100)
-
-  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
-  investmentId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())

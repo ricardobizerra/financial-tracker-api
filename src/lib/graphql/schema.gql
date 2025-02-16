@@ -5,6 +5,7 @@
 type InvestmentAvgAggregate {
   amount: Float
   duration: Float
+  regimePercentage: Float
 }
 
 type InvestmentCountAggregate {
@@ -12,14 +13,12 @@ type InvestmentCountAggregate {
   amount: Int!
   startDate: Int!
   duration: Int!
+  regimeName: Int!
+  regimePercentage: Int!
   userId: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
-}
-
-type InvestmentCount {
-  regime: Int!
 }
 
 type InvestmentMaxAggregate {
@@ -27,6 +26,8 @@ type InvestmentMaxAggregate {
   amount: Float
   startDate: DateTime
   duration: Int
+  regimeName: Regime
+  regimePercentage: Float
   userId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -37,11 +38,17 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+enum Regime {
+  CDI
+}
+
 type InvestmentMinAggregate {
   id: String
   amount: Float
   startDate: DateTime
   duration: Int
+  regimeName: Regime
+  regimePercentage: Float
   userId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -50,6 +57,7 @@ type InvestmentMinAggregate {
 type InvestmentSumAggregate {
   amount: Float
   duration: Int
+  regimePercentage: Float
 }
 
 type Investment {
@@ -57,62 +65,12 @@ type Investment {
   amount: Float!
   startDate: DateTime!
   duration: Int!
+  regimeName: Regime!
+  regimePercentage: Float
   userId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
-  regime: [InvestmentRegime!]
   user: User!
-  _count: InvestmentCount!
-}
-
-type InvestmentRegimeAvgAggregate {
-  percentage: Float
-}
-
-type InvestmentRegimeCountAggregate {
-  id: Int!
-  regime: Int!
-  percentage: Int!
-  investmentId: Int!
-  createdAt: Int!
-  updatedAt: Int!
-  _all: Int!
-}
-
-type InvestmentRegimeMaxAggregate {
-  id: String
-  regime: Regime
-  percentage: Float
-  investmentId: String
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-enum Regime {
-  CDI
-}
-
-type InvestmentRegimeMinAggregate {
-  id: String
-  regime: Regime
-  percentage: Float
-  investmentId: String
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-type InvestmentRegimeSumAggregate {
-  percentage: Float
-}
-
-type InvestmentRegime {
-  id: ID!
-  regime: Regime!
-  percentage: Float
-  investmentId: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  investment: Investment!
 }
 
 type UserCountAggregate {
@@ -196,10 +154,32 @@ type UserModelEdge {
   node: UserModel!
 }
 
+type InvestmentModel {
+  id: ID!
+  initialAmount: String!
+  currentAmount: String!
+  taxedAmount: String!
+  period: String!
+  duration: Int!
+  regimeName: Regime!
+  regimePercentage: Float!
+}
+
+type InvestmentConnection {
+  edges: [InvestmentModelEdge!]
+  pageInfo: PageInfo
+}
+
+type InvestmentModelEdge {
+  cursor: String!
+  node: InvestmentModel!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
+  investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): InvestmentConnection!
 }
 
 enum OrdenationUserModel {
@@ -212,6 +192,15 @@ enum OrdenationUserModel {
 enum OrderDirection {
   Asc
   Desc
+}
+
+enum OrdenationInvestmentModel {
+  id
+  initialAmount
+  period
+  duration
+  regimeName
+  regimePercentage
 }
 
 type Mutation {
@@ -242,55 +231,47 @@ input InvestmentCreateWithoutUserInput {
   amount: Float!
   startDate: DateTime!
   duration: Int!
-  createdAt: DateTime
-  updatedAt: DateTime
-  regime: InvestmentRegimeCreateNestedManyWithoutInvestmentInput
-}
-
-input InvestmentRegimeCreateNestedManyWithoutInvestmentInput {
-  create: [InvestmentRegimeCreateWithoutInvestmentInput!]
-  connectOrCreate: [InvestmentRegimeCreateOrConnectWithoutInvestmentInput!]
-  createMany: InvestmentRegimeCreateManyInvestmentInputEnvelope
-  connect: [InvestmentRegimeWhereUniqueInput!]
-}
-
-input InvestmentRegimeCreateWithoutInvestmentInput {
-  id: String
-  regime: Regime!
-  percentage: Float
+  regimeName: Regime!
+  regimePercentage: Float
   createdAt: DateTime
   updatedAt: DateTime
 }
 
-input InvestmentRegimeCreateOrConnectWithoutInvestmentInput {
-  where: InvestmentRegimeWhereUniqueInput!
-  create: InvestmentRegimeCreateWithoutInvestmentInput!
+input InvestmentCreateOrConnectWithoutUserInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutUserInput!
 }
 
-input InvestmentRegimeWhereUniqueInput {
+input InvestmentWhereUniqueInput {
   id: String
-  AND: [InvestmentRegimeWhereInput!]
-  OR: [InvestmentRegimeWhereInput!]
-  NOT: [InvestmentRegimeWhereInput!]
-  regime: EnumRegimeFilter
-  percentage: FloatNullableFilter
-  investmentId: StringFilter
+  AND: [InvestmentWhereInput!]
+  OR: [InvestmentWhereInput!]
+  NOT: [InvestmentWhereInput!]
+  amount: FloatFilter
+  startDate: DateTimeFilter
+  duration: IntFilter
+  regimeName: EnumRegimeFilter
+  regimePercentage: FloatNullableFilter
+  userId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
-  investment: InvestmentRelationFilter
+  user: UserRelationFilter
 }
 
-input InvestmentRegimeWhereInput {
-  AND: [InvestmentRegimeWhereInput!]
-  OR: [InvestmentRegimeWhereInput!]
-  NOT: [InvestmentRegimeWhereInput!]
+input InvestmentWhereInput {
+  AND: [InvestmentWhereInput!]
+  OR: [InvestmentWhereInput!]
+  NOT: [InvestmentWhereInput!]
   id: StringFilter
-  regime: EnumRegimeFilter
-  percentage: FloatNullableFilter
-  investmentId: StringFilter
+  amount: FloatFilter
+  startDate: DateTimeFilter
+  duration: IntFilter
+  regimeName: EnumRegimeFilter
+  regimePercentage: FloatNullableFilter
+  userId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
-  investment: InvestmentRelationFilter
+  user: UserRelationFilter
 }
 
 input StringFilter {
@@ -327,6 +308,72 @@ input NestedStringFilter {
   not: NestedStringFilter
 }
 
+input FloatFilter {
+  equals: Float
+  in: [Float!]
+  notIn: [Float!]
+  lt: Float
+  lte: Float
+  gt: Float
+  gte: Float
+  not: NestedFloatFilter
+}
+
+input NestedFloatFilter {
+  equals: Float
+  in: [Float!]
+  notIn: [Float!]
+  lt: Float
+  lte: Float
+  gt: Float
+  gte: Float
+  not: NestedFloatFilter
+}
+
+input DateTimeFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeFilter
+}
+
+input NestedDateTimeFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeFilter
+}
+
+input IntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
+input NestedIntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
 input EnumRegimeFilter {
   equals: Regime
   in: [Regime!]
@@ -361,98 +408,6 @@ input NestedFloatNullableFilter {
   gt: Float
   gte: Float
   not: NestedFloatNullableFilter
-}
-
-input DateTimeFilter {
-  equals: DateTime
-  in: [DateTime!]
-  notIn: [DateTime!]
-  lt: DateTime
-  lte: DateTime
-  gt: DateTime
-  gte: DateTime
-  not: NestedDateTimeFilter
-}
-
-input NestedDateTimeFilter {
-  equals: DateTime
-  in: [DateTime!]
-  notIn: [DateTime!]
-  lt: DateTime
-  lte: DateTime
-  gt: DateTime
-  gte: DateTime
-  not: NestedDateTimeFilter
-}
-
-input InvestmentRelationFilter {
-  is: InvestmentWhereInput
-  isNot: InvestmentWhereInput
-}
-
-input InvestmentWhereInput {
-  AND: [InvestmentWhereInput!]
-  OR: [InvestmentWhereInput!]
-  NOT: [InvestmentWhereInput!]
-  id: StringFilter
-  amount: FloatFilter
-  startDate: DateTimeFilter
-  duration: IntFilter
-  userId: StringFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  regime: InvestmentRegimeListRelationFilter
-  user: UserRelationFilter
-}
-
-input FloatFilter {
-  equals: Float
-  in: [Float!]
-  notIn: [Float!]
-  lt: Float
-  lte: Float
-  gt: Float
-  gte: Float
-  not: NestedFloatFilter
-}
-
-input NestedFloatFilter {
-  equals: Float
-  in: [Float!]
-  notIn: [Float!]
-  lt: Float
-  lte: Float
-  gt: Float
-  gte: Float
-  not: NestedFloatFilter
-}
-
-input IntFilter {
-  equals: Int
-  in: [Int!]
-  notIn: [Int!]
-  lt: Int
-  lte: Int
-  gt: Int
-  gte: Int
-  not: NestedIntFilter
-}
-
-input NestedIntFilter {
-  equals: Int
-  in: [Int!]
-  notIn: [Int!]
-  lt: Int
-  lte: Int
-  gt: Int
-  gte: Int
-  not: NestedIntFilter
-}
-
-input InvestmentRegimeListRelationFilter {
-  every: InvestmentRegimeWhereInput
-  some: InvestmentRegimeWhereInput
-  none: InvestmentRegimeWhereInput
 }
 
 input UserRelationFilter {
@@ -494,39 +449,6 @@ input InvestmentListRelationFilter {
   none: InvestmentWhereInput
 }
 
-input InvestmentRegimeCreateManyInvestmentInputEnvelope {
-  data: [InvestmentRegimeCreateManyInvestmentInput!]!
-  skipDuplicates: Boolean
-}
-
-input InvestmentRegimeCreateManyInvestmentInput {
-  id: String
-  regime: Regime!
-  percentage: Float
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input InvestmentCreateOrConnectWithoutUserInput {
-  where: InvestmentWhereUniqueInput!
-  create: InvestmentCreateWithoutUserInput!
-}
-
-input InvestmentWhereUniqueInput {
-  id: String
-  AND: [InvestmentWhereInput!]
-  OR: [InvestmentWhereInput!]
-  NOT: [InvestmentWhereInput!]
-  amount: FloatFilter
-  startDate: DateTimeFilter
-  duration: IntFilter
-  userId: StringFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  regime: InvestmentRegimeListRelationFilter
-  user: UserRelationFilter
-}
-
 input InvestmentCreateManyUserInputEnvelope {
   data: [InvestmentCreateManyUserInput!]!
   skipDuplicates: Boolean
@@ -537,6 +459,8 @@ input InvestmentCreateManyUserInput {
   amount: Float!
   startDate: DateTime!
   duration: Int!
+  regimeName: Regime!
+  regimePercentage: Float
   createdAt: DateTime
   updatedAt: DateTime
 }
