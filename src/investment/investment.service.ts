@@ -30,11 +30,14 @@ export class InvestmentService {
     queriedFields,
     paginationArgs,
     ordenationArgs,
+    userId,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationUserArgs;
+    userId: string;
   }): Promise<InvestmentConnection> {
+    console.log('userId', userId);
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
@@ -96,6 +99,9 @@ export class InvestmentService {
           ] satisfies (keyof Investment)[],
         }),
       }),
+      where: {
+        userId,
+      },
     });
 
     const investments: InvestmentModel[] = [];
@@ -209,6 +215,9 @@ export class InvestmentService {
             : undefined,
           select: {
             id: true,
+          },
+          where: {
+            userId,
           },
         })
       : [];
