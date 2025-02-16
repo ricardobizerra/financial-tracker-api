@@ -16,6 +16,7 @@ import { IpeadataModule } from './external/ipeadata/ipeadata.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
+import { InvestmentModule } from './investment/investment.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     RedisModule,
     AuthModule,
     IpeadataModule,
+    InvestmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
