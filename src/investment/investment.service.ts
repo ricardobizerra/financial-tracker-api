@@ -1,20 +1,18 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrdenationUserArgs } from '@/user/models/user.model';
 import { OrderDirection } from '@/utils/args/ordenation.args';
-import { Investment, Prisma } from '@prisma/client';
+import { Investment } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import { InvestmentConnection, InvestmentModel } from './investment.model';
 import { formatDate } from '@/utils/date-formatter';
-import { addDays, differenceInDays, subDays } from 'date-fns';
+import { addDays, differenceInDays } from 'date-fns';
 import { formatCurrency } from '@/utils/currency-formatter';
-import { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CdiValuesResponse } from '@/external/ipeadata/types/cdi-values-response';
 import { getIrpfTax } from './utils/get-irpf-tax';
 import { Regime } from '@/lib/graphql/prisma-client';
+import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -25,7 +23,7 @@ type CorrectInvestmentAmountReturn = {
 export class InvestmentService {
   constructor(
     private readonly prismaService: PrismaService,
-    @Inject(CACHE_MANAGER) private cacheService: Cache,
+    private readonly redisCacheService: RedisCacheService,
   ) {}
 
   async findMany({
@@ -218,8 +216,9 @@ export class InvestmentService {
 
     const irpfTax = getIrpfTax(currentInvestmentDays);
 
-    const cdiValues: CdiValuesResponse['value'] | null =
-      await this.cacheService.get('external-ipeadata-cdi-daily');
+    const cdiValues = await this.redisCacheService.get(
+      'external-ipeadata-cdi-daily',
+    );
 
     if (!cdiValues) {
       return {
@@ -229,7 +228,7 @@ export class InvestmentService {
     }
 
     const cdiValuesLastDate: CdiValuesResponse['value'][number]['VALDATA'] =
-      await this.cacheService.get('external-ipeadata-cdi-last-date');
+      await this.redisCacheService.get('external-ipeadata-cdi-last-date');
 
     if (investment.startDate > new Date(cdiValuesLastDate)) {
       return {
