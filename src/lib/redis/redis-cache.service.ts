@@ -1,6 +1,7 @@
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Cache } from 'cache-manager';
 
 type CacheKey = keyof RedisCacheService['keyFunction'];
@@ -50,5 +51,18 @@ export class RedisCacheService {
 
   async set<K extends CacheKey>(key: K, value: KeyFunctionReturn<K>) {
     return await this.cacheService.set(key, value);
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cacheCdiValues() {
+    const cdiValues = await this.ipeadataService.getCdiValues();
+
+    await Promise.all([
+      this.cacheService.set('external-ipeadata-cdi-daily', cdiValues),
+      this.cacheService.set(
+        'external-ipeadata-cdi-last-date',
+        cdiValues?.[cdiValues?.length - 1]?.VALDATA,
+      ),
+    ]);
   }
 }
