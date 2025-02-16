@@ -207,6 +207,9 @@ export class InvestmentService {
                     : OrderDirection.Desc,
               }
             : undefined,
+          select: {
+            id: true,
+          },
         })
       : [];
 
