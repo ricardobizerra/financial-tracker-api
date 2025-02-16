@@ -85,28 +85,55 @@ export class InvestmentService {
         currentAmount: ['amount'],
         taxedAmount: ['amount'],
         period: ['startDate', 'duration'],
+        ...((queriedFields.includes('currentAmount') ||
+          queriedFields.includes('taxedAmount')) && {
+          DEFAULT: [
+            'amount',
+            'startDate',
+            'duration',
+            'regimeName',
+            'regimePercentage',
+          ] satisfies (keyof Investment)[],
+        }),
       }),
     });
 
-    const investments: InvestmentModel[] = await Promise.all(
-      investmentsQuery.map(async (investment) => {
-        const { correctedAmount, taxedAmount } =
-          await this.correctInvestmentAmount(investment);
+    const investments: InvestmentModel[] = [];
 
-        return {
-          id: investment.id,
+    for (const investment of investmentsQuery) {
+      const { correctedAmount, taxedAmount } =
+        queriedFields.includes('currentAmount') ||
+        queriedFields.includes('taxedAmount')
+          ? await this.correctInvestmentAmount(investment)
+          : {};
+
+      investments.push({
+        ...(queriedFields.includes('id') && { id: investment.id }),
+        ...(queriedFields.includes('initialAmount') && {
           initialAmount: formatCurrency(investment.amount),
+        }),
+        ...(queriedFields.includes('currentAmount') && {
           currentAmount: formatCurrency(correctedAmount),
+        }),
+        ...(queriedFields.includes('taxedAmount') && {
           taxedAmount: formatCurrency(taxedAmount),
+        }),
+        ...(queriedFields.includes('period') && {
           period: `${formatDate(investment.startDate)} - ${formatDate(
             addDays(investment.startDate, investment.duration),
           )}`,
+        }),
+        ...(queriedFields.includes('duration') && {
           duration: investment.duration,
+        }),
+        ...(queriedFields.includes('regimeName') && {
           regimeName: investment.regimeName as Regime,
+        }),
+        ...(queriedFields.includes('regimePercentage') && {
           regimePercentage: investment.regimePercentage,
-        };
-      }),
-    );
+        }),
+      });
+    }
 
     if (last) {
       investments.reverse();
