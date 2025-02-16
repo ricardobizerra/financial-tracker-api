@@ -1,11 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { RedisService } from '@/lib/redis/redis.service';
+import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service';
 import { ConfigModule } from '@nestjs/config';
 
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [RedisService],
-  exports: [RedisService],
+  providers: [RedisSubscriptionService],
+  exports: [RedisSubscriptionService],
 })
 export class RedisModule {}

@@ -1,5 +1,5 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { RedisService } from '@/lib/redis/redis.service';
+import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrdenationUserArgs } from '@/user/models/user.model';
