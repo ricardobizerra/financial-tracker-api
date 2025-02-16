@@ -47,6 +47,6 @@ export function selectObject<
       return { ...acc, ...hashedSelectObject };
     }
 
-    return { ...acc, field: true };
+    return { ...acc, [field]: true };
   }, {} as SelectObjectReturn<TDatabase>);
 }
