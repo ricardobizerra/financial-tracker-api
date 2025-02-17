@@ -11,7 +11,10 @@ import { addDays, differenceInDays } from 'date-fns';
 import { formatCurrency } from '@/utils/currency-formatter';
 import { CdiValuesResponse } from '@/external/ipeadata/types/cdi-values-response';
 import { getIrpfTax } from './utils/get-irpf-tax';
-import { Regime } from '@/lib/graphql/prisma-client';
+import {
+  InvestmentCreateWithoutUserInput,
+  Regime,
+} from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 
 type CorrectInvestmentAmountReturn = {
@@ -237,6 +240,21 @@ export class InvestmentService {
       edges,
       pageInfo,
     };
+  }
+
+  async create(data: InvestmentCreateWithoutUserInput, userId: string) {
+    const investment = await this.prismaService.investment.create({
+      data: {
+        ...data,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return investment;
   }
 
   private async correctInvestmentAmount(

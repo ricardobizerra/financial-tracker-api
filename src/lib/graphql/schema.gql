@@ -206,6 +206,7 @@ enum OrdenationInvestmentModel {
 type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
+  createInvestment(data: InvestmentCreateWithoutUserInput!): Investment!
 }
 
 input UserCreateInput {
