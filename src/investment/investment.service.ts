@@ -40,7 +40,6 @@ export class InvestmentService {
     ordenationArgs: OrdenationUserArgs;
     userId: string;
   }): Promise<InvestmentConnection> {
-    console.log('userId', userId);
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
