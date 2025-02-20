@@ -158,7 +158,10 @@ type InvestmentModel {
   id: ID!
   initialAmount: String!
   currentAmount: String!
+  currentVariation: String!
+  taxPercentage: String!
   taxedAmount: String!
+  taxedVariation: String!
   period: String!
   duration: Int!
   regimeName: Regime!

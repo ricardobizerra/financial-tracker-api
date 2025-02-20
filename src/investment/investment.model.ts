@@ -15,7 +15,16 @@ export class InvestmentModel {
   currentAmount!: string;
 
   @Field(() => String, { nullable: false })
+  currentVariation!: string;
+
+  @Field(() => String, { nullable: false })
+  taxPercentage!: string;
+
+  @Field(() => String, { nullable: false })
   taxedAmount!: string;
+
+  @Field(() => String, { nullable: false })
+  taxedVariation!: string;
 
   @Field(() => String, { nullable: false })
   period!: string;

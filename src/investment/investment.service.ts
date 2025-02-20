@@ -19,7 +19,10 @@ import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
+  correctedVariation: number;
+  taxPercentage: number;
   taxedAmount: number;
+  taxedVariation: number;
 };
 
 @Injectable()
@@ -88,10 +91,16 @@ export class InvestmentService {
       select: selectObject<Investment, InvestmentModel>(queriedFields, {
         initialAmount: ['amount'],
         currentAmount: ['amount'],
+        currentVariation: ['amount'],
+        taxPercentage: ['amount'],
         taxedAmount: ['amount'],
+        taxedVariation: ['amount'],
         period: ['startDate', 'duration'],
         ...((queriedFields.includes('currentAmount') ||
-          queriedFields.includes('taxedAmount')) && {
+          queriedFields.includes('taxedAmount') ||
+          queriedFields.includes('currentVariation') ||
+          queriedFields.includes('taxedVariation') ||
+          queriedFields.includes('taxPercentage')) && {
           DEFAULT: [
             'amount',
             'startDate',
@@ -109,9 +118,18 @@ export class InvestmentService {
     const investments: InvestmentModel[] = [];
 
     for (const investment of investmentsQuery) {
-      const { correctedAmount, taxedAmount } =
+      const {
+        correctedAmount,
+        correctedVariation,
+        taxPercentage,
+        taxedAmount,
+        taxedVariation,
+      } =
         queriedFields.includes('currentAmount') ||
-        queriedFields.includes('taxedAmount')
+        queriedFields.includes('taxedAmount') ||
+        queriedFields.includes('currentVariation') ||
+        queriedFields.includes('taxedVariation') ||
+        queriedFields.includes('taxPercentage')
           ? await this.correctInvestmentAmount(investment)
           : {};
 
@@ -123,8 +141,18 @@ export class InvestmentService {
         ...(queriedFields.includes('currentAmount') && {
           currentAmount: formatCurrency(correctedAmount),
         }),
+        ...(queriedFields.includes('currentVariation') && {
+          currentVariation:
+            correctedVariation.toFixed(2).replace('.', ',') + '%',
+        }),
+        ...(queriedFields.includes('taxPercentage') && {
+          taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
+        }),
         ...(queriedFields.includes('taxedAmount') && {
           taxedAmount: formatCurrency(taxedAmount),
+        }),
+        ...(queriedFields.includes('taxedVariation') && {
+          taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
         }),
         ...(queriedFields.includes('period') && {
           period: `${formatDate(investment.startDate)} - ${formatDate(
@@ -279,7 +307,11 @@ export class InvestmentService {
     if (!cdiValues) {
       return {
         correctedAmount: investment.amount,
+        correctedVariation: 0,
+        taxPercentage: irpfTax,
         taxedAmount: investment.amount * (1 - irpfTax / 100),
+        taxedVariation:
+          100 * ((investment.amount * (1 - irpfTax / 100)) / investment.amount),
       };
     }
 
@@ -289,7 +321,11 @@ export class InvestmentService {
     if (investment.startDate > new Date(cdiValuesLastDate)) {
       return {
         correctedAmount: investment.amount,
+        correctedVariation: 0,
         taxedAmount: investment.amount * (1 - irpfTax / 100),
+        taxPercentage: irpfTax,
+        taxedVariation:
+          100 * ((investment.amount * (1 - irpfTax / 100)) / investment.amount),
       };
     }
 
@@ -320,7 +356,12 @@ export class InvestmentService {
 
     return {
       correctedAmount: amount,
+      correctedVariation:
+        100 * ((amount - investment.amount) / investment.amount),
+      taxPercentage: irpfTax,
       taxedAmount,
+      taxedVariation:
+        100 * ((taxedAmount - investment.amount) / investment.amount),
     };
   }
 }
