@@ -311,7 +311,8 @@ export class InvestmentService {
         taxPercentage: irpfTax,
         taxedAmount: investment.amount * (1 - irpfTax / 100),
         taxedVariation:
-          100 * ((investment.amount * (1 - irpfTax / 100)) / investment.amount),
+          100 *
+          ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
       };
     }
 
@@ -325,7 +326,8 @@ export class InvestmentService {
         taxedAmount: investment.amount * (1 - irpfTax / 100),
         taxPercentage: irpfTax,
         taxedVariation:
-          100 * ((investment.amount * (1 - irpfTax / 100)) / investment.amount),
+          100 *
+          ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
       };
     }
 
