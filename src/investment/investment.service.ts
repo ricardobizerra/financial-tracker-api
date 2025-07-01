@@ -5,7 +5,11 @@ import { OrdenationUserArgs } from '@/user/models/user.model';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { Investment } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
-import { InvestmentConnection, InvestmentModel } from './investment.model';
+import {
+  InvestmentConnection,
+  InvestmentModel,
+  TotalInvestmentsModel,
+} from './investment.model';
 import { formatDate } from '@/utils/date-formatter';
 import { addDays, differenceInDays } from 'date-fns';
 import { formatCurrency } from '@/utils/currency-formatter';
@@ -321,6 +325,92 @@ export class InvestmentService {
     });
 
     return investment;
+  }
+
+  async totalInvestments({
+    userId,
+    queriedFields,
+  }: {
+    userId: string;
+    queriedFields: (keyof TotalInvestmentsModel)[];
+  }): Promise<TotalInvestmentsModel> {
+    const investments = await this.prismaService.investment.findMany({
+      select: {
+        id: true,
+        amount: true,
+        startDate: true,
+        duration: true,
+        regimePercentage: true,
+      },
+      where: { userId },
+    });
+
+    let totalInitialAmount = 0;
+    let totalCurrentAmount = 0;
+    let totalTaxedAmount = 0;
+
+    const cdiLastDate = await this.redisCacheService.get(
+      'external-ipeadata-cdi-last-date',
+      async () => {
+        const cdiValues = await this.ipeadataService.getCdiValues();
+
+        await this.redisCacheService.set(
+          'external-ipeadata-cdi-daily',
+          cdiValues,
+        );
+
+        return cdiValues?.[cdiValues?.length - 1]?.VALDATA;
+      },
+    );
+
+    const processedInvestments = await Promise.all(
+      investments.map((investment, index) =>
+        this.correctInvestmentAmount(investment, cdiLastDate).then(
+          (result) => ({
+            ...result,
+            originalIndex: index,
+          }),
+        ),
+      ),
+    );
+
+    for (const {
+      originalIndex,
+      correctedAmount,
+      taxedAmount,
+    } of processedInvestments) {
+      totalInitialAmount += investments[originalIndex].amount;
+      totalCurrentAmount += correctedAmount;
+      totalTaxedAmount += taxedAmount;
+    }
+
+    const currentVariation =
+      queriedFields.includes('currentVariation') && totalInitialAmount > 0
+        ? 100 * ((totalCurrentAmount - totalInitialAmount) / totalInitialAmount)
+        : 0;
+
+    const taxedVariation =
+      queriedFields.includes('taxedVariation') && totalInitialAmount > 0
+        ? 100 * ((totalTaxedAmount - totalInitialAmount) / totalInitialAmount)
+        : 0;
+
+    return {
+      ...(queriedFields.includes('initialAmount') && {
+        initialAmount: formatCurrency(totalInitialAmount),
+      }),
+      ...(queriedFields.includes('currentAmount') && {
+        currentAmount: formatCurrency(totalCurrentAmount),
+      }),
+      ...(queriedFields.includes('currentVariation') && {
+        currentVariation: currentVariation.toFixed(2).replace('.', ',') + '%',
+      }),
+      ...(queriedFields.includes('taxedAmount') && {
+        taxedAmount: formatCurrency(totalTaxedAmount),
+      }),
+      ...(queriedFields.includes('taxedVariation') && {
+        taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+      }),
+    };
   }
 
   private async correctInvestmentAmount(

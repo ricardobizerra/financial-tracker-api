@@ -1,4 +1,13 @@
-import { Args, Info, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Field,
+  Float,
+  Info,
+  Mutation,
+  ObjectType,
+  Query,
+  Resolver,
+} from '@nestjs/graphql';
 import { InvestmentService } from './investment.service';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { UserModel } from '@/user/models/user.model';
@@ -8,6 +17,7 @@ import {
   InvestmentConnection,
   InvestmentModel,
   OrdenationInvestmentArgs,
+  TotalInvestmentsModel,
 } from './investment.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
@@ -53,5 +63,25 @@ export class InvestmentResolver {
     );
 
     return createdInvestment;
+  }
+
+  @Auth()
+  @Query(() => TotalInvestmentsModel, { name: 'totalInvestments' })
+  async totalInvestments(
+    @CurrentUser() user: UserModel,
+    @Info() info: GraphQLResolveInfo,
+  ) {
+    const queriedFields = getQueriedFields<TotalInvestmentsModel>(
+      info,
+      'totalInvestments',
+      false,
+    );
+
+    const totalInvestments = await this.investmentService.totalInvestments({
+      userId: user?.id,
+      queriedFields,
+    });
+
+    return totalInvestments;
   }
 }

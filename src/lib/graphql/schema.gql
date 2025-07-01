@@ -178,11 +178,20 @@ type InvestmentModelEdge {
   node: InvestmentModel!
 }
 
+type TotalInvestmentsModel {
+  initialAmount: String!
+  currentAmount: String!
+  currentVariation: String!
+  taxedAmount: String!
+  taxedVariation: String!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): InvestmentConnection!
+  totalInvestments: TotalInvestmentsModel!
 }
 
 enum OrdenationUserModel {

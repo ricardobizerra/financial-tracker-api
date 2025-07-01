@@ -56,3 +56,21 @@ export class OrdenationInvestmentArgs extends Ordenation(
   InvestmentModel,
   OrderBy,
 ) {}
+
+@ObjectType()
+export class TotalInvestmentsModel {
+  @Field(() => String, { nullable: false })
+  initialAmount!: string;
+
+  @Field(() => String, { nullable: false })
+  currentAmount!: string;
+
+  @Field(() => String, { nullable: false })
+  currentVariation!: string;
+
+  @Field(() => String, { nullable: false })
+  taxedAmount!: string;
+
+  @Field(() => String, { nullable: false })
+  taxedVariation!: string;
+}
