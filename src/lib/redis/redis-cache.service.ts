@@ -1,40 +1,41 @@
-import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
+import { CdiValuesResponse } from '@/external/ipeadata/types/cdi-values-response';
+import { InvestmentCachedAmounts } from '@/investment/investment.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { Cache } from 'cache-manager';
 
-type CacheKey = keyof RedisCacheService['keyFunction'];
+type CacheKeyMapping = {
+  'external-ipeadata-cdi-daily': CdiValuesResponse['value'];
+  'external-ipeadata-cdi-last-date': string;
+  'investment-amounts': InvestmentCachedAmounts;
+};
 
-type KeyFunctionReturn<K extends CacheKey> = Awaited<
-  ReturnType<RedisCacheService['keyFunction'][K]>
->;
+type BaseCacheKey = keyof CacheKeyMapping;
+type CacheKey = `${BaseCacheKey}` | `${BaseCacheKey}:${string}`;
+
+type InferBaseKey<K extends CacheKey> = K extends `${infer B}:${string}`
+  ? B
+  : K;
+
+type KeyFunctionReturn<K extends CacheKey> =
+  InferBaseKey<K> extends BaseCacheKey
+    ? CacheKeyMapping[InferBaseKey<K>]
+    : never;
 
 @Injectable()
 export class RedisCacheService {
-  private keyFunction = {
-    'external-ipeadata-cdi-daily': () => this.ipeadataService.getCdiValues(),
-    'external-ipeadata-cdi-last-date': async () =>
-      (await this.ipeadataService.getCdiValues())?.[
-        (await this.ipeadataService.getCdiValues())?.length - 1
-      ]?.VALDATA,
-  };
+  constructor(@Inject(CACHE_MANAGER) private cacheService: Cache) {}
 
-  constructor(
-    @Inject(CACHE_MANAGER) private cacheService: Cache,
-    private readonly ipeadataService: IpeadataService,
-  ) {}
-
-  async get<K extends CacheKey>(key: K): Promise<KeyFunctionReturn<K> | null> {
-    const cacheValue = await this.cacheService.get<KeyFunctionReturn<K>>(key);
+  async get<K extends CacheKey>(
+    key: K,
+    keyFunction?: () => Promise<KeyFunctionReturn<K>>,
+  ): Promise<KeyFunctionReturn<K> | null> {
+    const cacheValue: KeyFunctionReturn<K> | null | undefined =
+      await this.cacheService.get(key);
 
     if (cacheValue !== null && cacheValue !== undefined) {
       return cacheValue;
     }
-
-    const keyFunction = this.keyFunction[key] as () => Promise<
-      KeyFunctionReturn<K>
-    >;
 
     if (keyFunction) {
       const value = await keyFunction();
@@ -49,20 +50,15 @@ export class RedisCacheService {
     return null;
   }
 
-  async set<K extends CacheKey>(key: K, value: KeyFunctionReturn<K>) {
-    return await this.cacheService.set(key, value);
+  async set<K extends CacheKey>(
+    key: K,
+    value: KeyFunctionReturn<K>,
+    ttl?: number,
+  ) {
+    return await this.cacheService.set(key, value, ttl);
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
-  async cacheCdiValues() {
-    const cdiValues = await this.ipeadataService.getCdiValues();
-
-    await Promise.all([
-      this.cacheService.set('external-ipeadata-cdi-daily', cdiValues),
-      this.cacheService.set(
-        'external-ipeadata-cdi-last-date',
-        cdiValues?.[cdiValues?.length - 1]?.VALDATA,
-      ),
-    ]);
+  async del(key: string) {
+    return await this.cacheService.del(key);
   }
 }
