@@ -9,13 +9,14 @@ import { InvestmentConnection, InvestmentModel } from './investment.model';
 import { formatDate } from '@/utils/date-formatter';
 import { addDays, differenceInDays } from 'date-fns';
 import { formatCurrency } from '@/utils/currency-formatter';
-import { CdiValuesResponse } from '@/external/ipeadata/types/cdi-values-response';
 import { getIrpfTax } from './utils/get-irpf-tax';
 import {
   InvestmentCreateWithoutUserInput,
   Regime,
 } from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
+import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -25,11 +26,21 @@ type CorrectInvestmentAmountReturn = {
   taxedVariation: number;
 };
 
+export type InvestmentCachedAmounts = {
+  correctedAmount: number;
+  taxedAmount: number;
+  cdiLastDate: string;
+};
+
 @Injectable()
 export class InvestmentService {
+  private readonly CACHE_TTL = 1000 * 60 * 60 * 24;
+  private readonly CACHE_PREFIX = 'investment-amounts';
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly redisCacheService: RedisCacheService,
+    private readonly ipeadataService: IpeadataService,
   ) {}
 
   async findMany({
@@ -102,6 +113,7 @@ export class InvestmentService {
           queriedFields.includes('taxedVariation') ||
           queriedFields.includes('taxPercentage')) && {
           DEFAULT: [
+            'id',
             'amount',
             'startDate',
             'duration',
@@ -115,61 +127,89 @@ export class InvestmentService {
       },
     });
 
-    const investments: InvestmentModel[] = [];
+    const cdiLastDate = await this.redisCacheService.get(
+      'external-ipeadata-cdi-last-date',
+      async () => {
+        const cdiValues = await this.ipeadataService.getCdiValues();
 
-    for (const investment of investmentsQuery) {
-      const {
-        correctedAmount,
-        correctedVariation,
-        taxPercentage,
-        taxedAmount,
-        taxedVariation,
-      } =
-        queriedFields.includes('currentAmount') ||
-        queriedFields.includes('taxedAmount') ||
-        queriedFields.includes('currentVariation') ||
-        queriedFields.includes('taxedVariation') ||
-        queriedFields.includes('taxPercentage')
-          ? await this.correctInvestmentAmount(investment)
-          : {};
+        await this.redisCacheService.set(
+          'external-ipeadata-cdi-daily',
+          cdiValues,
+        );
 
-      investments.push({
-        ...(queriedFields.includes('id') && { id: investment.id }),
-        ...(queriedFields.includes('initialAmount') && {
-          initialAmount: formatCurrency(investment.amount),
-        }),
-        ...(queriedFields.includes('currentAmount') && {
-          currentAmount: formatCurrency(correctedAmount),
-        }),
-        ...(queriedFields.includes('currentVariation') && {
-          currentVariation:
-            correctedVariation.toFixed(2).replace('.', ',') + '%',
-        }),
-        ...(queriedFields.includes('taxPercentage') && {
-          taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
-        }),
-        ...(queriedFields.includes('taxedAmount') && {
-          taxedAmount: formatCurrency(taxedAmount),
-        }),
-        ...(queriedFields.includes('taxedVariation') && {
-          taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
-        }),
-        ...(queriedFields.includes('period') && {
-          period: `${formatDate(investment.startDate)} - ${formatDate(
-            addDays(investment.startDate, investment.duration),
-          )}`,
-        }),
-        ...(queriedFields.includes('duration') && {
-          duration: investment.duration,
-        }),
-        ...(queriedFields.includes('regimeName') && {
-          regimeName: investment.regimeName as Regime,
-        }),
-        ...(queriedFields.includes('regimePercentage') && {
-          regimePercentage: investment.regimePercentage,
-        }),
-      });
-    }
+        return cdiValues?.[cdiValues?.length - 1]?.VALDATA;
+      },
+    );
+
+    const investments = await Promise.all(
+      investmentsQuery.map(async (investment) => {
+        const { correctedAmount, taxedAmount } =
+          queriedFields.includes('currentAmount') ||
+          queriedFields.includes('taxedAmount') ||
+          queriedFields.includes('currentVariation') ||
+          queriedFields.includes('taxedVariation') ||
+          queriedFields.includes('taxPercentage')
+            ? await this.correctInvestmentAmount(investment, cdiLastDate)
+            : {};
+
+        const correctedVariation = correctedAmount
+          ? 100 * ((correctedAmount - investment.amount) / investment.amount)
+          : 0;
+
+        const taxedVariation = taxedAmount
+          ? 100 * ((taxedAmount - investment.amount) / investment.amount)
+          : 0;
+
+        const daysFromInitialDate = differenceInDays(
+          new Date(),
+          investment.startDate,
+        );
+        const isInvestmentFinished = daysFromInitialDate >= investment.duration;
+        const currentInvestmentDays = isInvestmentFinished
+          ? investment.duration
+          : daysFromInitialDate;
+        const taxPercentage = getIrpfTax(currentInvestmentDays);
+
+        return {
+          ...(queriedFields.includes('id') && { id: investment.id }),
+          ...(queriedFields.includes('initialAmount') && {
+            initialAmount: formatCurrency(investment.amount),
+          }),
+          ...(queriedFields.includes('currentAmount') &&
+            correctedAmount && {
+              currentAmount: formatCurrency(correctedAmount),
+            }),
+          ...(queriedFields.includes('currentVariation') && {
+            currentVariation:
+              correctedVariation.toFixed(2).replace('.', ',') + '%',
+          }),
+          ...(queriedFields.includes('taxPercentage') && {
+            taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
+          }),
+          ...(queriedFields.includes('taxedAmount') &&
+            taxedAmount && {
+              taxedAmount: formatCurrency(taxedAmount),
+            }),
+          ...(queriedFields.includes('taxedVariation') && {
+            taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+          }),
+          ...(queriedFields.includes('period') && {
+            period: `${formatDate(investment.startDate)} - ${formatDate(
+              addDays(investment.startDate, investment.duration),
+            )}`,
+          }),
+          ...(queriedFields.includes('duration') && {
+            duration: investment.duration,
+          }),
+          ...(queriedFields.includes('regimeName') && {
+            regimeName: investment.regimeName as Regime,
+          }),
+          ...(queriedFields.includes('regimePercentage') && {
+            regimePercentage: investment.regimePercentage,
+          }),
+        };
+      }),
+    );
 
     if (last) {
       investments.reverse();
@@ -253,7 +293,6 @@ export class InvestmentService {
       : [];
 
     const hasNextPage = last ? !!before : !!extraItem;
-
     const hasPreviousPage = last ? !!extraItem : !!after;
 
     const pageInfo = {
@@ -285,27 +324,58 @@ export class InvestmentService {
   }
 
   private async correctInvestmentAmount(
-    investment: Investment,
+    investment: Pick<
+      Investment,
+      'id' | 'startDate' | 'amount' | 'duration' | 'regimePercentage'
+    >,
+    cdiLastDate: string,
   ): Promise<CorrectInvestmentAmountReturn> {
+    const cachedData = await this.redisCacheService.get(
+      `${this.CACHE_PREFIX}:${investment.id}`,
+    );
+
+    if (cachedData && cachedData.cdiLastDate === cdiLastDate) {
+      const { correctedAmount, taxedAmount } = cachedData;
+      const daysFromInitialDate = differenceInDays(
+        new Date(),
+        investment.startDate,
+      );
+      const isInvestmentFinished = daysFromInitialDate >= investment.duration;
+      const currentInvestmentDays = isInvestmentFinished
+        ? investment.duration
+        : daysFromInitialDate;
+      const irpfTax = getIrpfTax(currentInvestmentDays);
+
+      return {
+        correctedAmount,
+        correctedVariation:
+          100 * ((correctedAmount - investment.amount) / investment.amount),
+        taxPercentage: irpfTax,
+        taxedAmount,
+        taxedVariation:
+          100 * ((taxedAmount - investment.amount) / investment.amount),
+      };
+    }
+
     const daysFromInitialDate = differenceInDays(
       new Date(),
       investment.startDate,
     );
-
     const isInvestmentFinished = daysFromInitialDate >= investment.duration;
-
     const currentInvestmentDays = isInvestmentFinished
       ? investment.duration
       : daysFromInitialDate;
-
     const irpfTax = getIrpfTax(currentInvestmentDays);
 
     const cdiValues = await this.redisCacheService.get(
       'external-ipeadata-cdi-daily',
+      async () => {
+        return await this.ipeadataService.getCdiValues();
+      },
     );
 
-    if (!cdiValues) {
-      return {
+    if (!cdiValues || cdiValues.length === 0) {
+      const result = {
         correctedAmount: investment.amount,
         correctedVariation: 0,
         taxPercentage: irpfTax,
@@ -313,14 +383,26 @@ export class InvestmentService {
         taxedVariation:
           100 *
           ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
+        cdiLastDate: cdiLastDate || '',
       };
+
+      await this.redisCacheService.set(
+        `${this.CACHE_PREFIX}:${investment.id}`,
+        {
+          correctedAmount: result.correctedAmount,
+          taxedAmount: result.taxedAmount,
+          cdiLastDate: cdiLastDate || '',
+        },
+        this.CACHE_TTL,
+      );
+
+      return result;
     }
 
-    const cdiValuesLastDate: CdiValuesResponse['value'][number]['VALDATA'] =
-      await this.redisCacheService.get('external-ipeadata-cdi-last-date');
-
-    if (investment.startDate > new Date(cdiValuesLastDate)) {
-      return {
+    if (
+      investment.startDate > new Date(cdiValues[cdiValues.length - 1].VALDATA)
+    ) {
+      const result = {
         correctedAmount: investment.amount,
         correctedVariation: 0,
         taxedAmount: investment.amount * (1 - irpfTax / 100),
@@ -328,7 +410,20 @@ export class InvestmentService {
         taxedVariation:
           100 *
           ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
+        cdiLastDate: cdiLastDate || '',
       };
+
+      await this.redisCacheService.set(
+        `${this.CACHE_PREFIX}:${investment.id}`,
+        {
+          correctedAmount: result.correctedAmount,
+          taxedAmount: result.taxedAmount,
+          cdiLastDate: cdiLastDate || '',
+        },
+        this.CACHE_TTL,
+      );
+
+      return result;
     }
 
     const firstDayIndex = cdiValues.findIndex((cdi) => {
@@ -340,23 +435,23 @@ export class InvestmentService {
     });
 
     if (firstDayIndex === -1) {
-      throw new NotFoundException('Initial date not found');
+      throw new NotFoundException('Initial date not found in CDI data');
     }
 
     let amount = investment.amount;
+    const endIndex = Math.min(
+      firstDayIndex + investment.duration,
+      cdiValues.length,
+    );
 
-    for (
-      let i = firstDayIndex;
-      i < cdiValues?.length && i < firstDayIndex + investment.duration;
-      i++
-    ) {
+    for (let i = firstDayIndex; i < endIndex; i++) {
       amount *=
         1 + (cdiValues[i].VALVALOR * (investment.regimePercentage / 100)) / 100;
     }
 
     const taxedAmount = amount * (1 - irpfTax / 100);
 
-    return {
+    const result = {
       correctedAmount: amount,
       correctedVariation:
         100 * ((amount - investment.amount) / investment.amount),
@@ -364,6 +459,64 @@ export class InvestmentService {
       taxedAmount,
       taxedVariation:
         100 * ((taxedAmount - investment.amount) / investment.amount),
+      cdiLastDate: cdiLastDate || '',
     };
+
+    await this.redisCacheService.set(
+      `${this.CACHE_PREFIX}:${investment.id}`,
+      {
+        correctedAmount: result.correctedAmount,
+        taxedAmount: result.taxedAmount,
+        cdiLastDate: cdiLastDate || '',
+      },
+      this.CACHE_TTL,
+    );
+
+    return result;
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async updateInvestments() {
+    const lastKnownCdiDate = await this.redisCacheService.get(
+      'external-ipeadata-cdi-last-date',
+    );
+
+    const cdiValues = await this.ipeadataService.getCdiValues();
+
+    if (!cdiValues || cdiValues.length === 0) {
+      return;
+    }
+
+    const latestCdiDate = cdiValues[cdiValues.length - 1]?.VALDATA;
+
+    if (
+      lastKnownCdiDate &&
+      latestCdiDate &&
+      new Date(lastKnownCdiDate) >= new Date(latestCdiDate)
+    ) {
+      return;
+    }
+
+    await this.redisCacheService.set('external-ipeadata-cdi-daily', cdiValues);
+    await this.redisCacheService.set(
+      'external-ipeadata-cdi-last-date',
+      latestCdiDate,
+    );
+
+    const investments = await this.prismaService.investment.findMany({
+      select: {
+        id: true,
+        amount: true,
+        startDate: true,
+        duration: true,
+        regimePercentage: true,
+      },
+    });
+
+    await Promise.all(
+      investments.map((investment) =>
+        this.correctInvestmentAmount(investment, latestCdiDate),
+      ),
+    );
   }
 }
