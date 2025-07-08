@@ -1,13 +1,13 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
-import { OrdenationUserArgs } from '@/user/models/user.model';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { Investment } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import {
   InvestmentConnection,
   InvestmentModel,
+  OrdenationInvestmentArgs,
   TotalInvestmentsModel,
 } from './investment.model';
 import { formatDate } from '@/utils/date-formatter';
@@ -55,7 +55,7 @@ export class InvestmentService {
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
-    ordenationArgs: OrdenationUserArgs;
+    ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
