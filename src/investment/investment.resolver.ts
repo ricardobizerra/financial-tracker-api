@@ -2,9 +2,11 @@ import {
   Args,
   Field,
   Float,
+  ID,
   Info,
   Mutation,
   ObjectType,
+  PickType,
   Query,
   Resolver,
 } from '@nestjs/graphql';
@@ -83,5 +85,16 @@ export class InvestmentResolver {
     });
 
     return totalInvestments;
+  }
+
+  @Auth()
+  @Mutation(() => ID!, { name: 'deleteInvestment' })
+  async deleteInvestments(
+    @Args('id', { type: () => ID! }) id: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    const deletedInvestment = await this.investmentService.delete(id, user?.id);
+
+    return deletedInvestment;
   }
 }

@@ -327,6 +327,32 @@ export class InvestmentService {
     return investment;
   }
 
+  async delete(id: string, userId: string) {
+    const investmentFoundAndFromUser =
+      await this.prismaService.investment.findUnique({
+        where: {
+          id,
+          user: {
+            id: userId,
+          },
+        },
+      });
+
+    if (!investmentFoundAndFromUser) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    const investment = await this.prismaService.investment.delete({
+      where: {
+        id,
+      },
+    });
+
+    return {
+      id: investment.id,
+    };
+  }
+
   async totalInvestments({
     userId,
     queriedFields,

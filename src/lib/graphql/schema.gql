@@ -219,6 +219,7 @@ type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
   createInvestment(data: InvestmentCreateWithoutUserInput!): Investment!
+  deleteInvestment(id: ID!): ID!
 }
 
 input UserCreateInput {
