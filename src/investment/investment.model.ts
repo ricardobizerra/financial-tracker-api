@@ -42,20 +42,14 @@ export class InvestmentModel {
 @ObjectType()
 export class InvestmentConnection extends Connection(InvestmentModel) {}
 
-enum OrderBy {
-  id = 'id',
-  initialAmount = 'amount',
-  period = 'startDate',
-  duration = 'duration',
-  regimeName = 'regimeName',
-  regimePercentage = 'regimePercentage',
-}
-
 @ArgsType()
-export class OrdenationInvestmentArgs extends Ordenation(
-  InvestmentModel,
-  OrderBy,
-) {}
+export class OrdenationInvestmentArgs extends Ordenation(InvestmentModel, [
+  'currentAmount',
+  'taxedAmount',
+  'currentVariation',
+  'taxedVariation',
+  'taxPercentage',
+]) {}
 
 @ObjectType()
 export class TotalInvestmentsModel {

@@ -17,12 +17,5 @@ export class UserModel {
   role!: Role;
 }
 
-enum OrderBy {
-  id = 'id',
-  email = 'email',
-  name = 'name',
-  role = 'role',
-}
-
 @ArgsType()
-export class OrdenationUserArgs extends Ordenation(UserModel, OrderBy) {}
+export class OrdenationUserArgs extends Ordenation(UserModel) {}
