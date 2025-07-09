@@ -1,4 +1,4 @@
-export interface CdiValuesResponse {
+export interface IpeadataResponse {
   '@odata.context': string;
   value: {
     SERCODIGO: string;

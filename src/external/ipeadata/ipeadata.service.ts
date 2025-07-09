@@ -1,5 +1,5 @@
 import { catchError, firstValueFrom } from 'rxjs';
-import { CdiValuesResponse } from './types/cdi-values-response';
+import { IpeadataResponse } from './types/ipeadata-response';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
 import { Injectable } from '@nestjs/common';
@@ -13,11 +13,13 @@ export class IpeadataService {
     private redisCacheService: RedisCacheService,
   ) {}
 
-  async getCdiValues(): Promise<CdiValuesResponse['value']> {
+  private async getDataByCode(
+    code: string,
+  ): Promise<IpeadataResponse['value']> {
     const { data } = await firstValueFrom(
       this.httpService
-        .get<CdiValuesResponse>(
-          `http://www.ipeadata.gov.br/api/odata4/Metadados('SGS366_CDI366')/Valores`,
+        .get<IpeadataResponse>(
+          `http://www.ipeadata.gov.br/api/odata4/Metadados('${code}')/Valores`,
         )
         .pipe(
           catchError((error: AxiosError) => {
@@ -28,6 +30,10 @@ export class IpeadataService {
     );
 
     return data.value;
+  }
+
+  async getCdiValues(): Promise<IpeadataResponse['value']> {
+    return this.getDataByCode('SGS366_CDI366');
   }
 
   @Cron(CronExpression.EVERY_HOUR)

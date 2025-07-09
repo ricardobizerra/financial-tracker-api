@@ -1,11 +1,11 @@
-import { CdiValuesResponse } from '@/external/ipeadata/types/cdi-values-response';
+import { IpeadataResponse } from '@/external/ipeadata/types/ipeadata-response';
 import { InvestmentCachedAmounts } from '@/investment/investment.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 type CacheKeyMapping = {
-  'external-ipeadata-cdi-daily': CdiValuesResponse['value'];
+  'external-ipeadata-cdi-daily': IpeadataResponse['value'];
   'external-ipeadata-cdi-last-date': string;
   'investment-amounts': InvestmentCachedAmounts;
 };
