@@ -38,6 +38,7 @@ export enum Role {
 
 export enum Regime {
   CDI = 'CDI',
+  POUPANCA = 'POUPANCA',
 }
 
 export enum QueryMode {

@@ -51,4 +51,5 @@ enum Role {
 
 enum Regime {
   CDI
+  POUPANCA
 }
