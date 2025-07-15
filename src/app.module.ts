@@ -17,6 +17,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { InvestmentModule } from './investment/investment.module';
+import { BacenModule } from './external/bacen/bacen.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { InvestmentModule } from './investment/investment.module';
     UserModule,
     RedisModule,
     AuthModule,
+    BacenModule,
     IpeadataModule,
     InvestmentModule,
   ],
