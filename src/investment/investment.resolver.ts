@@ -88,13 +88,13 @@ export class InvestmentResolver {
   }
 
   @Auth()
-  @Mutation(() => ID!, { name: 'deleteInvestment' })
+  @Mutation(() => ID, { name: 'deleteInvestment' })
   async deleteInvestments(
     @Args('id', { type: () => ID! }) id: string,
     @CurrentUser() user: UserModel,
   ) {
     const deletedInvestment = await this.investmentService.delete(id, user?.id);
 
-    return deletedInvestment;
+    return deletedInvestment?.id;
   }
 }
