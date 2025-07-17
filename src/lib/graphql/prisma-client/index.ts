@@ -56,6 +56,7 @@ export enum InvestmentScalarFieldEnum {
   amount = 'amount',
   startDate = 'startDate',
   duration = 'duration',
+  finishedAt = 'finishedAt',
   regimeName = 'regimeName',
   regimePercentage = 'regimePercentage',
   userId = 'userId',
@@ -256,6 +257,8 @@ export class InvestmentCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
+  finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
@@ -280,6 +283,8 @@ export class InvestmentCountAggregate {
   @Field(() => Int, { nullable: false })
   duration!: number;
   @Field(() => Int, { nullable: false })
+  finishedAt!: number;
+  @Field(() => Int, { nullable: false })
   regimeName!: number;
   @Field(() => Int, { nullable: false })
   regimePercentage!: number;
@@ -303,6 +308,8 @@ export class InvestmentCountOrderByAggregateInput {
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  finishedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -332,8 +339,10 @@ export class InvestmentCreateManyUserInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -352,8 +361,10 @@ export class InvestmentCreateManyInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -400,8 +411,10 @@ export class InvestmentCreateWithoutUserInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -420,8 +433,10 @@ export class InvestmentCreateInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -469,8 +484,10 @@ export class InvestmentGroupBy {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -514,6 +531,8 @@ export class InvestmentMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
+  finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
@@ -535,6 +554,8 @@ export class InvestmentMaxAggregate {
   startDate?: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -558,6 +579,8 @@ export class InvestmentMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  finishedAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
@@ -580,6 +603,8 @@ export class InvestmentMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
+  finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
@@ -601,6 +626,8 @@ export class InvestmentMinAggregate {
   startDate?: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -623,6 +650,8 @@ export class InvestmentMinOrderByAggregateInput {
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  finishedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -649,8 +678,10 @@ export class InvestmentOrderByWithAggregationInput {
   amount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
-  @Field(() => SortOrder, { nullable: true })
-  duration?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  duration?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  finishedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
@@ -681,8 +712,10 @@ export class InvestmentOrderByWithRelationInput {
   amount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
-  @Field(() => SortOrder, { nullable: true })
-  duration?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  duration?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  finishedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
@@ -711,8 +744,10 @@ export class InvestmentScalarWhereWithAggregatesInput {
   amount?: InstanceType<typeof FloatWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeWithAggregatesFilter>;
-  @Field(() => IntWithAggregatesFilter, { nullable: true })
-  duration?: InstanceType<typeof IntWithAggregatesFilter>;
+  @Field(() => IntNullableWithAggregatesFilter, { nullable: true })
+  duration?: InstanceType<typeof IntNullableWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  finishedAt?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
   @Field(() => EnumRegimeWithAggregatesFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeWithAggregatesFilter>;
   @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
@@ -739,8 +774,10 @@ export class InvestmentScalarWhereInput {
   amount?: InstanceType<typeof FloatFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => IntFilter, { nullable: true })
-  duration?: InstanceType<typeof IntFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  duration?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -807,8 +844,10 @@ export class InvestmentUncheckedCreateWithoutUserInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -827,8 +866,10 @@ export class InvestmentUncheckedCreateInput {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -892,8 +933,10 @@ export class InvestmentUncheckedUpdateManyWithoutUserInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -914,8 +957,10 @@ export class InvestmentUncheckedUpdateManyInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -938,8 +983,10 @@ export class InvestmentUncheckedUpdateWithoutUserInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -960,8 +1007,10 @@ export class InvestmentUncheckedUpdateInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -984,8 +1033,10 @@ export class InvestmentUpdateManyMutationInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1069,8 +1120,10 @@ export class InvestmentUpdateWithoutUserInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1091,8 +1144,10 @@ export class InvestmentUpdateInput {
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => IntFieldUpdateOperationsInput, { nullable: true })
-  duration?: InstanceType<typeof IntFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1138,8 +1193,10 @@ export class InvestmentWhereUniqueInput {
   amount?: InstanceType<typeof FloatFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => IntFilter, { nullable: true })
-  duration?: InstanceType<typeof IntFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  duration?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -1168,8 +1225,10 @@ export class InvestmentWhereInput {
   amount?: InstanceType<typeof FloatFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => IntFilter, { nullable: true })
-  duration?: InstanceType<typeof IntFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  duration?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -1192,8 +1251,10 @@ export class Investment {
   amount!: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date;
-  @Field(() => Int, { nullable: false })
-  duration!: number;
+  @Field(() => Int, { nullable: true })
+  duration!: number | null;
+  @Field(() => Date, { nullable: true })
+  finishedAt!: Date | null;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true, defaultValue: 100 })
@@ -1271,6 +1332,52 @@ export class DateTimeFilter {
   gte?: Date | string;
   @Field(() => NestedDateTimeFilter, { nullable: true })
   not?: InstanceType<typeof NestedDateTimeFilter>;
+}
+
+@InputType()
+export class DateTimeNullableFilter {
+  @Field(() => Date, { nullable: true })
+  equals?: Date | string;
+  @Field(() => [Date], { nullable: true })
+  in?: Array<Date> | Array<string>;
+  @Field(() => [Date], { nullable: true })
+  notIn?: Array<Date> | Array<string>;
+  @Field(() => Date, { nullable: true })
+  lt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lte?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gte?: Date | string;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDateTimeNullableFilter>;
+}
+
+@InputType()
+export class DateTimeNullableWithAggregatesFilter {
+  @Field(() => Date, { nullable: true })
+  equals?: Date | string;
+  @Field(() => [Date], { nullable: true })
+  in?: Array<Date> | Array<string>;
+  @Field(() => [Date], { nullable: true })
+  notIn?: Array<Date> | Array<string>;
+  @Field(() => Date, { nullable: true })
+  lt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lte?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gte?: Date | string;
+  @Field(() => NestedDateTimeNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDateTimeNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedDateTimeNullableFilter>;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedDateTimeNullableFilter>;
 }
 
 @InputType()
@@ -1486,21 +1593,7 @@ export class FloatWithAggregatesFilter {
 }
 
 @InputType()
-export class IntFieldUpdateOperationsInput {
-  @Field(() => Int, { nullable: true })
-  set?: number;
-  @Field(() => Int, { nullable: true })
-  increment?: number;
-  @Field(() => Int, { nullable: true })
-  decrement?: number;
-  @Field(() => Int, { nullable: true })
-  multiply?: number;
-  @Field(() => Int, { nullable: true })
-  divide?: number;
-}
-
-@InputType()
-export class IntFilter {
+export class IntNullableFilter {
   @Field(() => Int, { nullable: true })
   equals?: number;
   @Field(() => [Int], { nullable: true })
@@ -1515,12 +1608,12 @@ export class IntFilter {
   gt?: number;
   @Field(() => Int, { nullable: true })
   gte?: number;
-  @Field(() => NestedIntFilter, { nullable: true })
-  not?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedIntNullableFilter>;
 }
 
 @InputType()
-export class IntWithAggregatesFilter {
+export class IntNullableWithAggregatesFilter {
   @Field(() => Int, { nullable: true })
   equals?: number;
   @Field(() => [Int], { nullable: true })
@@ -1535,18 +1628,18 @@ export class IntWithAggregatesFilter {
   gt?: number;
   @Field(() => Int, { nullable: true })
   gte?: number;
-  @Field(() => NestedIntWithAggregatesFilter, { nullable: true })
-  not?: InstanceType<typeof NestedIntWithAggregatesFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _count?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedFloatFilter, { nullable: true })
-  _avg?: InstanceType<typeof NestedFloatFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _sum?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _min?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _max?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedIntNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedIntNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedFloatNullableFilter, { nullable: true })
+  _avg?: InstanceType<typeof NestedFloatNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _sum?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedIntNullableFilter>;
 }
 
 @InputType()
@@ -1567,6 +1660,52 @@ export class NestedDateTimeFilter {
   gte?: Date | string;
   @Field(() => NestedDateTimeFilter, { nullable: true })
   not?: InstanceType<typeof NestedDateTimeFilter>;
+}
+
+@InputType()
+export class NestedDateTimeNullableFilter {
+  @Field(() => Date, { nullable: true })
+  equals?: Date | string;
+  @Field(() => [Date], { nullable: true })
+  in?: Array<Date> | Array<string>;
+  @Field(() => [Date], { nullable: true })
+  notIn?: Array<Date> | Array<string>;
+  @Field(() => Date, { nullable: true })
+  lt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lte?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gte?: Date | string;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDateTimeNullableFilter>;
+}
+
+@InputType()
+export class NestedDateTimeNullableWithAggregatesFilter {
+  @Field(() => Date, { nullable: true })
+  equals?: Date | string;
+  @Field(() => [Date], { nullable: true })
+  in?: Array<Date> | Array<string>;
+  @Field(() => [Date], { nullable: true })
+  notIn?: Array<Date> | Array<string>;
+  @Field(() => Date, { nullable: true })
+  lt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lte?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  gte?: Date | string;
+  @Field(() => NestedDateTimeNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDateTimeNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedDateTimeNullableFilter>;
+  @Field(() => NestedDateTimeNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedDateTimeNullableFilter>;
 }
 
 @InputType()
@@ -1796,7 +1935,7 @@ export class NestedIntNullableFilter {
 }
 
 @InputType()
-export class NestedIntWithAggregatesFilter {
+export class NestedIntNullableWithAggregatesFilter {
   @Field(() => Int, { nullable: true })
   equals?: number;
   @Field(() => [Int], { nullable: true })
@@ -1811,18 +1950,18 @@ export class NestedIntWithAggregatesFilter {
   gt?: number;
   @Field(() => Int, { nullable: true })
   gte?: number;
-  @Field(() => NestedIntWithAggregatesFilter, { nullable: true })
-  not?: InstanceType<typeof NestedIntWithAggregatesFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _count?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedFloatFilter, { nullable: true })
-  _avg?: InstanceType<typeof NestedFloatFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _sum?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _min?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _max?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedIntNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedIntNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedFloatNullableFilter, { nullable: true })
+  _avg?: InstanceType<typeof NestedFloatNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _sum?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedIntNullableFilter>;
 }
 
 @InputType()
@@ -1884,6 +2023,12 @@ export class NestedStringWithAggregatesFilter {
 }
 
 @InputType()
+export class NullableDateTimeFieldUpdateOperationsInput {
+  @Field(() => Date, { nullable: true })
+  set?: Date | string;
+}
+
+@InputType()
 export class NullableFloatFieldUpdateOperationsInput {
   @Field(() => Float, { nullable: true })
   set?: number;
@@ -1894,6 +2039,20 @@ export class NullableFloatFieldUpdateOperationsInput {
   @Field(() => Float, { nullable: true })
   multiply?: number;
   @Field(() => Float, { nullable: true })
+  divide?: number;
+}
+
+@InputType()
+export class NullableIntFieldUpdateOperationsInput {
+  @Field(() => Int, { nullable: true })
+  set?: number;
+  @Field(() => Int, { nullable: true })
+  increment?: number;
+  @Field(() => Int, { nullable: true })
+  decrement?: number;
+  @Field(() => Int, { nullable: true })
+  multiply?: number;
+  @Field(() => Int, { nullable: true })
   divide?: number;
 }
 

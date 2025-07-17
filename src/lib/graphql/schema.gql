@@ -13,6 +13,7 @@ type InvestmentCountAggregate {
   amount: Int!
   startDate: Int!
   duration: Int!
+  finishedAt: Int!
   regimeName: Int!
   regimePercentage: Int!
   userId: Int!
@@ -26,6 +27,7 @@ type InvestmentMaxAggregate {
   amount: Float
   startDate: DateTime
   duration: Int
+  finishedAt: DateTime
   regimeName: Regime
   regimePercentage: Float
   userId: String
@@ -48,6 +50,7 @@ type InvestmentMinAggregate {
   amount: Float
   startDate: DateTime
   duration: Int
+  finishedAt: DateTime
   regimeName: Regime
   regimePercentage: Float
   userId: String
@@ -65,7 +68,8 @@ type Investment {
   id: ID!
   amount: Float!
   startDate: DateTime!
-  duration: Int!
+  duration: Int
+  finishedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   userId: String!
@@ -157,16 +161,19 @@ type UserModelEdge {
 
 type InvestmentModel {
   id: ID!
-  initialAmount: String!
-  currentAmount: String!
+  amount: Float!
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  currentAmount: Float!
   currentVariation: String!
   taxPercentage: String!
-  taxedAmount: String!
+  taxedAmount: Float!
   taxedVariation: String!
-  period: String!
-  duration: Int!
-  regimeName: Regime!
-  regimePercentage: Float!
 }
 
 type InvestmentConnection {
@@ -180,10 +187,10 @@ type InvestmentModelEdge {
 }
 
 type TotalInvestmentsModel {
-  initialAmount: String!
-  currentAmount: String!
+  initialAmount: Float!
+  currentAmount: Float!
   currentVariation: String!
-  taxedAmount: String!
+  taxedAmount: Float!
   taxedVariation: String!
 }
 
@@ -193,6 +200,7 @@ type Query {
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
+  findAll(orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): String!
 }
 
 enum OrdenationUserModel {
@@ -209,11 +217,15 @@ enum OrderDirection {
 
 enum OrdenationInvestmentModel {
   id
-  initialAmount
-  period
+  amount
+  startDate
   duration
+  finishedAt
   regimeName
   regimePercentage
+  createdAt
+  updatedAt
+  currentAmount
 }
 
 type Mutation {
@@ -245,7 +257,8 @@ input InvestmentCreateWithoutUserInput {
   id: String
   amount: Float!
   startDate: DateTime!
-  duration: Int!
+  duration: Int
+  finishedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
@@ -264,7 +277,8 @@ input InvestmentWhereUniqueInput {
   NOT: [InvestmentWhereInput!]
   amount: FloatFilter
   startDate: DateTimeFilter
-  duration: IntFilter
+  duration: IntNullableFilter
+  finishedAt: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   userId: StringFilter
@@ -280,7 +294,8 @@ input InvestmentWhereInput {
   id: StringFilter
   amount: FloatFilter
   startDate: DateTimeFilter
-  duration: IntFilter
+  duration: IntNullableFilter
+  finishedAt: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   userId: StringFilter
@@ -367,7 +382,7 @@ input NestedDateTimeFilter {
   not: NestedDateTimeFilter
 }
 
-input IntFilter {
+input IntNullableFilter {
   equals: Int
   in: [Int!]
   notIn: [Int!]
@@ -375,10 +390,10 @@ input IntFilter {
   lte: Int
   gt: Int
   gte: Int
-  not: NestedIntFilter
+  not: NestedIntNullableFilter
 }
 
-input NestedIntFilter {
+input NestedIntNullableFilter {
   equals: Int
   in: [Int!]
   notIn: [Int!]
@@ -386,7 +401,29 @@ input NestedIntFilter {
   lte: Int
   gt: Int
   gte: Int
-  not: NestedIntFilter
+  not: NestedIntNullableFilter
+}
+
+input DateTimeNullableFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeNullableFilter
+}
+
+input NestedDateTimeNullableFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeNullableFilter
 }
 
 input EnumRegimeFilter {
@@ -473,7 +510,8 @@ input InvestmentCreateManyUserInput {
   id: String
   amount: Float!
   startDate: DateTime!
-  duration: Int!
+  duration: Int
+  finishedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime

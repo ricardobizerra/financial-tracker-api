@@ -8,11 +8,11 @@ export class InvestmentModel {
   @Field(() => ID, { nullable: false })
   id!: string;
 
-  @Field(() => String, { nullable: false })
-  initialAmount!: string;
+  @Field(() => Float, { nullable: false })
+  initialAmount!: number;
 
-  @Field(() => String, { nullable: false })
-  currentAmount!: string;
+  @Field(() => Float, { nullable: false })
+  currentAmount!: number;
 
   @Field(() => String, { nullable: false })
   currentVariation!: string;
@@ -20,14 +20,17 @@ export class InvestmentModel {
   @Field(() => String, { nullable: false })
   taxPercentage!: string;
 
-  @Field(() => String, { nullable: false })
-  taxedAmount!: string;
+  @Field(() => Float, { nullable: false })
+  taxedAmount!: number;
 
   @Field(() => String, { nullable: false })
   taxedVariation!: string;
 
   @Field(() => String, { nullable: false })
   period!: string;
+
+  @Field(() => String, { nullable: false })
+  finishedAt!: Date;
 
   @Field(() => Int, { nullable: false })
   duration!: number;
@@ -49,21 +52,22 @@ export class OrdenationInvestmentArgs extends Ordenation(InvestmentModel, [
   'currentVariation',
   'taxedVariation',
   'taxPercentage',
+  'finishedAt',
 ]) {}
 
 @ObjectType()
 export class TotalInvestmentsModel {
-  @Field(() => String, { nullable: false })
-  initialAmount!: string;
+  @Field(() => Float, { nullable: false })
+  initialAmount!: number;
 
-  @Field(() => String, { nullable: false })
-  currentAmount!: string;
+  @Field(() => Float, { nullable: false })
+  currentAmount!: number;
 
   @Field(() => String, { nullable: false })
   currentVariation!: string;
 
-  @Field(() => String, { nullable: false })
-  taxedAmount!: string;
+  @Field(() => Float, { nullable: false })
+  taxedAmount!: number;
 
   @Field(() => String, { nullable: false })
   taxedVariation!: string;
