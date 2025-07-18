@@ -4,6 +4,8 @@
 
 type InvestmentAvgAggregate {
   amount: Float
+  correctedAmount: Float
+  taxedAmount: Float
   duration: Float
   regimePercentage: Float
 }
@@ -11,9 +13,12 @@ type InvestmentAvgAggregate {
 type InvestmentCountAggregate {
   id: Int!
   amount: Int!
+  correctedAmount: Int!
+  taxedAmount: Int!
   startDate: Int!
   duration: Int!
   finishedAt: Int!
+  lastCorrectedAt: Int!
   regimeName: Int!
   regimePercentage: Int!
   userId: Int!
@@ -25,9 +30,12 @@ type InvestmentCountAggregate {
 type InvestmentMaxAggregate {
   id: String
   amount: Float
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime
   regimePercentage: Float
   userId: String
@@ -48,9 +56,12 @@ enum Regime {
 type InvestmentMinAggregate {
   id: String
   amount: Float
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime
   regimePercentage: Float
   userId: String
@@ -60,6 +71,8 @@ type InvestmentMinAggregate {
 
 type InvestmentSumAggregate {
   amount: Float
+  correctedAmount: Float
+  taxedAmount: Float
   duration: Int
   regimePercentage: Float
 }
@@ -67,9 +80,12 @@ type InvestmentSumAggregate {
 type Investment {
   id: ID!
   amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime!
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   userId: String!
@@ -162,17 +178,18 @@ type UserModelEdge {
 type InvestmentModel {
   id: ID!
   amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime!
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime!
   updatedAt: DateTime!
-  currentAmount: Float!
   currentVariation: String!
   taxPercentage: String!
-  taxedAmount: Float!
   taxedVariation: String!
 }
 
@@ -200,7 +217,6 @@ type Query {
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
-  findAll(orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection): String!
 }
 
 enum OrdenationUserModel {
@@ -218,14 +234,16 @@ enum OrderDirection {
 enum OrdenationInvestmentModel {
   id
   amount
+  correctedAmount
+  taxedAmount
   startDate
   duration
   finishedAt
+  lastCorrectedAt
   regimeName
   regimePercentage
   createdAt
   updatedAt
-  currentAmount
 }
 
 type Mutation {
@@ -256,9 +274,12 @@ input InvestmentCreateNestedManyWithoutUserInput {
 input InvestmentCreateWithoutUserInput {
   id: String
   amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime!
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
@@ -276,9 +297,12 @@ input InvestmentWhereUniqueInput {
   OR: [InvestmentWhereInput!]
   NOT: [InvestmentWhereInput!]
   amount: FloatFilter
+  correctedAmount: FloatNullableFilter
+  taxedAmount: FloatNullableFilter
   startDate: DateTimeFilter
   duration: IntNullableFilter
   finishedAt: DateTimeNullableFilter
+  lastCorrectedAt: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   userId: StringFilter
@@ -293,9 +317,12 @@ input InvestmentWhereInput {
   NOT: [InvestmentWhereInput!]
   id: StringFilter
   amount: FloatFilter
+  correctedAmount: FloatNullableFilter
+  taxedAmount: FloatNullableFilter
   startDate: DateTimeFilter
   duration: IntNullableFilter
   finishedAt: DateTimeNullableFilter
+  lastCorrectedAt: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   userId: StringFilter
@@ -358,6 +385,28 @@ input NestedFloatFilter {
   gt: Float
   gte: Float
   not: NestedFloatFilter
+}
+
+input FloatNullableFilter {
+  equals: Float
+  in: [Float!]
+  notIn: [Float!]
+  lt: Float
+  lte: Float
+  gt: Float
+  gte: Float
+  not: NestedFloatNullableFilter
+}
+
+input NestedFloatNullableFilter {
+  equals: Float
+  in: [Float!]
+  notIn: [Float!]
+  lt: Float
+  lte: Float
+  gt: Float
+  gte: Float
+  not: NestedFloatNullableFilter
 }
 
 input DateTimeFilter {
@@ -440,28 +489,6 @@ input NestedEnumRegimeFilter {
   not: NestedEnumRegimeFilter
 }
 
-input FloatNullableFilter {
-  equals: Float
-  in: [Float!]
-  notIn: [Float!]
-  lt: Float
-  lte: Float
-  gt: Float
-  gte: Float
-  not: NestedFloatNullableFilter
-}
-
-input NestedFloatNullableFilter {
-  equals: Float
-  in: [Float!]
-  notIn: [Float!]
-  lt: Float
-  lte: Float
-  gt: Float
-  gte: Float
-  not: NestedFloatNullableFilter
-}
-
 input UserRelationFilter {
   is: UserWhereInput
   isNot: UserWhereInput
@@ -509,9 +536,12 @@ input InvestmentCreateManyUserInputEnvelope {
 input InvestmentCreateManyUserInput {
   id: String
   amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
   startDate: DateTime!
   duration: Int
   finishedAt: DateTime
+  lastCorrectedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime

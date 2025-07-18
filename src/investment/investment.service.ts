@@ -10,8 +10,7 @@ import {
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
 } from './investment.model';
-import { formatDate } from '@/utils/date-formatter';
-import { addDays, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
 import {
   InvestmentCreateWithoutUserInput,
@@ -19,10 +18,10 @@ import {
 } from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { BacenService } from '@/external/bacen/bacen.service';
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
-import { IpeadataResponse } from '@/external/ipeadata/types/ipeadata-response';
+import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -40,9 +39,6 @@ export type InvestmentCachedAmounts = {
 
 @Injectable()
 export class InvestmentService {
-  private readonly CACHE_TTL = 1000 * 60 * 60 * 24;
-  private readonly CACHE_PREFIX = 'investment-amounts';
-
   constructor(
     private readonly prismaService: PrismaService,
     private readonly redisCacheService: RedisCacheService,
@@ -107,14 +103,10 @@ export class InvestmentService {
           }
         : undefined,
       select: selectObject<Investment, InvestmentModel>(queriedFields, {
-        initialAmount: ['amount'],
-        currentAmount: ['amount'],
         currentVariation: ['amount'],
         taxPercentage: ['amount'],
-        taxedAmount: ['amount'],
         taxedVariation: ['amount'],
-        period: ['startDate', 'duration'],
-        ...((queriedFields.includes('currentAmount') ||
+        ...((queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
           queriedFields.includes('currentVariation') ||
           queriedFields.includes('taxedVariation') ||
@@ -127,6 +119,9 @@ export class InvestmentService {
             'duration',
             'regimeName',
             'regimePercentage',
+            'lastCorrectedAt',
+            'correctedAmount',
+            'taxedAmount',
           ] satisfies (keyof Investment)[],
         }),
       }),
@@ -153,7 +148,7 @@ export class InvestmentService {
             cdiValues,
           );
 
-          return cdiValues?.[cdiValues?.length - 1]?.VALDATA;
+          return cdiValues?.[cdiValues?.length - 1]?.date;
         },
       );
     }
@@ -173,12 +168,7 @@ export class InvestmentService {
             poupancaValues,
           );
 
-          return new Date(
-            poupancaValues?.[poupancaValues?.length - 1]?.data
-              ?.split('/')
-              .reverse()
-              .join('/'),
-          ).toISOString();
+          return poupancaValues?.[poupancaValues?.length - 1]?.data;
         },
       );
     }
@@ -186,7 +176,7 @@ export class InvestmentService {
     const investments = await Promise.all(
       investmentsQuery.map(async (investment) => {
         const { correctedAmount, taxedAmount } =
-          queriedFields.includes('currentAmount') ||
+          queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
           queriedFields.includes('currentVariation') ||
           queriedFields.includes('taxedVariation') ||
@@ -219,12 +209,12 @@ export class InvestmentService {
 
         return {
           ...(queriedFields.includes('id') && { id: investment.id }),
-          ...(queriedFields.includes('initialAmount') && {
-            initialAmount: investment.amount,
+          ...(queriedFields.includes('amount') && {
+            amount: investment.amount,
           }),
-          ...(queriedFields.includes('currentAmount') &&
+          ...(queriedFields.includes('correctedAmount') &&
             correctedAmount && {
-              currentAmount: correctedAmount,
+              correctedAmount: correctedAmount,
             }),
           ...(queriedFields.includes('currentVariation') && {
             currentVariation:
@@ -240,10 +230,8 @@ export class InvestmentService {
           ...(queriedFields.includes('taxedVariation') && {
             taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
           }),
-          ...(queriedFields.includes('period') && {
-            period: `${formatDate(investment.startDate)} - ${formatDate(
-              addDays(investment.startDate, investment.duration),
-            )}`,
+          ...(queriedFields.includes('startDate') && {
+            startDate: investment.startDate,
           }),
           ...(queriedFields.includes('finishedAt') && {
             finishedAt: investment.finishedAt,
@@ -406,90 +394,20 @@ export class InvestmentService {
     userId: string;
     queriedFields: (keyof TotalInvestmentsModel)[];
   }): Promise<TotalInvestmentsModel> {
-    const investments = await this.prismaService.investment.findMany({
-      select: {
-        id: true,
+    const {
+      _sum: {
+        amount: totalInitialAmount,
+        correctedAmount: totalCurrentAmount,
+        taxedAmount: totalTaxedAmount,
+      },
+    } = await this.prismaService.investment.aggregate({
+      _sum: {
         amount: true,
-        startDate: true,
-        finishedAt: true,
-        duration: true,
-        regimeName: true,
-        regimePercentage: true,
+        correctedAmount: true,
+        taxedAmount: true,
       },
       where: { userId },
     });
-
-    let totalInitialAmount = 0;
-    let totalCurrentAmount = 0;
-    let totalTaxedAmount = 0;
-
-    let cdiLastDate: string;
-    let poupancaLastDate: string;
-
-    if (
-      investments.some((investment) => investment.regimeName === Regime.CDI)
-    ) {
-      cdiLastDate = await this.redisCacheService.get(
-        'external-ipeadata-cdi-last-date',
-        async () => {
-          const cdiValues = await this.ipeadataService.getCdiValues();
-
-          await this.redisCacheService.set(
-            'external-ipeadata-cdi-daily',
-            cdiValues,
-          );
-
-          return cdiValues?.[cdiValues?.length - 1]?.VALDATA;
-        },
-      );
-    }
-
-    if (
-      investments.some(
-        (investment) => investment.regimeName === Regime.POUPANCA,
-      )
-    ) {
-      poupancaLastDate = await this.redisCacheService.get(
-        'external-bacen-poupanca-last-date',
-        async () => {
-          const poupancaValues = await this.bacenService.getPoupancaValues();
-
-          await this.redisCacheService.set(
-            'external-bacen-poupanca-daily',
-            poupancaValues,
-          );
-
-          return new Date(
-            poupancaValues?.[poupancaValues?.length - 1]?.data
-              ?.split('/')
-              .reverse()
-              .join('/'),
-          ).toISOString();
-        },
-      );
-    }
-
-    const processedInvestments = await Promise.all(
-      investments.map((investment, index) =>
-        this.correctInvestmentAmount(
-          investment,
-          investment.regimeName === Regime.CDI ? cdiLastDate : poupancaLastDate,
-        ).then((result) => ({
-          ...result,
-          originalIndex: index,
-        })),
-      ),
-    );
-
-    for (const {
-      originalIndex,
-      correctedAmount,
-      taxedAmount,
-    } of processedInvestments) {
-      totalInitialAmount += investments[originalIndex].amount;
-      totalCurrentAmount += correctedAmount;
-      totalTaxedAmount += taxedAmount;
-    }
 
     const currentVariation =
       queriedFields.includes('currentVariation') && totalInitialAmount > 0
@@ -530,16 +448,17 @@ export class InvestmentService {
       | 'duration'
       | 'regimeName'
       | 'regimePercentage'
+      | 'lastCorrectedAt'
+      | 'correctedAmount'
+      | 'taxedAmount'
     >,
     lastDate: string,
   ): Promise<CorrectInvestmentAmountReturn> {
-    const cachedData = await this.redisCacheService.get(
-      `${this.CACHE_PREFIX}:${investment.id}`,
-    );
-
-    if (cachedData && cachedData.lastDate === lastDate) {
-      const { correctedAmount, taxedAmount } = cachedData;
-
+    if (
+      investment.lastCorrectedAt &&
+      new Date(investment.lastCorrectedAt?.toISOString().split('T')[0]) >=
+        new Date(lastDate)
+    ) {
       const daysFromInitialDate = differenceInDays(
         new Date(),
         investment.startDate,
@@ -557,13 +476,16 @@ export class InvestmentService {
           : 0;
 
       return {
-        correctedAmount,
+        correctedAmount: investment.correctedAmount,
         correctedVariation:
-          100 * ((correctedAmount - investment.amount) / investment.amount),
+          100 *
+          ((investment.correctedAmount - investment.amount) /
+            investment.amount),
         taxPercentage: irpfTax,
-        taxedAmount,
+        taxedAmount: investment.taxedAmount,
         taxedVariation:
-          100 * ((taxedAmount - investment.amount) / investment.amount),
+          100 *
+          ((investment.taxedAmount - investment.amount) / investment.amount),
       };
     }
 
@@ -605,21 +527,22 @@ export class InvestmentService {
           lastDate: lastDate || '',
         };
 
-        await this.redisCacheService.set(
-          `${this.CACHE_PREFIX}:${investment.id}`,
-          {
+        await this.prismaService.investment.update({
+          where: {
+            id: investment.id,
+          },
+          data: {
             correctedAmount: result.correctedAmount,
             taxedAmount: result.taxedAmount,
-            lastDate: lastDate || '',
+            lastCorrectedAt: new Date(),
           },
-          this.CACHE_TTL,
-        );
+        });
 
         return result;
       }
 
       if (
-        investment.startDate > new Date(cdiValues[cdiValues.length - 1].VALDATA)
+        investment.startDate > new Date(cdiValues[cdiValues.length - 1].date)
       ) {
         const result = {
           correctedAmount: investment.amount,
@@ -632,21 +555,22 @@ export class InvestmentService {
           lastDate: lastDate || '',
         };
 
-        await this.redisCacheService.set(
-          `${this.CACHE_PREFIX}:${investment.id}`,
-          {
+        await this.prismaService.investment.update({
+          where: {
+            id: investment.id,
+          },
+          data: {
             correctedAmount: result.correctedAmount,
             taxedAmount: result.taxedAmount,
-            lastDate: lastDate || '',
+            lastCorrectedAt: new Date(),
           },
-          this.CACHE_TTL,
-        );
+        });
 
         return result;
       }
 
       const firstDayIndex = cdiValues.findIndex((cdi) => {
-        const cdiDate = new Date(cdi.VALDATA);
+        const cdiDate = new Date(cdi.date);
         const dateToMatch = new Date(investment.startDate);
         cdiDate.setHours(0, 0, 0, 0);
         dateToMatch.setHours(0, 0, 0, 0);
@@ -664,8 +588,7 @@ export class InvestmentService {
 
       for (let i = firstDayIndex; i < endIndex; i++) {
         amount *=
-          1 +
-          (cdiValues[i].VALVALOR * (investment.regimePercentage / 100)) / 100;
+          1 + (cdiValues[i].value * (investment.regimePercentage / 100)) / 100;
       }
     }
 
@@ -700,7 +623,7 @@ export class InvestmentService {
       const rateMap = new Map<string, number>();
       for (const item of poupancaValues) {
         const date = new Date(item.data.split('/').reverse().join('/'));
-        rateMap.set(date.toISOString().split('T')[0], item.valor);
+        rateMap.set(date?.toISOString().split('T')[0], item.valor);
       }
 
       while (true) {
@@ -739,7 +662,7 @@ export class InvestmentService {
 
         const rateDate = new Date(nextBirthday);
 
-        const rateKey = rateDate.toISOString().split('T')[0];
+        const rateKey = rateDate?.toISOString().split('T')[0];
         const dailyRate = rateMap.get(rateKey);
 
         currentDate = new Date(nextBirthday);
@@ -761,20 +684,22 @@ export class InvestmentService {
       lastDate: lastDate || '',
     };
 
-    await this.redisCacheService.set(
-      `${this.CACHE_PREFIX}:${investment.id}`,
-      {
+    await this.prismaService.investment.update({
+      where: {
+        id: investment.id,
+      },
+      data: {
         correctedAmount: result.correctedAmount,
         taxedAmount: result.taxedAmount,
-        lastDate: lastDate || '',
+        lastCorrectedAt: new Date(),
       },
-      this.CACHE_TTL,
-    );
+    });
 
     return result;
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  // Monday to Friday, 8:00 to 12:00
+  @Cron('0 0 8-12 * * 1-5')
   async updateInvestments() {
     const investments = await this.prismaService.investment.findMany({
       select: {
@@ -785,11 +710,14 @@ export class InvestmentService {
         duration: true,
         regimeName: true,
         regimePercentage: true,
+        lastCorrectedAt: true,
+        correctedAmount: true,
+        taxedAmount: true,
       },
     });
 
     let latestCdiDate: string | null = null;
-    let cdiValues: IpeadataResponse['value'] | null = null;
+    let cdiValues: IpeadataCachedValue[] | null = null;
 
     let latestPoupancaDate: string | null = null;
     let poupancaValues: BacenCachedValue[] | null = null;
@@ -808,7 +736,7 @@ export class InvestmentService {
       if (!cdiValues || cdiValues.length === 0) {
         nonUpdatableRegimes.push(Regime.CDI);
       } else {
-        latestCdiDate = cdiValues[cdiValues.length - 1]?.VALDATA;
+        latestCdiDate = cdiValues[cdiValues.length - 1]?.date;
 
         if (
           lastKnownCdiDate &&
@@ -834,12 +762,7 @@ export class InvestmentService {
       if (!poupancaValues || poupancaValues.length === 0) {
         nonUpdatableRegimes.push(Regime.POUPANCA);
       } else {
-        latestPoupancaDate = new Date(
-          poupancaValues[poupancaValues.length - 1]?.data
-            ?.split('/')
-            .reverse()
-            .join('/'),
-        ).toISOString();
+        latestPoupancaDate = poupancaValues[poupancaValues.length - 1]?.data;
 
         if (
           lastKnownPoupancaDate &&

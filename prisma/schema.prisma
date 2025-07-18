@@ -29,11 +29,14 @@ model User {
 }
 
 model Investment {
-  id         String    @id @default(uuid())
-  amount     Float
-  startDate  DateTime
-  duration   Int?
-  finishedAt DateTime?
+  id              String    @id @default(uuid())
+  amount          Float
+  correctedAmount Float?
+  taxedAmount     Float?
+  startDate       DateTime
+  duration        Int?
+  finishedAt      DateTime?
+  lastCorrectedAt DateTime?
 
   regimeName       Regime
   regimePercentage Float? @default(100)

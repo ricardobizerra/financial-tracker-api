@@ -54,9 +54,12 @@ export enum NullsOrder {
 export enum InvestmentScalarFieldEnum {
   id = 'id',
   amount = 'amount',
+  correctedAmount = 'correctedAmount',
+  taxedAmount = 'taxedAmount',
   startDate = 'startDate',
   duration = 'duration',
   finishedAt = 'finishedAt',
+  lastCorrectedAt = 'lastCorrectedAt',
   regimeName = 'regimeName',
   regimePercentage = 'regimePercentage',
   userId = 'userId',
@@ -221,6 +224,10 @@ export class InvestmentAvgAggregateInput {
   @Field(() => Boolean, { nullable: true })
   amount?: true;
   @Field(() => Boolean, { nullable: true })
+  correctedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  taxedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
@@ -231,6 +238,10 @@ export class InvestmentAvgAggregate {
   @Field(() => Float, { nullable: true })
   amount?: number;
   @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Float, { nullable: true })
   duration?: number;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
@@ -240,6 +251,10 @@ export class InvestmentAvgAggregate {
 export class InvestmentAvgOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  correctedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  taxedAmount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -253,11 +268,17 @@ export class InvestmentCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   amount?: true;
   @Field(() => Boolean, { nullable: true })
+  correctedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  taxedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
   startDate?: true;
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
   finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
@@ -279,11 +300,17 @@ export class InvestmentCountAggregate {
   @Field(() => Int, { nullable: false })
   amount!: number;
   @Field(() => Int, { nullable: false })
+  correctedAmount!: number;
+  @Field(() => Int, { nullable: false })
+  taxedAmount!: number;
+  @Field(() => Int, { nullable: false })
   startDate!: number;
   @Field(() => Int, { nullable: false })
   duration!: number;
   @Field(() => Int, { nullable: false })
   finishedAt!: number;
+  @Field(() => Int, { nullable: false })
+  lastCorrectedAt!: number;
   @Field(() => Int, { nullable: false })
   regimeName!: number;
   @Field(() => Int, { nullable: false })
@@ -305,11 +332,17 @@ export class InvestmentCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  correctedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  taxedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   finishedAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -337,12 +370,18 @@ export class InvestmentCreateManyUserInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -359,12 +398,18 @@ export class InvestmentCreateManyInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -409,12 +454,18 @@ export class InvestmentCreateWithoutUserInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -431,12 +482,18 @@ export class InvestmentCreateInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -482,12 +539,18 @@ export class InvestmentGroupBy {
   id!: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -527,11 +590,17 @@ export class InvestmentMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   amount?: true;
   @Field(() => Boolean, { nullable: true })
+  correctedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  taxedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
   startDate?: true;
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
   finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
@@ -550,12 +619,18 @@ export class InvestmentMaxAggregate {
   id?: string;
   @Field(() => Float, { nullable: true })
   amount?: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: true })
   startDate?: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -575,11 +650,17 @@ export class InvestmentMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  correctedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  taxedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   finishedAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -599,11 +680,17 @@ export class InvestmentMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   amount?: true;
   @Field(() => Boolean, { nullable: true })
+  correctedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  taxedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
   startDate?: true;
   @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
   finishedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
@@ -622,12 +709,18 @@ export class InvestmentMinAggregate {
   id?: string;
   @Field(() => Float, { nullable: true })
   amount?: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: true })
   startDate?: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -647,11 +740,17 @@ export class InvestmentMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  correctedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  taxedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   finishedAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -676,12 +775,18 @@ export class InvestmentOrderByWithAggregationInput {
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  correctedAmount?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   duration?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   finishedAt?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
@@ -710,12 +815,18 @@ export class InvestmentOrderByWithRelationInput {
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  correctedAmount?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   startDate?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   duration?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   finishedAt?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
@@ -742,12 +853,18 @@ export class InvestmentScalarWhereWithAggregatesInput {
   id?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => FloatWithAggregatesFilter, { nullable: true })
   amount?: InstanceType<typeof FloatWithAggregatesFilter>;
+  @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
+  correctedAmount?: InstanceType<typeof FloatNullableWithAggregatesFilter>;
+  @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
+  taxedAmount?: InstanceType<typeof FloatNullableWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => IntNullableWithAggregatesFilter, { nullable: true })
   duration?: InstanceType<typeof IntNullableWithAggregatesFilter>;
   @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
   finishedAt?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
   @Field(() => EnumRegimeWithAggregatesFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeWithAggregatesFilter>;
   @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
@@ -772,12 +889,18 @@ export class InvestmentScalarWhereInput {
   id?: InstanceType<typeof StringFilter>;
   @Field(() => FloatFilter, { nullable: true })
   amount?: InstanceType<typeof FloatFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  correctedAmount?: InstanceType<typeof FloatNullableFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  taxedAmount?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   duration?: InstanceType<typeof IntNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -795,6 +918,10 @@ export class InvestmentSumAggregateInput {
   @Field(() => Boolean, { nullable: true })
   amount?: true;
   @Field(() => Boolean, { nullable: true })
+  correctedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  taxedAmount?: true;
+  @Field(() => Boolean, { nullable: true })
   duration?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
@@ -804,6 +931,10 @@ export class InvestmentSumAggregateInput {
 export class InvestmentSumAggregate {
   @Field(() => Float, { nullable: true })
   amount?: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Float, { nullable: true })
@@ -814,6 +945,10 @@ export class InvestmentSumAggregate {
 export class InvestmentSumOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  correctedAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  taxedAmount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   duration?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -842,12 +977,18 @@ export class InvestmentUncheckedCreateWithoutUserInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -864,12 +1005,18 @@ export class InvestmentUncheckedCreateInput {
   id?: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
   @Field(() => Date, { nullable: false })
   startDate!: Date | string;
   @Field(() => Int, { nullable: true })
   duration?: number;
   @Field(() => Date, { nullable: true })
   finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -931,12 +1078,22 @@ export class InvestmentUncheckedUpdateManyWithoutUserInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -955,12 +1112,22 @@ export class InvestmentUncheckedUpdateManyInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -981,12 +1148,22 @@ export class InvestmentUncheckedUpdateWithoutUserInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1005,12 +1182,22 @@ export class InvestmentUncheckedUpdateInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1031,12 +1218,22 @@ export class InvestmentUpdateManyMutationInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1118,12 +1315,22 @@ export class InvestmentUpdateWithoutUserInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1142,12 +1349,22 @@ export class InvestmentUpdateInput {
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
   amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
   duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
   finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -1191,12 +1408,18 @@ export class InvestmentWhereUniqueInput {
   NOT?: Array<InvestmentWhereInput>;
   @Field(() => FloatFilter, { nullable: true })
   amount?: InstanceType<typeof FloatFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  correctedAmount?: InstanceType<typeof FloatNullableFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  taxedAmount?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   duration?: InstanceType<typeof IntNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -1223,12 +1446,18 @@ export class InvestmentWhereInput {
   id?: InstanceType<typeof StringFilter>;
   @Field(() => FloatFilter, { nullable: true })
   amount?: InstanceType<typeof FloatFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  correctedAmount?: InstanceType<typeof FloatNullableFilter>;
+  @Field(() => FloatNullableFilter, { nullable: true })
+  taxedAmount?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   startDate?: InstanceType<typeof DateTimeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   duration?: InstanceType<typeof IntNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
@@ -1249,12 +1478,18 @@ export class Investment {
   id!: string;
   @Field(() => Float, { nullable: false })
   amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount!: number | null;
+  @Field(() => Float, { nullable: true })
+  taxedAmount!: number | null;
   @Field(() => Date, { nullable: false })
   startDate!: Date;
   @Field(() => Int, { nullable: true })
   duration!: number | null;
   @Field(() => Date, { nullable: true })
   finishedAt!: Date | null;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt!: Date | null;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true, defaultValue: 100 })
