@@ -8,3 +8,8 @@ export interface IpeadataResponse {
     TERCODIGO: string;
   }[];
 }
+
+export interface IpeadataCachedValue {
+  date: string;
+  value: number;
+}

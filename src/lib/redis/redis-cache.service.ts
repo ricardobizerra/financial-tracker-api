@@ -1,16 +1,14 @@
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
-import { IpeadataResponse } from '@/external/ipeadata/types/ipeadata-response';
-import { InvestmentCachedAmounts } from '@/investment/investment.service';
+import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 type CacheKeyMapping = {
-  'external-ipeadata-cdi-daily': IpeadataResponse['value'];
+  'external-ipeadata-cdi-daily': IpeadataCachedValue[];
   'external-ipeadata-cdi-last-date': string;
   'external-bacen-poupanca-daily': BacenCachedValue[];
   'external-bacen-poupanca-last-date': string;
-  'investment-amounts': InvestmentCachedAmounts;
 };
 
 type BaseCacheKey = keyof CacheKeyMapping;
