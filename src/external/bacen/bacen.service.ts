@@ -83,9 +83,14 @@ export class BacenService {
     const values = await this.getDataByCode('195', range);
 
     return values?.map((item) => ({
-      ...item,
+      data: this.correctBacenDateFormat(item.data),
+      dataFim: this.correctBacenDateFormat(item.dataFim),
       valor: Number(item.valor),
     }));
+  }
+
+  private correctBacenDateFormat(date: string) {
+    return format(new Date(date?.split('/').reverse().join('/')), 'yyyy-MM-dd');
   }
 
   @Cron(CronExpression.EVERY_HOUR)
