@@ -34,7 +34,7 @@ export function Ordenation<
 
   if (orderableFields.length === 0) {
     throw new Error(
-      `No orderable fields found for ${Model.name}. All fields are marked as non-orderable. Available fields: ${orderableFields.join(', ')}`,
+      `No orderable fields found for ${Model.name}. All fields are marked as non-orderable. Available fields: ${fields.map((f) => f.name).join(', ')}`,
     );
   }
 
