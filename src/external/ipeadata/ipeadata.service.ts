@@ -44,7 +44,8 @@ export class IpeadataService {
     }));
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  // Monday to Friday, 8:00 to 12:00
+  @Cron('0 0 8-12 * * 1-5')
   async cacheCdiValues() {
     const cdiValues = await this.getCdiValues();
 

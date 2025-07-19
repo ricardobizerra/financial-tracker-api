@@ -93,7 +93,8 @@ export class BacenService {
     return format(new Date(date?.split('/').reverse().join('/')), 'yyyy-MM-dd');
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  // 8:00 to 12:00
+  @Cron('0 0 8-12 * * *')
   async cachePoupancaValues() {
     const poupancaValues = await this.getPoupancaValues();
 
