@@ -500,11 +500,6 @@ export class InvestmentService {
       ? investment.duration
       : daysFromInitialDate;
 
-    const irpfTax =
-      investment.regimeName === Regime.CDI
-        ? getIrpfTax(currentInvestmentDays)
-        : 0;
-
     let amount = investment.amount;
 
     if (investment.regimeName === Regime.CDI) {
@@ -519,11 +514,9 @@ export class InvestmentService {
         const result = {
           correctedAmount: investment.amount,
           correctedVariation: 0,
-          taxPercentage: irpfTax,
-          taxedAmount: investment.amount * (1 - irpfTax / 100),
-          taxedVariation:
-            100 *
-            ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
+          taxPercentage: 0,
+          taxedAmount: investment.amount,
+          taxedVariation: 0,
           lastDate: lastDate || '',
         };
 
@@ -547,11 +540,9 @@ export class InvestmentService {
         const result = {
           correctedAmount: investment.amount,
           correctedVariation: 0,
-          taxedAmount: investment.amount * (1 - irpfTax / 100),
-          taxPercentage: irpfTax,
-          taxedVariation:
-            100 *
-            ((investment.amount * (irpfTax / 100) * -1) / investment.amount),
+          taxedAmount: investment.amount,
+          taxPercentage: 0,
+          taxedVariation: 0,
           lastDate: lastDate || '',
         };
 
@@ -671,7 +662,13 @@ export class InvestmentService {
       }
     }
 
-    const taxedAmount = amount * (1 - irpfTax / 100);
+    const irpfTax =
+      investment.regimeName === Regime.CDI
+        ? getIrpfTax(currentInvestmentDays)
+        : 0;
+
+    const taxedAmount =
+      investment.amount + (amount - investment.amount) * (1 - irpfTax / 100);
 
     const result = {
       correctedAmount: amount,
