@@ -51,11 +51,13 @@ export class InvestmentService {
     paginationArgs,
     ordenationArgs,
     userId,
+    regime,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
+    regime: Regime | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -67,7 +69,12 @@ export class InvestmentService {
         : 0;
 
     const investmentsLengthQuery = last
-      ? await this.prismaService.investment.count()
+      ? await this.prismaService.investment.count({
+          where: {
+            regimeName: regime,
+            userId,
+          },
+        })
       : undefined;
 
     const investmentsLength = !!investmentsLengthQuery
@@ -127,6 +134,7 @@ export class InvestmentService {
       }),
       where: {
         userId,
+        regimeName: regime,
       },
     });
 
@@ -326,6 +334,7 @@ export class InvestmentService {
           },
           where: {
             userId,
+            regimeName: regime,
           },
         })
       : [];

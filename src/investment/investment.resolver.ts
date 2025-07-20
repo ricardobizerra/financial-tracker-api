@@ -26,6 +26,7 @@ import { Auth } from '@/auth/auth.decorator';
 import {
   Investment,
   InvestmentCreateWithoutUserInput,
+  Regime,
 } from '@/lib/graphql/prisma-client';
 
 @Resolver(() => InvestmentModel)
@@ -37,6 +38,8 @@ export class InvestmentResolver {
   async findMany(
     @Args() paginationArgs: PaginationArgs,
     @Args() ordenationArgs: OrdenationInvestmentArgs,
+    @Args('regime', { type: () => Regime, nullable: true })
+    regime: Regime | null,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
@@ -50,6 +53,7 @@ export class InvestmentResolver {
       paginationArgs,
       ordenationArgs,
       userId: user?.id,
+      regime,
     });
   }
 
