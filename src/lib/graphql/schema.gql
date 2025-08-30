@@ -211,12 +211,33 @@ type TotalInvestmentsModel {
   taxedVariation: String!
 }
 
+type InvestmentRegimeSummary {
+  name: String!
+  quantity: Int!
+  totalInvested: Float!
+  currentInvested: Float!
+  currentInvestedPercentage: String!
+  taxedInvested: Float!
+  taxedInvestedPercentage: String!
+}
+
+type InvestmentRegimeSummaryConnection {
+  edges: [InvestmentRegimeSummaryEdge!]
+  pageInfo: PageInfo
+}
+
+type InvestmentRegimeSummaryEdge {
+  cursor: String!
+  node: InvestmentRegimeSummary!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
+  investmentRegimes: InvestmentRegimeSummaryConnection!
 }
 
 enum OrdenationUserModel {

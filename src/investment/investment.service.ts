@@ -7,6 +7,8 @@ import { selectObject } from '@/utils/select-object';
 import {
   InvestmentConnection,
   InvestmentModel,
+  InvestmentRegimeSummary,
+  InvestmentRegimeSummaryConnection,
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
 } from './investment.model';
@@ -393,6 +395,115 @@ export class InvestmentService {
 
     return {
       id: investment.id,
+    };
+  }
+
+  async getInvestmentRegimes({
+    userId,
+    queriedFields,
+  }: {
+    userId: string;
+    queriedFields: (keyof InvestmentRegimeSummary)[];
+  }): Promise<InvestmentRegimeSummaryConnection> {
+    // Get all investments grouped by regime
+    const investmentsByRegime = await this.prismaService.investment.groupBy({
+      by: ['regimeName'],
+      where: { userId },
+      _sum: {
+        amount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Get all investments with their corrected and taxed amounts
+    const allInvestments = await this.prismaService.investment.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        amount: true,
+        correctedAmount: true,
+        taxedAmount: true,
+        regimeName: true,
+      },
+    });
+
+    // Calculate totals for percentage calculations
+    const totalInvested = allInvestments.reduce(
+      (sum, inv) => sum + Number(inv.amount),
+      0,
+    );
+
+    // Process each regime
+    const regimeSummaries = investmentsByRegime.map((regimeGroup, index) => {
+      const regimeInvestments = allInvestments.filter(
+        (inv) => inv.regimeName === regimeGroup.regimeName,
+      );
+
+      const currentInvested = regimeInvestments.reduce(
+        (sum, inv) => sum + (Number(inv.correctedAmount) || Number(inv.amount)),
+        0,
+      );
+
+      const taxedInvested = regimeInvestments.reduce(
+        (sum, inv) => sum + (Number(inv.taxedAmount) || Number(inv.amount)),
+        0,
+      );
+
+      const regimeTotalInvested = Number(regimeGroup._sum.amount || 0);
+
+      console.log(regimeGroup);
+
+      const summary: InvestmentRegimeSummary = {
+        ...(queriedFields.includes('name') && {
+          name: regimeGroup.regimeName.toString(),
+        }),
+        ...(queriedFields.includes('quantity') && {
+          quantity: regimeGroup._count.id,
+        }),
+        ...(queriedFields.includes('totalInvested') && {
+          totalInvested: regimeTotalInvested,
+        }),
+        ...(queriedFields.includes('currentInvested') && {
+          currentInvested,
+        }),
+        ...(queriedFields.includes('currentInvestedPercentage') && {
+          currentInvestedPercentage:
+            totalInvested > 0
+              ? ((currentInvested / totalInvested) * 100 - 100).toFixed(2) + '%'
+              : '0%',
+        }),
+        ...(queriedFields.includes('taxedInvested') && {
+          taxedInvested,
+        }),
+        ...(queriedFields.includes('taxedInvestedPercentage') && {
+          taxedInvestedPercentage:
+            totalInvested > 0
+              ? ((taxedInvested / totalInvested) * 100 - 100).toFixed(2) + '%'
+              : '0%',
+        }),
+      };
+
+      console.log(summary);
+
+      return {
+        cursor: Buffer.from(index.toString()).toString('base64').split('=')[0],
+        node: summary,
+      };
+    });
+
+    const startCursor = regimeSummaries[0].cursor;
+    const endCursor = regimeSummaries[regimeSummaries.length - 1].cursor;
+
+    return {
+      edges: regimeSummaries,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor,
+        endCursor,
+      },
     };
   }
 

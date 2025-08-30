@@ -18,6 +18,8 @@ import { getQueriedFields } from '@/utils/get-queried-fields';
 import {
   InvestmentConnection,
   InvestmentModel,
+  InvestmentRegimeSummary,
+  InvestmentRegimeSummaryConnection,
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
 } from './investment.model';
@@ -99,6 +101,23 @@ export class InvestmentResolver {
   ) {
     const deletedInvestment = await this.investmentService.delete(id, user?.id);
 
-    return deletedInvestment?.id;
+    return deletedInvestment;
+  }
+
+  @Auth()
+  @Query(() => InvestmentRegimeSummaryConnection, { name: 'investmentRegimes' })
+  async investmentRegimes(
+    @CurrentUser() user: UserModel,
+    @Info() info: GraphQLResolveInfo,
+  ) {
+    const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
+      info,
+      'investmentRegimes',
+    ) as (keyof InvestmentRegimeSummary)[];
+
+    return this.investmentService.getInvestmentRegimes({
+      userId: user?.id,
+      queriedFields,
+    });
   }
 }
