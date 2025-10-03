@@ -415,6 +415,11 @@ export class InvestmentService {
       _count: {
         id: true,
       },
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
     });
 
     // Get all investments with their corrected and taxed amounts
