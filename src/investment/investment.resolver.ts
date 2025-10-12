@@ -101,7 +101,7 @@ export class InvestmentResolver {
   ) {
     const deletedInvestment = await this.investmentService.delete(id, user?.id);
 
-    return deletedInvestment;
+    return deletedInvestment.id;
   }
 
   @Auth()
