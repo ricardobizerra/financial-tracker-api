@@ -1,4 +1,4 @@
-import { Investment } from '@/lib/graphql/prisma-client';
+import { Investment, Regime } from '@/lib/graphql/prisma-client';
 import { Ordenation } from '@/utils/args/ordenation.args';
 import { Connection } from '@/utils/models/connection.model';
 import {
@@ -55,8 +55,8 @@ export class TotalInvestmentsModel {
 
 @ObjectType()
 export class InvestmentRegimeSummary {
-  @Field(() => String, { nullable: false })
-  name!: string;
+  @Field(() => Regime, { nullable: false })
+  name!: keyof typeof Regime;
 
   @Field(() => Int, { nullable: false })
   quantity!: number;

@@ -212,7 +212,7 @@ type TotalInvestmentsModel {
 }
 
 type InvestmentRegimeSummary {
-  name: String!
+  name: Regime!
   quantity: Int!
   totalInvested: Float!
   currentInvested: Float!

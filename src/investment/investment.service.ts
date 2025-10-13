@@ -460,7 +460,7 @@ export class InvestmentService {
 
       const summary: InvestmentRegimeSummary = {
         ...(queriedFields.includes('name') && {
-          name: regimeGroup.regimeName.toString(),
+          name: regimeGroup.regimeName,
         }),
         ...(queriedFields.includes('quantity') && {
           quantity: regimeGroup._count.id,
