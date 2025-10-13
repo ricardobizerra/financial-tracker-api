@@ -4,12 +4,14 @@ import { RedisPubSub } from 'graphql-redis-subscriptions';
 import Redis, { RedisOptions } from 'ioredis';
 
 @Injectable()
-export class RedisService extends RedisPubSub implements OnModuleInit {
+export class RedisSubscriptionService
+  extends RedisPubSub
+  implements OnModuleInit
+{
   constructor(private readonly configService: ConfigService) {
     const options: RedisOptions = {
       host: configService.get('REDIS_HOST'),
       port: configService.get('REDIS_PORT'),
-      username: configService.get('REDIS_USER'),
       password: configService.get('REDIS_PASSWORD'),
       db: configService.get('REDIS_DB'),
     };

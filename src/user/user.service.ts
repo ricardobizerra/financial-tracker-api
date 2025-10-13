@@ -2,19 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { UserCreateInput } from '@/lib/graphql/prisma-client';
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { RedisService } from '@/lib/redis/redis.service';
+import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service';
 import { selectObject } from '@/utils/select-object';
 import { genSalt, hash } from 'bcryptjs';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
-import { OrdenationUserArgs } from './models/user.model';
+import { OrdenationUserArgs, UserModel } from './models/user.model';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly redisService: RedisService,
+    private readonly redisSubscriptionService: RedisSubscriptionService,
   ) {}
 
   async findMany({
@@ -23,7 +23,7 @@ export class UserService {
     searchArgs,
     ordenationArgs,
   }: {
-    queriedFields: string[];
+    queriedFields: (keyof UserModel)[];
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationUserArgs;
@@ -53,7 +53,9 @@ export class UserService {
 
     const users = await this.prismaService.$queryRaw<User[]>(
       Prisma.sql`SELECT ${Prisma.join(
-        queriedFields.map((field) => Prisma.raw(field)),
+        Object.keys(selectObject<User, UserModel>(queriedFields)).map((field) =>
+          Prisma.raw(field),
+        ),
         ', ',
       )} FROM "User"${
         !!searchArgs.search
@@ -215,7 +217,7 @@ export class UserService {
     });
 
     if (!!createdUser) {
-      this.redisService.publish('userAdded', { userAdded: data });
+      this.redisSubscriptionService.publish('userAdded', { userAdded: data });
     }
 
     return createdUser;
