@@ -80,7 +80,7 @@ export class InvestmentService {
       : undefined;
 
     const investmentsLength = !!investmentsLengthQuery
-      ? Number(investmentsLengthQuery?.[0].count)
+      ? Number(investmentsLengthQuery)
       : undefined;
 
     const investmentsQuery = await this.prismaService.investment.findMany({
@@ -339,7 +339,7 @@ export class InvestmentService {
             regimeName: regime,
           },
         })
-      : [];
+      : undefined;
 
     const hasNextPage = last ? !!before : !!extraItem;
     const hasPreviousPage = last ? !!extraItem : !!after;
@@ -458,8 +458,6 @@ export class InvestmentService {
 
       const regimeTotalInvested = Number(regimeGroup._sum.amount || 0);
 
-      console.log(regimeGroup);
-
       const summary: InvestmentRegimeSummary = {
         ...(queriedFields.includes('name') && {
           name: regimeGroup.regimeName.toString(),
@@ -489,8 +487,6 @@ export class InvestmentService {
               : '0%',
         }),
       };
-
-      console.log(summary);
 
       return {
         cursor: Buffer.from(index.toString()).toString('base64').split('=')[0],
