@@ -21,8 +21,6 @@ import { SignIn } from '@/auth/models/sign-in.model';
 import { UserConnection } from './models/user.connection';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
-import { ConfigService } from '@nestjs/config';
-import { Env } from '@/env';
 import { Response } from 'express';
 
 @Resolver(() => UserModel)
@@ -31,7 +29,6 @@ export class UserResolver {
     private readonly userService: UserService,
     private readonly redisSubscriptionService: RedisSubscriptionService,
     private readonly authService: AuthService,
-    private readonly configService: ConfigService<Env, true>,
   ) {}
 
   @Query(() => UserConnection, { name: 'users' })
@@ -74,15 +71,7 @@ export class UserResolver {
       data.password,
     );
 
-    res.cookie('accessToken', accessToken, {
-      maxAge:
-        this.configService.get('JWT_EXPIRES_IN_SECONDS', { infer: true }) *
-        1000,
-      sameSite: 'strict',
-      secure: true,
-      httpOnly: true,
-      signed: false,
-    });
+    this.authService.setTokenCookie(res, accessToken);
 
     return {
       user,

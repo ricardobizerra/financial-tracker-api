@@ -5,12 +5,16 @@ import { compare } from 'bcryptjs';
 import { SignIn } from './models/sign-in.model';
 import { userWithoutPassword } from '@/utils/user-without-password';
 import { UserModel } from '@/user/models/user.model';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { Env } from '@/env';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UserService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService<Env, true>,
   ) {}
 
   async validateEmailAndPassword(
@@ -62,5 +66,17 @@ export class AuthService {
       accessToken,
       user,
     };
+  }
+
+  setTokenCookie(res: Response, accessToken: string) {
+    res.cookie('accessToken', accessToken, {
+      maxAge:
+        this.configService.get('JWT_EXPIRES_IN_SECONDS', { infer: true }) *
+        1000,
+      sameSite: 'strict',
+      secure: true,
+      httpOnly: true,
+      signed: false,
+    });
   }
 }
