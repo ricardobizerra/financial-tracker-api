@@ -26,7 +26,7 @@ import { BacenModule } from './external/bacen/bacen.module';
       playground: false,
       autoSchemaFile: join(process.cwd(), 'src/lib/graphql/schema.gql'),
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      context: ({ req }) => ({ request: req }),
+      context: ({ req, res }) => ({ req, res }),
       subscriptions: {
         'graphql-ws': true,
       },

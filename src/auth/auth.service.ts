@@ -42,7 +42,13 @@ export class AuthService {
     return userWithoutPassword(user);
   }
 
-  async signIn(email: string, password: string): Promise<SignIn> {
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<{
+    accessToken: string;
+    user: UserModel;
+  }> {
     const user = await this.validateEmailAndPassword(email, password);
 
     const payload = {
