@@ -1,5 +1,6 @@
 import {
   Args,
+  Context,
   ID,
   Info,
   Mutation,
@@ -20,6 +21,9 @@ import { SignIn } from '@/auth/models/sign-in.model';
 import { UserConnection } from './models/user.connection';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
+import { ConfigService } from '@nestjs/config';
+import { Env } from '@/env';
+import { Response } from 'express';
 
 @Resolver(() => UserModel)
 export class UserResolver {
@@ -27,6 +31,7 @@ export class UserResolver {
     private readonly userService: UserService,
     private readonly redisSubscriptionService: RedisSubscriptionService,
     private readonly authService: AuthService,
+    private readonly configService: ConfigService<Env, true>,
   ) {}
 
   @Query(() => UserConnection, { name: 'users' })
@@ -52,7 +57,10 @@ export class UserResolver {
   }
 
   @Mutation(() => SignIn, { name: 'createUser' })
-  async create(@Args('data') data: UserCreateInput) {
+  async create(
+    @Args('data') data: UserCreateInput,
+    @Context('res') res: Response,
+  ) {
     const emailAlreadyExists = await this.userService.findByEmail(data.email);
 
     if (!!emailAlreadyExists) {
@@ -61,12 +69,24 @@ export class UserResolver {
 
     const createdUser = await this.userService.create(data);
 
-    const returnObject = await this.authService.signIn(
+    const { accessToken, user } = await this.authService.signIn(
       createdUser.email,
       data.password,
     );
 
-    return returnObject;
+    res.cookie('accessToken', accessToken, {
+      maxAge:
+        this.configService.get('JWT_EXPIRES_IN_SECONDS', { infer: true }) *
+        1000,
+      sameSite: 'strict',
+      secure: true,
+      httpOnly: true,
+      signed: false,
+    });
+
+    return {
+      user,
+    };
   }
 
   @Subscription(() => UserModel, {
