@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthSignInInput } from './models/sign-in-input.model';
 import { SignIn } from './models/sign-in.model';
 import { Response } from 'express';
+
 @Resolver()
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
@@ -22,5 +23,11 @@ export class AuthResolver {
     return {
       user,
     };
+  }
+
+  @Mutation(() => Boolean, { name: 'authSignOut' })
+  async signOut(@Context('res') res: Response): Promise<boolean> {
+    this.authService.clearTokenCookie(res);
+    return true;
   }
 }

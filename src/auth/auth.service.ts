@@ -79,4 +79,13 @@ export class AuthService {
       signed: false,
     });
   }
+
+  clearTokenCookie(res: Response) {
+    res.clearCookie('accessToken', {
+      sameSite: 'strict',
+      secure: true,
+      httpOnly: true,
+      signed: false,
+    });
+  }
 }
