@@ -15,17 +15,33 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String?
   name     String
 
   role Role
 
-  investments Investment[]
+  investments       Investment[]
+  authUserProviders AuthUserProvider[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+}
+
+model AuthUserProvider {
+  id String @id @default(uuid())
+
+  providerName AuthProviderName
+  providerId   String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([providerName, providerId, userId])
 }
 
 model Investment {
@@ -46,6 +62,10 @@ model Investment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+}
+
+enum AuthProviderName {
+  GOOGLE
 }
 
 enum Role {

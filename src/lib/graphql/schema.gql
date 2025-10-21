@@ -2,6 +2,53 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AuthUserProviderCountAggregate {
+  id: Int!
+  providerName: Int!
+  providerId: Int!
+  userId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type AuthUserProviderMaxAggregate {
+  id: String
+  providerName: AuthProviderName
+  providerId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum AuthProviderName {
+  GOOGLE
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type AuthUserProviderMinAggregate {
+  id: String
+  providerName: AuthProviderName
+  providerId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AuthUserProvider {
+  id: ID!
+  providerName: AuthProviderName!
+  providerId: String!
+  userId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+}
+
 type InvestmentAvgAggregate {
   amount: Float
   correctedAmount: Float
@@ -42,11 +89,6 @@ type InvestmentMaxAggregate {
   createdAt: DateTime
   updatedAt: DateTime
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 enum Regime {
   CDI
@@ -107,6 +149,7 @@ type UserCountAggregate {
 
 type UserCount {
   investments: Int!
+  authUserProviders: Int!
 }
 
 type UserMaxAggregate {
@@ -137,12 +180,13 @@ type UserMinAggregate {
 type User {
   id: ID!
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime!
   updatedAt: DateTime!
   investments: [Investment!]
+  authUserProviders: [AuthUserProvider!]
   _count: UserCount!
 }
 
@@ -277,12 +321,13 @@ type Mutation {
 input UserCreateInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
 }
 
 input InvestmentCreateNestedManyWithoutUserInput {
@@ -521,12 +566,42 @@ input UserWhereInput {
   NOT: [UserWhereInput!]
   id: StringFilter
   email: StringFilter
-  password: StringFilter
+  password: StringNullableFilter
   name: StringFilter
   role: EnumRoleFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   investments: InvestmentListRelationFilter
+  authUserProviders: AuthUserProviderListRelationFilter
+}
+
+input StringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: NestedStringNullableFilter
+}
+
+input NestedStringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: NestedStringNullableFilter
 }
 
 input EnumRoleFilter {
@@ -549,6 +624,39 @@ input InvestmentListRelationFilter {
   none: InvestmentWhereInput
 }
 
+input AuthUserProviderListRelationFilter {
+  every: AuthUserProviderWhereInput
+  some: AuthUserProviderWhereInput
+  none: AuthUserProviderWhereInput
+}
+
+input AuthUserProviderWhereInput {
+  AND: [AuthUserProviderWhereInput!]
+  OR: [AuthUserProviderWhereInput!]
+  NOT: [AuthUserProviderWhereInput!]
+  id: StringFilter
+  providerName: EnumAuthProviderNameFilter
+  providerId: StringFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+}
+
+input EnumAuthProviderNameFilter {
+  equals: AuthProviderName
+  in: [AuthProviderName!]
+  notIn: [AuthProviderName!]
+  not: NestedEnumAuthProviderNameFilter
+}
+
+input NestedEnumAuthProviderNameFilter {
+  equals: AuthProviderName
+  in: [AuthProviderName!]
+  notIn: [AuthProviderName!]
+  not: NestedEnumAuthProviderNameFilter
+}
+
 input InvestmentCreateManyUserInputEnvelope {
   data: [InvestmentCreateManyUserInput!]!
   skipDuplicates: Boolean
@@ -565,6 +673,59 @@ input InvestmentCreateManyUserInput {
   lastCorrectedAt: DateTime
   regimeName: Regime!
   regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthUserProviderCreateNestedManyWithoutUserInput {
+  create: [AuthUserProviderCreateWithoutUserInput!]
+  connectOrCreate: [AuthUserProviderCreateOrConnectWithoutUserInput!]
+  createMany: AuthUserProviderCreateManyUserInputEnvelope
+  connect: [AuthUserProviderWhereUniqueInput!]
+}
+
+input AuthUserProviderCreateWithoutUserInput {
+  id: String
+  providerName: AuthProviderName!
+  providerId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthUserProviderCreateOrConnectWithoutUserInput {
+  where: AuthUserProviderWhereUniqueInput!
+  create: AuthUserProviderCreateWithoutUserInput!
+}
+
+input AuthUserProviderWhereUniqueInput {
+  id: String
+  providerName_providerId_userId: AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput
+  AND: [AuthUserProviderWhereInput!]
+  OR: [AuthUserProviderWhereInput!]
+  NOT: [AuthUserProviderWhereInput!]
+  providerName: EnumAuthProviderNameFilter
+  providerId: StringFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+}
+
+input AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput {
+  providerName: AuthProviderName!
+  providerId: String!
+  userId: String!
+}
+
+input AuthUserProviderCreateManyUserInputEnvelope {
+  data: [AuthUserProviderCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input AuthUserProviderCreateManyUserInput {
+  id: String
+  providerName: AuthProviderName!
+  providerId: String!
   createdAt: DateTime
   updatedAt: DateTime
 }

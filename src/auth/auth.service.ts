@@ -68,6 +68,25 @@ export class AuthService {
     };
   }
 
+  async signInOAuth(userId: string): Promise<{ accessToken: string }> {
+    const user = await this.validateUserId(userId);
+
+    const payload = {
+      sub: userId,
+      ...user,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: this.configService.get('JWT_EXPIRES_IN_SECONDS', {
+        infer: true,
+      }),
+    });
+
+    return {
+      accessToken,
+    };
+  }
+
   setTokenCookie(res: Response, accessToken: string) {
     res.cookie('accessToken', accessToken, {
       maxAge:

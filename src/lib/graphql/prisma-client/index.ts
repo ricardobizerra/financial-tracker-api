@@ -5,9 +5,9 @@ import { Type } from 'class-transformer';
 import { Prisma } from '@prisma/client';
 import { Int } from '@nestjs/graphql';
 import { InputType } from '@nestjs/graphql';
-import { Float } from '@nestjs/graphql';
 import { registerEnumType } from '@nestjs/graphql';
 import { ID } from '@nestjs/graphql';
+import { Float } from '@nestjs/graphql';
 
 export enum UserScalarFieldEnum {
   id = 'id',
@@ -51,6 +51,10 @@ export enum NullsOrder {
   last = 'last',
 }
 
+export enum AuthProviderName {
+  GOOGLE = 'GOOGLE',
+}
+
 export enum InvestmentScalarFieldEnum {
   id = 'id',
   amount = 'amount',
@@ -67,8 +71,25 @@ export enum InvestmentScalarFieldEnum {
   updatedAt = 'updatedAt',
 }
 
+export enum AuthUserProviderScalarFieldEnum {
+  id = 'id',
+  providerName = 'providerName',
+  providerId = 'providerId',
+  userId = 'userId',
+  createdAt = 'createdAt',
+  updatedAt = 'updatedAt',
+}
+
+registerEnumType(AuthUserProviderScalarFieldEnum, {
+  name: 'AuthUserProviderScalarFieldEnum',
+  description: undefined,
+});
 registerEnumType(InvestmentScalarFieldEnum, {
   name: 'InvestmentScalarFieldEnum',
+  description: undefined,
+});
+registerEnumType(AuthProviderName, {
+  name: 'AuthProviderName',
   description: undefined,
 });
 registerEnumType(NullsOrder, { name: 'NullsOrder', description: undefined });
@@ -84,6 +105,1043 @@ registerEnumType(UserScalarFieldEnum, {
   name: 'UserScalarFieldEnum',
   description: undefined,
 });
+
+@ObjectType()
+export class AggregateAuthUserProvider {
+  @Field(() => AuthUserProviderCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof AuthUserProviderCountAggregate>;
+  @Field(() => AuthUserProviderMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof AuthUserProviderMinAggregate>;
+  @Field(() => AuthUserProviderMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof AuthUserProviderMaxAggregate>;
+}
+
+@ArgsType()
+export class AuthUserProviderAggregateArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AuthUserProviderOrderByWithRelationInput>;
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => AuthUserProviderCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AuthUserProviderCountAggregateInput>;
+  @Field(() => AuthUserProviderMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AuthUserProviderMinAggregateInput>;
+  @Field(() => AuthUserProviderMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AuthUserProviderMaxAggregateInput>;
+}
+
+@InputType()
+export class AuthUserProviderCountAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerName?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerId?: true;
+  @Field(() => Boolean, { nullable: true })
+  userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  _all?: true;
+}
+
+@ObjectType()
+export class AuthUserProviderCountAggregate {
+  @Field(() => Int, { nullable: false })
+  id!: number;
+  @Field(() => Int, { nullable: false })
+  providerName!: number;
+  @Field(() => Int, { nullable: false })
+  providerId!: number;
+  @Field(() => Int, { nullable: false })
+  userId!: number;
+  @Field(() => Int, { nullable: false })
+  createdAt!: number;
+  @Field(() => Int, { nullable: false })
+  updatedAt!: number;
+  @Field(() => Int, { nullable: false })
+  _all!: number;
+}
+
+@InputType()
+export class AuthUserProviderCountOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerName?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AuthUserProviderCreateManyUserInputEnvelope {
+  @Field(() => [AuthUserProviderCreateManyUserInput], { nullable: false })
+  @Type(() => AuthUserProviderCreateManyUserInput)
+  data!: Array<AuthUserProviderCreateManyUserInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class AuthUserProviderCreateManyUserInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderCreateManyInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderCreateNestedManyWithoutUserInput {
+  @Field(() => [AuthUserProviderCreateWithoutUserInput], { nullable: true })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create?: Array<AuthUserProviderCreateWithoutUserInput>;
+  @Field(() => [AuthUserProviderCreateOrConnectWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<AuthUserProviderCreateOrConnectWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => AuthUserProviderCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof AuthUserProviderCreateManyUserInputEnvelope>;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+}
+
+@InputType()
+export class AuthUserProviderCreateOrConnectWithoutUserInput {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => AuthUserProviderCreateWithoutUserInput, { nullable: false })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create!: InstanceType<typeof AuthUserProviderCreateWithoutUserInput>;
+}
+
+@InputType()
+export class AuthUserProviderCreateWithoutUserInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutAuthUserProvidersInput, {
+    nullable: false,
+  })
+  user!: InstanceType<typeof UserCreateNestedOneWithoutAuthUserProvidersInput>;
+}
+
+@ArgsType()
+export class AuthUserProviderGroupByArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderOrderByWithAggregationInput], {
+    nullable: true,
+  })
+  orderBy?: Array<AuthUserProviderOrderByWithAggregationInput>;
+  @Field(() => [AuthUserProviderScalarFieldEnum], { nullable: false })
+  by!: Array<keyof typeof AuthUserProviderScalarFieldEnum>;
+  @Field(() => AuthUserProviderScalarWhereWithAggregatesInput, {
+    nullable: true,
+  })
+  having?: InstanceType<typeof AuthUserProviderScalarWhereWithAggregatesInput>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => AuthUserProviderCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AuthUserProviderCountAggregateInput>;
+  @Field(() => AuthUserProviderMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AuthUserProviderMinAggregateInput>;
+  @Field(() => AuthUserProviderMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AuthUserProviderMaxAggregateInput>;
+}
+
+@ObjectType()
+export class AuthUserProviderGroupBy {
+  @Field(() => String, { nullable: false })
+  id!: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date | string;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date | string;
+  @Field(() => AuthUserProviderCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof AuthUserProviderCountAggregate>;
+  @Field(() => AuthUserProviderMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof AuthUserProviderMinAggregate>;
+  @Field(() => AuthUserProviderMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof AuthUserProviderMaxAggregate>;
+}
+
+@InputType()
+export class AuthUserProviderListRelationFilter {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  every?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  some?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  none?: InstanceType<typeof AuthUserProviderWhereInput>;
+}
+
+@InputType()
+export class AuthUserProviderMaxAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerName?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerId?: true;
+  @Field(() => Boolean, { nullable: true })
+  userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class AuthUserProviderMaxAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: true })
+  providerName?: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: true })
+  providerId?: string;
+  @Field(() => String, { nullable: true })
+  userId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderMaxOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerName?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AuthUserProviderMinAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerName?: true;
+  @Field(() => Boolean, { nullable: true })
+  providerId?: true;
+  @Field(() => Boolean, { nullable: true })
+  userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class AuthUserProviderMinAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: true })
+  providerName?: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: true })
+  providerId?: string;
+  @Field(() => String, { nullable: true })
+  userId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderMinOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerName?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AuthUserProviderOrderByRelationAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  _count?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AuthUserProviderOrderByWithAggregationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerName?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => AuthUserProviderCountOrderByAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AuthUserProviderCountOrderByAggregateInput>;
+  @Field(() => AuthUserProviderMaxOrderByAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AuthUserProviderMaxOrderByAggregateInput>;
+  @Field(() => AuthUserProviderMinOrderByAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AuthUserProviderMinOrderByAggregateInput>;
+}
+
+@InputType()
+export class AuthUserProviderOrderByWithRelationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerName?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  providerId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => UserOrderByWithRelationInput, { nullable: true })
+  user?: InstanceType<typeof UserOrderByWithRelationInput>;
+}
+
+@InputType()
+export class AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput {
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+}
+
+@InputType()
+export class AuthUserProviderScalarWhereWithAggregatesInput {
+  @Field(() => [AuthUserProviderScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  AND?: Array<AuthUserProviderScalarWhereWithAggregatesInput>;
+  @Field(() => [AuthUserProviderScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  OR?: Array<AuthUserProviderScalarWhereWithAggregatesInput>;
+  @Field(() => [AuthUserProviderScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  NOT?: Array<AuthUserProviderScalarWhereWithAggregatesInput>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  id?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => EnumAuthProviderNameWithAggregatesFilter, { nullable: true })
+  providerName?: InstanceType<typeof EnumAuthProviderNameWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  providerId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  userId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+}
+
+@InputType()
+export class AuthUserProviderScalarWhereInput {
+  @Field(() => [AuthUserProviderScalarWhereInput], { nullable: true })
+  AND?: Array<AuthUserProviderScalarWhereInput>;
+  @Field(() => [AuthUserProviderScalarWhereInput], { nullable: true })
+  OR?: Array<AuthUserProviderScalarWhereInput>;
+  @Field(() => [AuthUserProviderScalarWhereInput], { nullable: true })
+  NOT?: Array<AuthUserProviderScalarWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => EnumAuthProviderNameFilter, { nullable: true })
+  providerName?: InstanceType<typeof EnumAuthProviderNameFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  providerId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  userId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedCreateNestedManyWithoutUserInput {
+  @Field(() => [AuthUserProviderCreateWithoutUserInput], { nullable: true })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create?: Array<AuthUserProviderCreateWithoutUserInput>;
+  @Field(() => [AuthUserProviderCreateOrConnectWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<AuthUserProviderCreateOrConnectWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => AuthUserProviderCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof AuthUserProviderCreateManyUserInputEnvelope>;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedCreateWithoutUserInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedUpdateManyWithoutUserNestedInput {
+  @Field(() => [AuthUserProviderCreateWithoutUserInput], { nullable: true })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create?: Array<AuthUserProviderCreateWithoutUserInput>;
+  @Field(() => [AuthUserProviderCreateOrConnectWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<AuthUserProviderCreateOrConnectWithoutUserInput>;
+  @Field(() => [AuthUserProviderUpsertWithWhereUniqueWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpsertWithWhereUniqueWithoutUserInput)
+  upsert?: Array<AuthUserProviderUpsertWithWhereUniqueWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => AuthUserProviderCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof AuthUserProviderCreateManyUserInputEnvelope>;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  set?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  delete?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderUpdateWithWhereUniqueWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpdateWithWhereUniqueWithoutUserInput)
+  update?: Array<AuthUserProviderUpdateWithWhereUniqueWithoutUserInput>;
+  @Field(() => [AuthUserProviderUpdateManyWithWhereWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpdateManyWithWhereWithoutUserInput)
+  updateMany?: Array<AuthUserProviderUpdateManyWithWhereWithoutUserInput>;
+  @Field(() => [AuthUserProviderScalarWhereInput], { nullable: true })
+  @Type(() => AuthUserProviderScalarWhereInput)
+  deleteMany?: Array<AuthUserProviderScalarWhereInput>;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedUpdateManyWithoutUserInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedUpdateManyInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedUpdateWithoutUserInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUncheckedUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateManyMutationInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateManyWithWhereWithoutUserInput {
+  @Field(() => AuthUserProviderScalarWhereInput, { nullable: false })
+  @Type(() => AuthUserProviderScalarWhereInput)
+  where!: InstanceType<typeof AuthUserProviderScalarWhereInput>;
+  @Field(() => AuthUserProviderUpdateManyMutationInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateManyMutationInput)
+  data!: InstanceType<typeof AuthUserProviderUpdateManyMutationInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateManyWithoutUserNestedInput {
+  @Field(() => [AuthUserProviderCreateWithoutUserInput], { nullable: true })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create?: Array<AuthUserProviderCreateWithoutUserInput>;
+  @Field(() => [AuthUserProviderCreateOrConnectWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<AuthUserProviderCreateOrConnectWithoutUserInput>;
+  @Field(() => [AuthUserProviderUpsertWithWhereUniqueWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpsertWithWhereUniqueWithoutUserInput)
+  upsert?: Array<AuthUserProviderUpsertWithWhereUniqueWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => AuthUserProviderCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof AuthUserProviderCreateManyUserInputEnvelope>;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  set?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  delete?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderWhereUniqueInput], { nullable: true })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      AuthUserProviderWhereUniqueInput,
+      'id' | 'providerName_providerId_userId'
+    >
+  >;
+  @Field(() => [AuthUserProviderUpdateWithWhereUniqueWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpdateWithWhereUniqueWithoutUserInput)
+  update?: Array<AuthUserProviderUpdateWithWhereUniqueWithoutUserInput>;
+  @Field(() => [AuthUserProviderUpdateManyWithWhereWithoutUserInput], {
+    nullable: true,
+  })
+  @Type(() => AuthUserProviderUpdateManyWithWhereWithoutUserInput)
+  updateMany?: Array<AuthUserProviderUpdateManyWithWhereWithoutUserInput>;
+  @Field(() => [AuthUserProviderScalarWhereInput], { nullable: true })
+  @Type(() => AuthUserProviderScalarWhereInput)
+  deleteMany?: Array<AuthUserProviderScalarWhereInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateWithWhereUniqueWithoutUserInput {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => AuthUserProviderUpdateWithoutUserInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateWithoutUserInput)
+  data!: InstanceType<typeof AuthUserProviderUpdateWithoutUserInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateWithoutUserInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AuthUserProviderUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAuthProviderNameFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  providerName?: InstanceType<
+    typeof EnumAuthProviderNameFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  providerId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutAuthUserProvidersNestedInput, {
+    nullable: true,
+  })
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutAuthUserProvidersNestedInput
+  >;
+}
+
+@InputType()
+export class AuthUserProviderUpsertWithWhereUniqueWithoutUserInput {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => AuthUserProviderUpdateWithoutUserInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateWithoutUserInput)
+  update!: InstanceType<typeof AuthUserProviderUpdateWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateWithoutUserInput, { nullable: false })
+  @Type(() => AuthUserProviderCreateWithoutUserInput)
+  create!: InstanceType<typeof AuthUserProviderCreateWithoutUserInput>;
+}
+
+@InputType()
+export class AuthUserProviderWhereUniqueInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(
+    () => AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput,
+    { nullable: true },
+  )
+  providerName_providerId_userId?: InstanceType<
+    typeof AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput
+  >;
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  AND?: Array<AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  OR?: Array<AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  NOT?: Array<AuthUserProviderWhereInput>;
+  @Field(() => EnumAuthProviderNameFilter, { nullable: true })
+  providerName?: InstanceType<typeof EnumAuthProviderNameFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  providerId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  userId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => UserRelationFilter, { nullable: true })
+  user?: InstanceType<typeof UserRelationFilter>;
+}
+
+@InputType()
+export class AuthUserProviderWhereInput {
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  AND?: Array<AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  OR?: Array<AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderWhereInput], { nullable: true })
+  NOT?: Array<AuthUserProviderWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => EnumAuthProviderNameFilter, { nullable: true })
+  providerName?: InstanceType<typeof EnumAuthProviderNameFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  providerId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  userId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => UserRelationFilter, { nullable: true })
+  user?: InstanceType<typeof UserRelationFilter>;
+}
+
+@ObjectType()
+export class AuthUserProvider {
+  @Field(() => ID, { nullable: false })
+  id!: string;
+  @Field(() => AuthProviderName, { nullable: false })
+  providerName!: keyof typeof AuthProviderName;
+  @Field(() => String, { nullable: false })
+  providerId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date;
+  @Field(() => User, { nullable: false })
+  user?: InstanceType<typeof User>;
+}
+
+@ArgsType()
+export class CreateManyAuthUserProviderArgs {
+  @Field(() => [AuthUserProviderCreateManyInput], { nullable: false })
+  @Type(() => AuthUserProviderCreateManyInput)
+  data!: Array<AuthUserProviderCreateManyInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@ArgsType()
+export class CreateOneAuthUserProviderArgs {
+  @Field(() => AuthUserProviderCreateInput, { nullable: false })
+  @Type(() => AuthUserProviderCreateInput)
+  data!: InstanceType<typeof AuthUserProviderCreateInput>;
+}
+
+@ArgsType()
+export class DeleteManyAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+}
+
+@ArgsType()
+export class DeleteOneAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+}
+
+@ArgsType()
+export class FindFirstAuthUserProviderOrThrowArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AuthUserProviderOrderByWithRelationInput>;
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AuthUserProviderScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AuthUserProviderScalarFieldEnum>;
+}
+
+@ArgsType()
+export class FindFirstAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AuthUserProviderOrderByWithRelationInput>;
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AuthUserProviderScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AuthUserProviderScalarFieldEnum>;
+}
+
+@ArgsType()
+export class FindManyAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+  @Field(() => [AuthUserProviderOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AuthUserProviderOrderByWithRelationInput>;
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AuthUserProviderScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AuthUserProviderScalarFieldEnum>;
+}
+
+@ArgsType()
+export class FindUniqueAuthUserProviderOrThrowArgs {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+}
+
+@ArgsType()
+export class FindUniqueAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+}
+
+@ArgsType()
+export class UpdateManyAuthUserProviderArgs {
+  @Field(() => AuthUserProviderUpdateManyMutationInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateManyMutationInput)
+  data!: InstanceType<typeof AuthUserProviderUpdateManyMutationInput>;
+  @Field(() => AuthUserProviderWhereInput, { nullable: true })
+  @Type(() => AuthUserProviderWhereInput)
+  where?: InstanceType<typeof AuthUserProviderWhereInput>;
+}
+
+@ArgsType()
+export class UpdateOneAuthUserProviderArgs {
+  @Field(() => AuthUserProviderUpdateInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateInput)
+  data!: InstanceType<typeof AuthUserProviderUpdateInput>;
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+}
+
+@ArgsType()
+export class UpsertOneAuthUserProviderArgs {
+  @Field(() => AuthUserProviderWhereUniqueInput, { nullable: false })
+  @Type(() => AuthUserProviderWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    AuthUserProviderWhereUniqueInput,
+    'id' | 'providerName_providerId_userId'
+  >;
+  @Field(() => AuthUserProviderCreateInput, { nullable: false })
+  @Type(() => AuthUserProviderCreateInput)
+  create!: InstanceType<typeof AuthUserProviderCreateInput>;
+  @Field(() => AuthUserProviderUpdateInput, { nullable: false })
+  @Type(() => AuthUserProviderUpdateInput)
+  update!: InstanceType<typeof AuthUserProviderUpdateInput>;
+}
 
 @ObjectType()
 export class AggregateInvestment {
@@ -1642,6 +2700,44 @@ export class DateTimeWithAggregatesFilter {
 }
 
 @InputType()
+export class EnumAuthProviderNameFieldUpdateOperationsInput {
+  @Field(() => AuthProviderName, { nullable: true })
+  set?: keyof typeof AuthProviderName;
+}
+
+@InputType()
+export class EnumAuthProviderNameFilter {
+  @Field(() => AuthProviderName, { nullable: true })
+  equals?: keyof typeof AuthProviderName;
+  @Field(() => [AuthProviderName], { nullable: true })
+  in?: Array<keyof typeof AuthProviderName>;
+  @Field(() => [AuthProviderName], { nullable: true })
+  notIn?: Array<keyof typeof AuthProviderName>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+}
+
+@InputType()
+export class EnumAuthProviderNameWithAggregatesFilter {
+  @Field(() => AuthProviderName, { nullable: true })
+  equals?: keyof typeof AuthProviderName;
+  @Field(() => [AuthProviderName], { nullable: true })
+  in?: Array<keyof typeof AuthProviderName>;
+  @Field(() => [AuthProviderName], { nullable: true })
+  notIn?: Array<keyof typeof AuthProviderName>;
+  @Field(() => NestedEnumAuthProviderNameWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumAuthProviderNameWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+}
+
+@InputType()
 export class EnumRegimeFieldUpdateOperationsInput {
   @Field(() => Regime, { nullable: true })
   set?: keyof typeof Regime;
@@ -1970,6 +3066,38 @@ export class NestedDateTimeWithAggregatesFilter {
 }
 
 @InputType()
+export class NestedEnumAuthProviderNameFilter {
+  @Field(() => AuthProviderName, { nullable: true })
+  equals?: keyof typeof AuthProviderName;
+  @Field(() => [AuthProviderName], { nullable: true })
+  in?: Array<keyof typeof AuthProviderName>;
+  @Field(() => [AuthProviderName], { nullable: true })
+  notIn?: Array<keyof typeof AuthProviderName>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+}
+
+@InputType()
+export class NestedEnumAuthProviderNameWithAggregatesFilter {
+  @Field(() => AuthProviderName, { nullable: true })
+  equals?: keyof typeof AuthProviderName;
+  @Field(() => [AuthProviderName], { nullable: true })
+  in?: Array<keyof typeof AuthProviderName>;
+  @Field(() => [AuthProviderName], { nullable: true })
+  notIn?: Array<keyof typeof AuthProviderName>;
+  @Field(() => NestedEnumAuthProviderNameWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumAuthProviderNameWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+  @Field(() => NestedEnumAuthProviderNameFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumAuthProviderNameFilter>;
+}
+
+@InputType()
 export class NestedEnumRegimeFilter {
   @Field(() => Regime, { nullable: true })
   equals?: keyof typeof Regime;
@@ -2226,6 +3354,64 @@ export class NestedStringFilter {
 }
 
 @InputType()
+export class NestedStringNullableFilter {
+  @Field(() => String, { nullable: true })
+  equals?: string;
+  @Field(() => [String], { nullable: true })
+  in?: Array<string>;
+  @Field(() => [String], { nullable: true })
+  notIn?: Array<string>;
+  @Field(() => String, { nullable: true })
+  lt?: string;
+  @Field(() => String, { nullable: true })
+  lte?: string;
+  @Field(() => String, { nullable: true })
+  gt?: string;
+  @Field(() => String, { nullable: true })
+  gte?: string;
+  @Field(() => String, { nullable: true })
+  contains?: string;
+  @Field(() => String, { nullable: true })
+  startsWith?: string;
+  @Field(() => String, { nullable: true })
+  endsWith?: string;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedStringNullableFilter>;
+}
+
+@InputType()
+export class NestedStringNullableWithAggregatesFilter {
+  @Field(() => String, { nullable: true })
+  equals?: string;
+  @Field(() => [String], { nullable: true })
+  in?: Array<string>;
+  @Field(() => [String], { nullable: true })
+  notIn?: Array<string>;
+  @Field(() => String, { nullable: true })
+  lt?: string;
+  @Field(() => String, { nullable: true })
+  lte?: string;
+  @Field(() => String, { nullable: true })
+  gt?: string;
+  @Field(() => String, { nullable: true })
+  gte?: string;
+  @Field(() => String, { nullable: true })
+  contains?: string;
+  @Field(() => String, { nullable: true })
+  startsWith?: string;
+  @Field(() => String, { nullable: true })
+  endsWith?: string;
+  @Field(() => NestedStringNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedStringNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedStringNullableFilter>;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedStringNullableFilter>;
+}
+
+@InputType()
 export class NestedStringWithAggregatesFilter {
   @Field(() => String, { nullable: true })
   equals?: string;
@@ -2292,6 +3478,12 @@ export class NullableIntFieldUpdateOperationsInput {
 }
 
 @InputType()
+export class NullableStringFieldUpdateOperationsInput {
+  @Field(() => String, { nullable: true })
+  set?: string;
+}
+
+@InputType()
 export class SortOrderInput {
   @Field(() => SortOrder, { nullable: false })
   sort!: keyof typeof SortOrder;
@@ -2331,6 +3523,68 @@ export class StringFilter {
   mode?: keyof typeof QueryMode;
   @Field(() => NestedStringFilter, { nullable: true })
   not?: InstanceType<typeof NestedStringFilter>;
+}
+
+@InputType()
+export class StringNullableFilter {
+  @Field(() => String, { nullable: true })
+  equals?: string;
+  @Field(() => [String], { nullable: true })
+  in?: Array<string>;
+  @Field(() => [String], { nullable: true })
+  notIn?: Array<string>;
+  @Field(() => String, { nullable: true })
+  lt?: string;
+  @Field(() => String, { nullable: true })
+  lte?: string;
+  @Field(() => String, { nullable: true })
+  gt?: string;
+  @Field(() => String, { nullable: true })
+  gte?: string;
+  @Field(() => String, { nullable: true })
+  contains?: string;
+  @Field(() => String, { nullable: true })
+  startsWith?: string;
+  @Field(() => String, { nullable: true })
+  endsWith?: string;
+  @Field(() => QueryMode, { nullable: true })
+  mode?: keyof typeof QueryMode;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedStringNullableFilter>;
+}
+
+@InputType()
+export class StringNullableWithAggregatesFilter {
+  @Field(() => String, { nullable: true })
+  equals?: string;
+  @Field(() => [String], { nullable: true })
+  in?: Array<string>;
+  @Field(() => [String], { nullable: true })
+  notIn?: Array<string>;
+  @Field(() => String, { nullable: true })
+  lt?: string;
+  @Field(() => String, { nullable: true })
+  lte?: string;
+  @Field(() => String, { nullable: true })
+  gt?: string;
+  @Field(() => String, { nullable: true })
+  gte?: string;
+  @Field(() => String, { nullable: true })
+  contains?: string;
+  @Field(() => String, { nullable: true })
+  startsWith?: string;
+  @Field(() => String, { nullable: true })
+  endsWith?: string;
+  @Field(() => QueryMode, { nullable: true })
+  mode?: keyof typeof QueryMode;
+  @Field(() => NestedStringNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedStringNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedStringNullableFilter>;
+  @Field(() => NestedStringNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedStringNullableFilter>;
 }
 
 @InputType()
@@ -2588,6 +3842,8 @@ export class UserCountOrderByAggregateInput {
 export class UserCount {
   @Field(() => Int, { nullable: false })
   investments?: number;
+  @Field(() => Int, { nullable: false })
+  authUserProviders?: number;
 }
 
 @InputType()
@@ -2596,8 +3852,8 @@ export class UserCreateManyInput {
   id?: string;
   @Field(() => String, { nullable: false })
   email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
   @Field(() => String, { nullable: false })
   name!: string;
   @Field(() => Role, { nullable: false })
@@ -2606,6 +3862,23 @@ export class UserCreateManyInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+}
+
+@InputType()
+export class UserCreateNestedOneWithoutAuthUserProvidersInput {
+  @Field(() => UserCreateWithoutAuthUserProvidersInput, { nullable: true })
+  @Type(() => UserCreateWithoutAuthUserProvidersInput)
+  create?: InstanceType<typeof UserCreateWithoutAuthUserProvidersInput>;
+  @Field(() => UserCreateOrConnectWithoutAuthUserProvidersInput, {
+    nullable: true,
+  })
+  @Type(() => UserCreateOrConnectWithoutAuthUserProvidersInput)
+  connectOrCreate?: InstanceType<
+    typeof UserCreateOrConnectWithoutAuthUserProvidersInput
+  >;
+  @Field(() => UserWhereUniqueInput, { nullable: true })
+  @Type(() => UserWhereUniqueInput)
+  connect?: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
 }
 
 @InputType()
@@ -2624,6 +3897,16 @@ export class UserCreateNestedOneWithoutInvestmentsInput {
 }
 
 @InputType()
+export class UserCreateOrConnectWithoutAuthUserProvidersInput {
+  @Field(() => UserWhereUniqueInput, { nullable: false })
+  @Type(() => UserWhereUniqueInput)
+  where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => UserCreateWithoutAuthUserProvidersInput, { nullable: false })
+  @Type(() => UserCreateWithoutAuthUserProvidersInput)
+  create!: InstanceType<typeof UserCreateWithoutAuthUserProvidersInput>;
+}
+
+@InputType()
 export class UserCreateOrConnectWithoutInvestmentsInput {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
@@ -2634,31 +3917,13 @@ export class UserCreateOrConnectWithoutInvestmentsInput {
 }
 
 @InputType()
-export class UserCreateWithoutInvestmentsInput {
+export class UserCreateWithoutAuthUserProvidersInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
   email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
-  @Field(() => String, { nullable: false })
-  name!: string;
-  @Field(() => Role, { nullable: false })
-  role!: keyof typeof Role;
-  @Field(() => Date, { nullable: true })
-  createdAt?: Date | string;
-  @Field(() => Date, { nullable: true })
-  updatedAt?: Date | string;
-}
-
-@InputType()
-export class UserCreateInput {
   @Field(() => String, { nullable: true })
-  id?: string;
-  @Field(() => String, { nullable: false })
-  email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
+  password?: string;
   @Field(() => String, { nullable: false })
   name!: string;
   @Field(() => Role, { nullable: false })
@@ -2669,6 +3934,56 @@ export class UserCreateInput {
   updatedAt?: Date | string;
   @Field(() => InvestmentCreateNestedManyWithoutUserInput, { nullable: true })
   investments?: InstanceType<typeof InvestmentCreateNestedManyWithoutUserInput>;
+}
+
+@InputType()
+export class UserCreateWithoutInvestmentsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  email!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => Role, { nullable: false })
+  role!: keyof typeof Role;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AuthUserProviderCreateNestedManyWithoutUserInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderCreateNestedManyWithoutUserInput
+  >;
+}
+
+@InputType()
+export class UserCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  email!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => Role, { nullable: false })
+  role!: keyof typeof Role;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => InvestmentCreateNestedManyWithoutUserInput, { nullable: true })
+  investments?: InstanceType<typeof InvestmentCreateNestedManyWithoutUserInput>;
+  @Field(() => AuthUserProviderCreateNestedManyWithoutUserInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderCreateNestedManyWithoutUserInput
+  >;
 }
 
 @ArgsType()
@@ -2700,8 +4015,8 @@ export class UserGroupBy {
   id!: string;
   @Field(() => String, { nullable: false })
   email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
   @Field(() => String, { nullable: false })
   name!: string;
   @Field(() => Role, { nullable: false })
@@ -2832,8 +4147,8 @@ export class UserOrderByWithAggregationInput {
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   email?: keyof typeof SortOrder;
-  @Field(() => SortOrder, { nullable: true })
-  password?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  password?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -2856,8 +4171,8 @@ export class UserOrderByWithRelationInput {
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   email?: keyof typeof SortOrder;
-  @Field(() => SortOrder, { nullable: true })
-  password?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  password?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -2868,6 +4183,12 @@ export class UserOrderByWithRelationInput {
   updatedAt?: keyof typeof SortOrder;
   @Field(() => InvestmentOrderByRelationAggregateInput, { nullable: true })
   investments?: InstanceType<typeof InvestmentOrderByRelationAggregateInput>;
+  @Field(() => AuthUserProviderOrderByRelationAggregateInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderOrderByRelationAggregateInput
+  >;
 }
 
 @InputType()
@@ -2890,8 +4211,8 @@ export class UserScalarWhereWithAggregatesInput {
   id?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   email?: InstanceType<typeof StringWithAggregatesFilter>;
-  @Field(() => StringWithAggregatesFilter, { nullable: true })
-  password?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
+  password?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   name?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => EnumRoleWithAggregatesFilter, { nullable: true })
@@ -2903,31 +4224,13 @@ export class UserScalarWhereWithAggregatesInput {
 }
 
 @InputType()
-export class UserUncheckedCreateWithoutInvestmentsInput {
+export class UserUncheckedCreateWithoutAuthUserProvidersInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
   email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
-  @Field(() => String, { nullable: false })
-  name!: string;
-  @Field(() => Role, { nullable: false })
-  role!: keyof typeof Role;
-  @Field(() => Date, { nullable: true })
-  createdAt?: Date | string;
-  @Field(() => Date, { nullable: true })
-  updatedAt?: Date | string;
-}
-
-@InputType()
-export class UserUncheckedCreateInput {
   @Field(() => String, { nullable: true })
-  id?: string;
-  @Field(() => String, { nullable: false })
-  email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
+  password?: string;
   @Field(() => String, { nullable: false })
   name!: string;
   @Field(() => Role, { nullable: false })
@@ -2945,31 +4248,67 @@ export class UserUncheckedCreateInput {
 }
 
 @InputType()
+export class UserUncheckedCreateWithoutInvestmentsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  email!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => Role, { nullable: false })
+  role!: keyof typeof Role;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AuthUserProviderUncheckedCreateNestedManyWithoutUserInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUncheckedCreateNestedManyWithoutUserInput
+  >;
+}
+
+@InputType()
+export class UserUncheckedCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  email!: string;
+  @Field(() => String, { nullable: true })
+  password?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => Role, { nullable: false })
+  role!: keyof typeof Role;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutUserInput, {
+    nullable: true,
+  })
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutUserInput
+  >;
+  @Field(() => AuthUserProviderUncheckedCreateNestedManyWithoutUserInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUncheckedCreateNestedManyWithoutUserInput
+  >;
+}
+
+@InputType()
 export class UserUncheckedUpdateManyInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
-  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-}
-
-@InputType()
-export class UserUncheckedUpdateWithoutInvestmentsInput {
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
@@ -2981,13 +4320,13 @@ export class UserUncheckedUpdateWithoutInvestmentsInput {
 }
 
 @InputType()
-export class UserUncheckedUpdateInput {
+export class UserUncheckedUpdateWithoutAuthUserProvidersInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
@@ -3005,13 +4344,13 @@ export class UserUncheckedUpdateInput {
 }
 
 @InputType()
-export class UserUpdateManyMutationInput {
+export class UserUncheckedUpdateWithoutInvestmentsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
@@ -3020,6 +4359,87 @@ export class UserUpdateManyMutationInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AuthUserProviderUncheckedUpdateManyWithoutUserNestedInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUncheckedUpdateManyWithoutUserNestedInput
+  >;
+}
+
+@InputType()
+export class UserUncheckedUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
+  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput, {
+    nullable: true,
+  })
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  >;
+  @Field(() => AuthUserProviderUncheckedUpdateManyWithoutUserNestedInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUncheckedUpdateManyWithoutUserNestedInput
+  >;
+}
+
+@InputType()
+export class UserUpdateManyMutationInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
+  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class UserUpdateOneRequiredWithoutAuthUserProvidersNestedInput {
+  @Field(() => UserCreateWithoutAuthUserProvidersInput, { nullable: true })
+  @Type(() => UserCreateWithoutAuthUserProvidersInput)
+  create?: InstanceType<typeof UserCreateWithoutAuthUserProvidersInput>;
+  @Field(() => UserCreateOrConnectWithoutAuthUserProvidersInput, {
+    nullable: true,
+  })
+  @Type(() => UserCreateOrConnectWithoutAuthUserProvidersInput)
+  connectOrCreate?: InstanceType<
+    typeof UserCreateOrConnectWithoutAuthUserProvidersInput
+  >;
+  @Field(() => UserUpsertWithoutAuthUserProvidersInput, { nullable: true })
+  @Type(() => UserUpsertWithoutAuthUserProvidersInput)
+  upsert?: InstanceType<typeof UserUpsertWithoutAuthUserProvidersInput>;
+  @Field(() => UserWhereUniqueInput, { nullable: true })
+  @Type(() => UserWhereUniqueInput)
+  connect?: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => UserUpdateToOneWithWhereWithoutAuthUserProvidersInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateToOneWithWhereWithoutAuthUserProvidersInput)
+  update?: InstanceType<
+    typeof UserUpdateToOneWithWhereWithoutAuthUserProvidersInput
+  >;
 }
 
 @InputType()
@@ -3046,6 +4466,16 @@ export class UserUpdateOneRequiredWithoutInvestmentsNestedInput {
 }
 
 @InputType()
+export class UserUpdateToOneWithWhereWithoutAuthUserProvidersInput {
+  @Field(() => UserWhereInput, { nullable: true })
+  @Type(() => UserWhereInput)
+  where?: InstanceType<typeof UserWhereInput>;
+  @Field(() => UserUpdateWithoutAuthUserProvidersInput, { nullable: false })
+  @Type(() => UserUpdateWithoutAuthUserProvidersInput)
+  data!: InstanceType<typeof UserUpdateWithoutAuthUserProvidersInput>;
+}
+
+@InputType()
 export class UserUpdateToOneWithWhereWithoutInvestmentsInput {
   @Field(() => UserWhereInput, { nullable: true })
   @Type(() => UserWhereInput)
@@ -3056,31 +4486,13 @@ export class UserUpdateToOneWithWhereWithoutInvestmentsInput {
 }
 
 @InputType()
-export class UserUpdateWithoutInvestmentsInput {
+export class UserUpdateWithoutAuthUserProvidersInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
-  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-}
-
-@InputType()
-export class UserUpdateInput {
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  password?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
@@ -3091,6 +4503,69 @@ export class UserUpdateInput {
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => InvestmentUpdateManyWithoutUserNestedInput, { nullable: true })
   investments?: InstanceType<typeof InvestmentUpdateManyWithoutUserNestedInput>;
+}
+
+@InputType()
+export class UserUpdateWithoutInvestmentsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
+  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AuthUserProviderUpdateManyWithoutUserNestedInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUpdateManyWithoutUserNestedInput
+  >;
+}
+
+@InputType()
+export class UserUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  email?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  password?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumRoleFieldUpdateOperationsInput, { nullable: true })
+  role?: InstanceType<typeof EnumRoleFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => InvestmentUpdateManyWithoutUserNestedInput, { nullable: true })
+  investments?: InstanceType<typeof InvestmentUpdateManyWithoutUserNestedInput>;
+  @Field(() => AuthUserProviderUpdateManyWithoutUserNestedInput, {
+    nullable: true,
+  })
+  authUserProviders?: InstanceType<
+    typeof AuthUserProviderUpdateManyWithoutUserNestedInput
+  >;
+}
+
+@InputType()
+export class UserUpsertWithoutAuthUserProvidersInput {
+  @Field(() => UserUpdateWithoutAuthUserProvidersInput, { nullable: false })
+  @Type(() => UserUpdateWithoutAuthUserProvidersInput)
+  update!: InstanceType<typeof UserUpdateWithoutAuthUserProvidersInput>;
+  @Field(() => UserCreateWithoutAuthUserProvidersInput, { nullable: false })
+  @Type(() => UserCreateWithoutAuthUserProvidersInput)
+  create!: InstanceType<typeof UserCreateWithoutAuthUserProvidersInput>;
+  @Field(() => UserWhereInput, { nullable: true })
+  @Type(() => UserWhereInput)
+  where?: InstanceType<typeof UserWhereInput>;
 }
 
 @InputType()
@@ -3118,8 +4593,8 @@ export class UserWhereUniqueInput {
   OR?: Array<UserWhereInput>;
   @Field(() => [UserWhereInput], { nullable: true })
   NOT?: Array<UserWhereInput>;
-  @Field(() => StringFilter, { nullable: true })
-  password?: InstanceType<typeof StringFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  password?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   name?: InstanceType<typeof StringFilter>;
   @Field(() => EnumRoleFilter, { nullable: true })
@@ -3130,6 +4605,8 @@ export class UserWhereUniqueInput {
   updatedAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
+  @Field(() => AuthUserProviderListRelationFilter, { nullable: true })
+  authUserProviders?: InstanceType<typeof AuthUserProviderListRelationFilter>;
 }
 
 @InputType()
@@ -3144,8 +4621,8 @@ export class UserWhereInput {
   id?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
   email?: InstanceType<typeof StringFilter>;
-  @Field(() => StringFilter, { nullable: true })
-  password?: InstanceType<typeof StringFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  password?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   name?: InstanceType<typeof StringFilter>;
   @Field(() => EnumRoleFilter, { nullable: true })
@@ -3156,6 +4633,8 @@ export class UserWhereInput {
   updatedAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
+  @Field(() => AuthUserProviderListRelationFilter, { nullable: true })
+  authUserProviders?: InstanceType<typeof AuthUserProviderListRelationFilter>;
 }
 
 @ObjectType()
@@ -3164,8 +4643,8 @@ export class User {
   id!: string;
   @Field(() => String, { nullable: false })
   email!: string;
-  @Field(() => String, { nullable: false })
-  password!: string;
+  @Field(() => String, { nullable: true })
+  password!: string | null;
   @Field(() => String, { nullable: false })
   name!: string;
   @Field(() => Role, { nullable: false })
@@ -3176,6 +4655,8 @@ export class User {
   updatedAt!: Date;
   @Field(() => [Investment], { nullable: true })
   investments?: Array<Investment>;
+  @Field(() => [AuthUserProvider], { nullable: true })
+  authUserProviders?: Array<AuthUserProvider>;
   @Field(() => UserCount, { nullable: false })
   _count?: InstanceType<typeof UserCount>;
 }

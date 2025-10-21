@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
-import { UserCreateInput } from '@/lib/graphql/prisma-client';
+import { UserCreateInput, UserUpdateInput } from '@/lib/graphql/prisma-client';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service';
 import { selectObject } from '@/utils/select-object';
@@ -197,6 +197,9 @@ export class UserService {
       where: {
         id,
       },
+      include: {
+        authUserProviders: true,
+      },
     });
   }
 
@@ -204,6 +207,9 @@ export class UserService {
     return this.prismaService.user.findUnique({
       where: {
         email,
+      },
+      include: {
+        authUserProviders: true,
       },
     });
   }
@@ -223,7 +229,7 @@ export class UserService {
     return createdUser;
   }
 
-  async update(id: string, data: UserCreateInput) {
+  async update(id: string, data: UserUpdateInput) {
     return this.prismaService.user.update({
       where: {
         id,
