@@ -22,10 +22,42 @@ model User {
 
   role Role
 
+  accounts    Account[]
   investments Investment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+}
+
+model Institution {
+  id      String  @id @default(uuid())
+  code    String  @unique
+  name    String
+  logoUrl String?
+  color   String?
+
+  accounts Account[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Account {
+  id          String      @id @default(uuid())
+  name        String
+  type        AccountType
+  balance     Decimal     @default(0)
+  description String?
+  isActive    Boolean     @default(true)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Investment {
@@ -46,6 +78,15 @@ model Investment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+}
+
+enum AccountType {
+  WALLET // Carteira física
+  CHECKING // Conta corrente
+  SAVINGS // Poupança
+  INVESTMENT // Investimentos
+  CREDIT_CARD // Cartão de crédito
+  OTHER // Outros tipos
 }
 
 enum Role {
