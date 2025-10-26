@@ -378,6 +378,27 @@ type AccountModelEdge {
   node: AccountModel!
 }
 
+type InstitutionModel {
+  id: ID!
+  code: String!
+  name: String!
+  logoUrl: String
+  color: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accounts: [Account!]
+}
+
+type InstitutionConnection {
+  edges: [InstitutionModelEdge!]
+  pageInfo: PageInfo
+}
+
+type InstitutionModelEdge {
+  cursor: String!
+  node: InstitutionModel!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
@@ -387,6 +408,8 @@ type Query {
   investmentRegimes: InvestmentRegimeSummaryConnection!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
   account(id: String!): AccountModel!
+  institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection): InstitutionConnection!
+  institution(id: String!): InstitutionModel!
 }
 
 enum OrdenationUserModel {
@@ -425,6 +448,17 @@ enum OrdenationAccountModel {
   createdAt
   updatedAt
   institution
+}
+
+enum OrdenationInstitutionModel {
+  id
+  code
+  name
+  logoUrl
+  color
+  createdAt
+  updatedAt
+  accounts
 }
 
 type Mutation {

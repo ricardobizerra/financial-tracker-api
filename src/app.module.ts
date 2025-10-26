@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { InvestmentModule } from './investment/investment.module';
 import { BacenModule } from './external/bacen/bacen.module';
 import { AccountModule } from './account/account.module';
+import { InstitutionModule } from './institution/institution.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AccountModule } from './account/account.module';
     IpeadataModule,
     InvestmentModule,
     AccountModule,
+    InstitutionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
