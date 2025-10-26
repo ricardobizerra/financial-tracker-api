@@ -40,6 +40,11 @@ export enum Role {
   USER = 'USER',
 }
 
+export enum RelationLoadStrategy {
+  query = 'query',
+  join = 'join',
+}
+
 export enum Regime {
   CDI = 'CDI',
   POUPANCA = 'POUPANCA',
@@ -119,6 +124,10 @@ registerEnumType(AccountType, { name: 'AccountType', description: undefined });
 registerEnumType(NullsOrder, { name: 'NullsOrder', description: undefined });
 registerEnumType(QueryMode, { name: 'QueryMode', description: undefined });
 registerEnumType(Regime, { name: 'Regime', description: undefined });
+registerEnumType(RelationLoadStrategy, {
+  name: 'RelationLoadStrategy',
+  description: undefined,
+});
 registerEnumType(Role, { name: 'Role', description: undefined });
 registerEnumType(SortOrder, { name: 'SortOrder', description: undefined });
 registerEnumType(TransactionIsolationLevel, {
@@ -1606,6 +1615,8 @@ export class CreateOneAccountArgs {
   @Field(() => AccountCreateInput, { nullable: false })
   @Type(() => AccountCreateInput)
   data!: InstanceType<typeof AccountCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1620,6 +1631,8 @@ export class DeleteOneAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
   where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1639,6 +1652,8 @@ export class FindFirstAccountOrThrowArgs {
   skip?: number;
   @Field(() => [AccountScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof AccountScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1658,6 +1673,8 @@ export class FindFirstAccountArgs {
   skip?: number;
   @Field(() => [AccountScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof AccountScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1677,6 +1694,8 @@ export class FindManyAccountArgs {
   skip?: number;
   @Field(() => [AccountScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof AccountScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1684,6 +1703,8 @@ export class FindUniqueAccountOrThrowArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
   where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1691,6 +1712,8 @@ export class FindUniqueAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
   where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1711,6 +1734,8 @@ export class UpdateOneAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
   where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1724,6 +1749,8 @@ export class UpsertOneAccountArgs {
   @Field(() => AccountUpdateInput, { nullable: false })
   @Type(() => AccountUpdateInput)
   update!: InstanceType<typeof AccountUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ObjectType()
@@ -1750,6 +1777,8 @@ export class CreateOneInstitutionArgs {
   @Field(() => InstitutionCreateInput, { nullable: false })
   @Type(() => InstitutionCreateInput)
   data!: InstanceType<typeof InstitutionCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1764,6 +1793,8 @@ export class DeleteOneInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
   where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1781,6 +1812,8 @@ export class FindFirstInstitutionOrThrowArgs {
   skip?: number;
   @Field(() => [InstitutionScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InstitutionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1798,6 +1831,8 @@ export class FindFirstInstitutionArgs {
   skip?: number;
   @Field(() => [InstitutionScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InstitutionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1815,6 +1850,8 @@ export class FindManyInstitutionArgs {
   skip?: number;
   @Field(() => [InstitutionScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InstitutionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1822,6 +1859,8 @@ export class FindUniqueInstitutionOrThrowArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
   where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -1829,6 +1868,8 @@ export class FindUniqueInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
   where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2545,6 +2586,8 @@ export class UpdateOneInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
   where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2558,6 +2601,8 @@ export class UpsertOneInstitutionArgs {
   @Field(() => InstitutionUpdateInput, { nullable: false })
   @Type(() => InstitutionUpdateInput)
   update!: InstanceType<typeof InstitutionUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ObjectType()
@@ -2588,6 +2633,8 @@ export class CreateOneInvestmentArgs {
   @Field(() => InvestmentCreateInput, { nullable: false })
   @Type(() => InvestmentCreateInput)
   data!: InstanceType<typeof InvestmentCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2602,6 +2649,8 @@ export class DeleteOneInvestmentArgs {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2619,6 +2668,8 @@ export class FindFirstInvestmentOrThrowArgs {
   skip?: number;
   @Field(() => [InvestmentScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InvestmentScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2636,6 +2687,8 @@ export class FindFirstInvestmentArgs {
   skip?: number;
   @Field(() => [InvestmentScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InvestmentScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2653,6 +2706,8 @@ export class FindManyInvestmentArgs {
   skip?: number;
   @Field(() => [InvestmentScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof InvestmentScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2660,6 +2715,8 @@ export class FindUniqueInvestmentOrThrowArgs {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -2667,6 +2724,8 @@ export class FindUniqueInvestmentArgs {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -4002,6 +4061,8 @@ export class UpdateOneInvestmentArgs {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -4015,6 +4076,8 @@ export class UpsertOneInvestmentArgs {
   @Field(() => InvestmentUpdateInput, { nullable: false })
   @Type(() => InvestmentUpdateInput)
   update!: InstanceType<typeof InvestmentUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ObjectType()
@@ -5293,6 +5356,8 @@ export class CreateOneUserArgs {
   @Field(() => UserCreateInput, { nullable: false })
   @Type(() => UserCreateInput)
   data!: InstanceType<typeof UserCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5307,6 +5372,8 @@ export class DeleteOneUserArgs {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
   where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5324,6 +5391,8 @@ export class FindFirstUserOrThrowArgs {
   skip?: number;
   @Field(() => [UserScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof UserScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5341,6 +5410,8 @@ export class FindFirstUserArgs {
   skip?: number;
   @Field(() => [UserScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof UserScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5358,6 +5429,8 @@ export class FindManyUserArgs {
   skip?: number;
   @Field(() => [UserScalarFieldEnum], { nullable: true })
   distinct?: Array<keyof typeof UserScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5365,6 +5438,8 @@ export class FindUniqueUserOrThrowArgs {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
   where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5372,6 +5447,8 @@ export class FindUniqueUserArgs {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
   where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5392,6 +5469,8 @@ export class UpdateOneUserArgs {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
   where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
@@ -5405,6 +5484,8 @@ export class UpsertOneUserArgs {
   @Field(() => UserUpdateInput, { nullable: false })
   @Type(() => UserUpdateInput)
   update!: InstanceType<typeof UserUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
