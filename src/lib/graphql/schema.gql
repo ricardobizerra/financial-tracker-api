@@ -355,6 +355,29 @@ type InvestmentRegimeSummaryEdge {
   node: InvestmentRegimeSummary!
 }
 
+type AccountModel {
+  id: ID!
+  name: String!
+  type: AccountType!
+  balance: Decimal!
+  description: String
+  isActive: Boolean!
+  institutionId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  institution: Institution!
+}
+
+type AccountConnection {
+  edges: [AccountModelEdge!]
+  pageInfo: PageInfo
+}
+
+type AccountModelEdge {
+  cursor: String!
+  node: AccountModel!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
@@ -362,6 +385,8 @@ type Query {
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes: InvestmentRegimeSummaryConnection!
+  accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
+  account(id: String!): AccountModel!
 }
 
 enum OrdenationUserModel {
@@ -391,11 +416,23 @@ enum OrdenationInvestmentModel {
   updatedAt
 }
 
+enum OrdenationAccountModel {
+  name
+  type
+  balance
+  isActive
+  institutionId
+  createdAt
+  updatedAt
+  institution
+}
+
 type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
   createInvestment(data: InvestmentCreateWithoutUserInput!): Investment!
   deleteInvestment(id: ID!): ID!
+  createAccount(data: AccountCreateWithoutUserInput!): AccountModel!
 }
 
 input UserCreateInput {

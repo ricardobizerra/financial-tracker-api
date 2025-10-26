@@ -1,3 +1,5 @@
+import { Decimal } from '@prisma/client/runtime/library';
+
 type ExtraModelFields<TDatabase, TModel> = Exclude<
   keyof TModel,
   keyof TDatabase
@@ -25,7 +27,24 @@ type SelectObjectParams<TDatabase, TModel> =
         hashDifferentFields: RequiredHashFields<TDatabase, TModel>,
       ];
 
-type SelectObjectReturn<TDatabase> = Partial<Record<keyof TDatabase, true>>;
+type ScalarFields<T> = {
+  [K in keyof T]: T[K] extends object | undefined | null
+    ? T[K] extends Date | Decimal
+      ? K
+      : never
+    : K;
+}[keyof T];
+
+type RelationFields<T> = Exclude<keyof T, ScalarFields<T>>;
+
+type SelectObjectReturn<TDatabase> = Partial<{
+  [K in ScalarFields<TDatabase>]: boolean;
+}> &
+  Partial<{
+    [K in RelationFields<TDatabase>]:
+      | boolean
+      | { select: SelectObjectReturn<any> };
+  }>;
 
 export function selectObject<
   TDatabase extends Record<string, any>,
@@ -33,38 +52,60 @@ export function selectObject<
 >(
   ...args: SelectObjectParams<TDatabase, TModel>
 ): SelectObjectReturn<TDatabase> {
-  const [queriedFields, hashDifferentFields] = args as SelectObjectParams<
-    TDatabase,
-    TModel
-  >;
+  const [queriedFields, hashDifferentFields] = args;
+  const result: SelectObjectReturn<TDatabase> = {};
 
-  const processFields = (fields: (keyof TDatabase)[]) =>
-    selectObject<TDatabase, TDatabase>(fields);
+  for (const field of queriedFields) {
+    if (typeof field !== 'string') continue;
 
-  const reduceFields = (
-    acc: SelectObjectReturn<TDatabase>,
-    field: keyof TModel,
-  ) => {
-    if (hashDifferentFields && field in hashDifferentFields) {
-      const hashedFields = hashDifferentFields[
-        field as keyof RequiredHashFields<TDatabase, TModel>
-      ] as (keyof TDatabase)[];
-      return { ...acc, ...processFields(hashedFields) };
+    if (field.includes('.')) {
+      const [relation, ...nestedPath] = field.split('.');
+      const nestedField = nestedPath.join('.');
+
+      if (!result[relation]) {
+        result[relation] = { select: {} };
+      } else if (result[relation] === true) {
+        continue;
+      }
+
+      const relationSelect = (result[relation] as { select: any }).select;
+
+      if (nestedField.includes('.')) {
+        Object.assign(relationSelect, selectObject<any, any>([nestedField]));
+      } else {
+        relationSelect[nestedField] = true;
+      }
+    } else {
+      result[field] = true;
     }
-    return { ...acc, [field]: true };
-  };
-
-  const reducedFields = queriedFields.reduce(
-    reduceFields,
-    {} as SelectObjectReturn<TDatabase>,
-  );
-
-  if (!hashDifferentFields?.DEFAULT) {
-    return reducedFields;
   }
 
-  const defaultFields = processFields(
-    hashDifferentFields.DEFAULT as (keyof TDatabase)[],
-  );
-  return { ...reducedFields, ...defaultFields };
+  if (hashDifferentFields) {
+    for (const [key, fields] of Object.entries(hashDifferentFields)) {
+      if (key === 'DEFAULT') continue;
+
+      if (fields && fields.length > 0) {
+        const nestedSelect = selectObject<any, any>(
+          fields.filter((f) => typeof f === 'string'),
+        );
+        if (Object.keys(nestedSelect).length > 0) {
+          result[key] = { select: nestedSelect };
+        }
+      }
+    }
+
+    const defaultFields = hashDifferentFields.DEFAULT;
+    if (defaultFields?.length > 0) {
+      const defaultSelect = selectObject<any, any>(
+        defaultFields.filter((f) => typeof f === 'string'),
+      );
+      for (const [key, value] of Object.entries(defaultSelect)) {
+        if (!(key in result)) {
+          result[key] = value;
+        }
+      }
+    }
+  }
+
+  return result;
 }
