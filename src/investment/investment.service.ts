@@ -255,6 +255,18 @@ export class InvestmentService {
           ...(queriedFields.includes('regimePercentage') && {
             regimePercentage: investment.regimePercentage,
           }),
+          ...(queriedFields.includes('finishedAt') && {
+            finishedAt: investment.finishedAt,
+          }),
+          ...(queriedFields.includes('lastCorrectedAt') && {
+            lastCorrectedAt: investment.lastCorrectedAt,
+          }),
+          ...(queriedFields.includes('createdAt') && {
+            createdAt: investment.createdAt,
+          }),
+          ...(queriedFields.includes('updatedAt') && {
+            updatedAt: investment.updatedAt,
+          }),
         };
       }),
     );
