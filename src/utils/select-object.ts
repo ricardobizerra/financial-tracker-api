@@ -53,59 +53,58 @@ export function selectObject<
   ...args: SelectObjectParams<TDatabase, TModel>
 ): SelectObjectReturn<TDatabase> {
   const [queriedFields, hashDifferentFields] = args;
-  const result: SelectObjectReturn<TDatabase> = {};
+  console.log('queriedFields', queriedFields);
 
-  for (const field of queriedFields) {
-    if (typeof field !== 'string') continue;
+  const processFields = (fields: (keyof TDatabase)[]) =>
+    selectObject<TDatabase, TDatabase>(fields);
 
-    if (field.includes('.')) {
-      const [relation, ...nestedPath] = field.split('.');
-      const nestedField = nestedPath.join('.');
+  const reduceFields = (
+    acc: SelectObjectReturn<TDatabase>,
+    field: keyof TModel,
+  ) => {
+    if (hashDifferentFields && field in hashDifferentFields) {
+      const hashedFields = hashDifferentFields[
+        field as keyof RequiredHashFields<TDatabase, TModel>
+      ] as (keyof TDatabase)[];
+      return { ...acc, ...processFields(hashedFields) };
+    }
 
-      if (!result[relation]) {
-        result[relation] = { select: {} };
-      } else if (result[relation] === true) {
-        continue;
+    if ((field as string).includes('.')) {
+      const [relation, ...subFields] = (field as string).split('.');
+      const subField = subFields.join('.');
+
+      if (!acc[relation]) {
+        acc[relation] = { select: {} };
       }
 
-      const relationSelect = (result[relation] as { select: any }).select;
+      if (!('select' in acc[relation])) {
+        acc[relation].select = {};
+      }
 
-      if (nestedField.includes('.')) {
-        Object.assign(relationSelect, selectObject<any, any>([nestedField]));
+      if (subField.includes('.')) {
+        reduceFields(acc[relation].select, subField);
       } else {
-        relationSelect[nestedField] = true;
+        acc[relation].select[subField] = true;
       }
-    } else {
-      result[field] = true;
+      return acc;
     }
+
+    return { ...acc, [field]: true };
+  };
+
+  const reducedFields = queriedFields.reduce(
+    reduceFields,
+    {} as SelectObjectReturn<TDatabase>,
+  );
+
+  if (!hashDifferentFields?.DEFAULT) {
+    console.log('return', reducedFields);
+    return reducedFields;
   }
 
-  if (hashDifferentFields) {
-    for (const [key, fields] of Object.entries(hashDifferentFields)) {
-      if (key === 'DEFAULT') continue;
+  const defaultFields = processFields(hashDifferentFields.DEFAULT);
 
-      if (fields && fields.length > 0) {
-        const nestedSelect = selectObject<any, any>(
-          fields.filter((f) => typeof f === 'string'),
-        );
-        if (Object.keys(nestedSelect).length > 0) {
-          result[key] = { select: nestedSelect };
-        }
-      }
-    }
+  console.log('return', { ...reducedFields, ...defaultFields });
 
-    const defaultFields = hashDifferentFields.DEFAULT;
-    if (defaultFields?.length > 0) {
-      const defaultSelect = selectObject<any, any>(
-        defaultFields.filter((f) => typeof f === 'string'),
-      );
-      for (const [key, value] of Object.entries(defaultSelect)) {
-        if (!(key in result)) {
-          result[key] = value;
-        }
-      }
-    }
-  }
-
-  return result;
+  return { ...reducedFields, ...defaultFields };
 }
