@@ -53,7 +53,6 @@ export function selectObject<
   ...args: SelectObjectParams<TDatabase, TModel>
 ): SelectObjectReturn<TDatabase> {
   const [queriedFields, hashDifferentFields] = args;
-  console.log('queriedFields', queriedFields);
 
   const processFields = (fields: (keyof TDatabase)[]) =>
     selectObject<TDatabase, TDatabase>(fields);
@@ -98,13 +97,10 @@ export function selectObject<
   );
 
   if (!hashDifferentFields?.DEFAULT) {
-    console.log('return', reducedFields);
     return reducedFields;
   }
 
   const defaultFields = processFields(hashDifferentFields.DEFAULT);
-
-  console.log('return', { ...reducedFields, ...defaultFields });
 
   return { ...reducedFields, ...defaultFields };
 }
