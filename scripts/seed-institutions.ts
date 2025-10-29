@@ -47,25 +47,26 @@ async function seedInstitutions() {
   const institutions = await fetchInstitutions(apiKey);
 
   await Promise.all(
-    institutions.map((institution) =>
-      prisma.institution.upsert({
+    institutions.map((institution) => {
+      const institutionColor = institution.primaryColor.startsWith('#')
+        ? institution.primaryColor
+        : `#${institution.primaryColor}`;
+
+      const data = {
+        name: institution.name,
+        code: institution.id.toString(),
+        logoUrl: institution.imageUrl,
+        color: institutionColor,
+      };
+
+      return prisma.institution.upsert({
         where: {
           code: institution.id.toString(),
         },
-        create: {
-          name: institution.name,
-          code: institution.id.toString(),
-          logoUrl: institution.imageUrl,
-          color: institution.primaryColor,
-        },
-        update: {
-          name: institution.name,
-          code: institution.id.toString(),
-          logoUrl: institution.imageUrl,
-          color: institution.primaryColor,
-        },
-      }),
-    ),
+        create: data,
+        update: data,
+      });
+    }),
   );
 }
 
