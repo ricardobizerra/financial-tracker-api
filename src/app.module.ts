@@ -20,6 +20,7 @@ import { InvestmentModule } from './investment/investment.module';
 import { BacenModule } from './external/bacen/bacen.module';
 import { AccountModule } from './account/account.module';
 import { InstitutionModule } from './institution/institution.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { InstitutionModule } from './institution/institution.module';
     InvestmentModule,
     AccountModule,
     InstitutionModule,
+    TransactionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
