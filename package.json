@@ -37,7 +37,7 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/schedule": "^5.0.1",
     "@prisma/client": "5.22.0",
-    "axios": "^1.7.9",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "cache-manager": "^6.4.0",
     "cache-manager-redis-store": "^3.0.1",
