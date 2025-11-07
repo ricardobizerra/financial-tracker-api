@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
-import { AccountModel, OrdenationAccountArgs } from './account.model';
+import {
+  AccountFilterArgs,
+  AccountModel,
+  OrdenationAccountArgs,
+} from './account.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
@@ -13,6 +17,7 @@ export class AccountService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async findMany({
+    filterArgs,
     userId,
     queriedFields,
     paginationArgs,
@@ -24,6 +29,7 @@ export class AccountService {
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationAccountArgs;
+    filterArgs: AccountFilterArgs;
   }) {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -37,6 +43,7 @@ export class AccountService {
     const accountsLengthQuery = last
       ? await this.prismaService.account.count({
           where: {
+            type: filterArgs.type ?? undefined,
             userId,
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
@@ -84,6 +91,7 @@ export class AccountService {
         : undefined,
       select: selectObject<Account, AccountModel>(queriedFields),
       where: {
+        type: filterArgs.type ?? undefined,
         userId,
         ...(!!searchArgs.search && {
           OR: ['name', 'description'].map((field) => ({
@@ -172,6 +180,7 @@ export class AccountService {
             id: true,
           },
           where: {
+            type: filterArgs.type ?? undefined,
             userId,
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({

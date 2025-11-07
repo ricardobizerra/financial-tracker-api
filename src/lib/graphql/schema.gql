@@ -606,7 +606,7 @@ type Query {
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes: InvestmentRegimeSummaryConnection!
-  accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
+  accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, type: AccountType): AccountConnection!
   account(id: String!): AccountModel!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection): InstitutionConnection!
   institution(id: String!): InstitutionModel!

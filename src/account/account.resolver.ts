@@ -1,6 +1,6 @@
 import { Info, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AccountService } from './account.service';
-import { AccountConnection } from './account.model';
+import { AccountConnection, AccountFilterArgs } from './account.model';
 import { Args } from '@nestjs/graphql';
 import { Auth } from '@/auth/auth.decorator';
 import {
@@ -25,12 +25,14 @@ export class AccountResolver {
     @Args() paginationArgs: PaginationArgs,
     @Args() searchArgs: SearchArgs,
     @Args() ordenationArgs: OrdenationAccountArgs,
+    @Args() filterArgs: AccountFilterArgs,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
     const queriedFields = getQueriedFields<AccountModel>(info, 'accounts');
 
     return this.accountService.findMany({
+      filterArgs,
       userId: user.id,
       queriedFields,
       paginationArgs,

@@ -17,3 +17,9 @@ export class OrdenationAccountArgs extends Ordenation(AccountModel, [
   'id',
   'description',
 ]) {}
+
+@ArgsType()
+export class AccountFilterArgs {
+  @Field(() => AccountType, { nullable: true })
+  type?: AccountType;
+}
