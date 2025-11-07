@@ -84,6 +84,18 @@ export enum NullsOrder {
   last = 'last',
 }
 
+export enum InvestmentTransactionRole {
+  FUNDING = 'FUNDING',
+  REDEMPTION = 'REDEMPTION',
+  INCOME = 'INCOME',
+  FEE = 'FEE',
+}
+
+export enum InvestmentStatus {
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+}
+
 export enum AccountType {
   WALLET = 'WALLET',
   CHECKING = 'CHECKING',
@@ -91,6 +103,16 @@ export enum AccountType {
   INVESTMENT = 'INVESTMENT',
   CREDIT_CARD = 'CREDIT_CARD',
   OTHER = 'OTHER',
+}
+
+export enum InvestmentTransactionScalarFieldEnum {
+  id = 'id',
+  role = 'role',
+  amount = 'amount',
+  investmentId = 'investmentId',
+  transactionId = 'transactionId',
+  createdAt = 'createdAt',
+  updatedAt = 'updatedAt',
 }
 
 export enum InvestmentScalarFieldEnum {
@@ -102,9 +124,11 @@ export enum InvestmentScalarFieldEnum {
   duration = 'duration',
   finishedAt = 'finishedAt',
   lastCorrectedAt = 'lastCorrectedAt',
+  status = 'status',
   regimeName = 'regimeName',
   regimePercentage = 'regimePercentage',
   userId = 'userId',
+  accountId = 'accountId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
 }
@@ -144,7 +168,19 @@ registerEnumType(InvestmentScalarFieldEnum, {
   name: 'InvestmentScalarFieldEnum',
   description: undefined,
 });
+registerEnumType(InvestmentTransactionScalarFieldEnum, {
+  name: 'InvestmentTransactionScalarFieldEnum',
+  description: undefined,
+});
 registerEnumType(AccountType, { name: 'AccountType', description: undefined });
+registerEnumType(InvestmentStatus, {
+  name: 'InvestmentStatus',
+  description: undefined,
+});
+registerEnumType(InvestmentTransactionRole, {
+  name: 'InvestmentTransactionRole',
+  description: undefined,
+});
 registerEnumType(NullsOrder, { name: 'NullsOrder', description: undefined });
 registerEnumType(QueryMode, { name: 'QueryMode', description: undefined });
 registerEnumType(Regime, { name: 'Regime', description: undefined });
@@ -305,6 +341,8 @@ export class AccountCountOrderByAggregateInput {
 export class AccountCount {
   @Field(() => Int, { nullable: false })
   transactions?: number;
+  @Field(() => Int, { nullable: false })
+  investments?: number;
 }
 
 @InputType()
@@ -434,6 +472,23 @@ export class AccountCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class AccountCreateNestedOneWithoutInvestmentsInput {
+  @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInvestmentsInput)
+  create?: InstanceType<typeof AccountCreateWithoutInvestmentsInput>;
+  @Field(() => AccountCreateOrConnectWithoutInvestmentsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutInvestmentsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutInvestmentsInput
+  >;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+}
+
+@InputType()
 export class AccountCreateNestedOneWithoutTransactionsInput {
   @Field(() => AccountCreateWithoutTransactionsInput, { nullable: true })
   @Type(() => AccountCreateWithoutTransactionsInput)
@@ -458,6 +513,16 @@ export class AccountCreateOrConnectWithoutInstitutionInput {
   @Field(() => AccountCreateWithoutInstitutionInput, { nullable: false })
   @Type(() => AccountCreateWithoutInstitutionInput)
   create!: InstanceType<typeof AccountCreateWithoutInstitutionInput>;
+}
+
+@InputType()
+export class AccountCreateOrConnectWithoutInvestmentsInput {
+  @Field(() => AccountWhereUniqueInput, { nullable: false })
+  @Type(() => AccountWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: false })
+  @Type(() => AccountCreateWithoutInvestmentsInput)
+  create!: InstanceType<typeof AccountCreateWithoutInvestmentsInput>;
 }
 
 @InputType()
@@ -510,6 +575,52 @@ export class AccountCreateWithoutInstitutionInput {
   transactions?: InstanceType<
     typeof TransactionCreateNestedManyWithoutAccountInput
   >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
+  >;
+}
+
+@InputType()
+export class AccountCreateWithoutInvestmentsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  balance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutAccountsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutAccountsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutAccountsInput>;
+  @Field(() => InstitutionCreateNestedOneWithoutAccountsInput, {
+    nullable: false,
+  })
+  @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
+  institution!: InstanceType<
+    typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutAccountInput)
+  transactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutAccountInput
+  >;
 }
 
 @InputType()
@@ -541,6 +652,13 @@ export class AccountCreateWithoutTransactionsInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
   >;
 }
 
@@ -577,6 +695,13 @@ export class AccountCreateWithoutUserInput {
   @Type(() => TransactionCreateNestedManyWithoutAccountInput)
   transactions?: InstanceType<
     typeof TransactionCreateNestedManyWithoutAccountInput
+  >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
   >;
 }
 
@@ -616,6 +741,13 @@ export class AccountCreateInput {
   @Type(() => TransactionCreateNestedManyWithoutAccountInput)
   transactions?: InstanceType<
     typeof TransactionCreateNestedManyWithoutAccountInput
+  >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
   >;
 }
 
@@ -920,6 +1052,9 @@ export class AccountOrderByWithRelationInput {
   @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
   @Type(() => TransactionOrderByRelationAggregateInput)
   transactions?: InstanceType<typeof TransactionOrderByRelationAggregateInput>;
+  @Field(() => InvestmentOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => InvestmentOrderByRelationAggregateInput)
+  investments?: InstanceType<typeof InvestmentOrderByRelationAggregateInput>;
 }
 
 @InputType()
@@ -1081,6 +1216,46 @@ export class AccountUncheckedCreateWithoutInstitutionInput {
   transactions?: InstanceType<
     typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
   >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
+  >;
+}
+
+@InputType()
+export class AccountUncheckedCreateWithoutInvestmentsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  balance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => String, { nullable: false })
+  institutionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  >;
 }
 
 @InputType()
@@ -1107,6 +1282,13 @@ export class AccountUncheckedCreateWithoutTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
+  >;
 }
 
 @InputType()
@@ -1137,6 +1319,13 @@ export class AccountUncheckedCreateWithoutUserInput {
   @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
   transactions?: InstanceType<
     typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
   >;
 }
 
@@ -1170,6 +1359,13 @@ export class AccountUncheckedCreateInput {
   @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
   transactions?: InstanceType<
     typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
   >;
 }
 
@@ -1358,6 +1554,45 @@ export class AccountUncheckedUpdateWithoutInstitutionInput {
   transactions?: InstanceType<
     typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
   >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+}
+
+@InputType()
+export class AccountUncheckedUpdateWithoutInvestmentsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  institutionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  >;
 }
 
 @InputType()
@@ -1383,6 +1618,13 @@ export class AccountUncheckedUpdateWithoutTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
+  >;
 }
 
 @InputType()
@@ -1412,6 +1654,13 @@ export class AccountUncheckedUpdateWithoutUserInput {
   @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
   transactions?: InstanceType<
     typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
   >;
 }
 
@@ -1444,6 +1693,13 @@ export class AccountUncheckedUpdateInput {
   @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
   transactions?: InstanceType<
     typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
   >;
 }
 
@@ -1575,6 +1831,33 @@ export class AccountUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class AccountUpdateOneRequiredWithoutInvestmentsNestedInput {
+  @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInvestmentsInput)
+  create?: InstanceType<typeof AccountCreateWithoutInvestmentsInput>;
+  @Field(() => AccountCreateOrConnectWithoutInvestmentsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutInvestmentsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutInvestmentsInput
+  >;
+  @Field(() => AccountUpsertWithoutInvestmentsInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutInvestmentsInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutInvestmentsInput>;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountUpdateToOneWithWhereWithoutInvestmentsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateToOneWithWhereWithoutInvestmentsInput)
+  update?: InstanceType<
+    typeof AccountUpdateToOneWithWhereWithoutInvestmentsInput
+  >;
+}
+
+@InputType()
 export class AccountUpdateOneRequiredWithoutTransactionsNestedInput {
   @Field(() => AccountCreateWithoutTransactionsInput, { nullable: true })
   @Type(() => AccountCreateWithoutTransactionsInput)
@@ -1599,6 +1882,16 @@ export class AccountUpdateOneRequiredWithoutTransactionsNestedInput {
   update?: InstanceType<
     typeof AccountUpdateToOneWithWhereWithoutTransactionsInput
   >;
+}
+
+@InputType()
+export class AccountUpdateToOneWithWhereWithoutInvestmentsInput {
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
+  @Field(() => AccountUpdateWithoutInvestmentsInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutInvestmentsInput)
+  data!: InstanceType<typeof AccountUpdateWithoutInvestmentsInput>;
 }
 
 @InputType()
@@ -1662,6 +1955,53 @@ export class AccountUpdateWithoutInstitutionInput {
   transactions?: InstanceType<
     typeof TransactionUpdateManyWithoutAccountNestedInput
   >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
+  >;
+}
+
+@InputType()
+export class AccountUpdateWithoutInvestmentsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutAccountsNestedInput)
+  user?: InstanceType<typeof UserUpdateOneRequiredWithoutAccountsNestedInput>;
+  @Field(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
+  institution?: InstanceType<
+    typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutAccountNestedInput
+  >;
 }
 
 @InputType()
@@ -1694,6 +2034,13 @@ export class AccountUpdateWithoutTransactionsInput {
   @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
   >;
 }
 
@@ -1729,6 +2076,13 @@ export class AccountUpdateWithoutUserInput {
   @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
   transactions?: InstanceType<
     typeof TransactionUpdateManyWithoutAccountNestedInput
+  >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
   >;
 }
 
@@ -1770,6 +2124,13 @@ export class AccountUpdateInput {
   transactions?: InstanceType<
     typeof TransactionUpdateManyWithoutAccountNestedInput
   >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
+  >;
 }
 
 @InputType()
@@ -1796,6 +2157,19 @@ export class AccountUpsertWithWhereUniqueWithoutUserInput {
   @Field(() => AccountCreateWithoutUserInput, { nullable: false })
   @Type(() => AccountCreateWithoutUserInput)
   create!: InstanceType<typeof AccountCreateWithoutUserInput>;
+}
+
+@InputType()
+export class AccountUpsertWithoutInvestmentsInput {
+  @Field(() => AccountUpdateWithoutInvestmentsInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutInvestmentsInput)
+  update!: InstanceType<typeof AccountUpdateWithoutInvestmentsInput>;
+  @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: false })
+  @Type(() => AccountCreateWithoutInvestmentsInput)
+  create!: InstanceType<typeof AccountCreateWithoutInvestmentsInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
 }
 
 @InputType()
@@ -1852,6 +2226,9 @@ export class AccountWhereUniqueInput {
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   transactions?: InstanceType<typeof TransactionListRelationFilter>;
+  @Field(() => InvestmentListRelationFilter, { nullable: true })
+  @Type(() => InvestmentListRelationFilter)
+  investments?: InstanceType<typeof InvestmentListRelationFilter>;
 }
 
 @InputType()
@@ -1895,6 +2272,9 @@ export class AccountWhereInput {
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   transactions?: InstanceType<typeof TransactionListRelationFilter>;
+  @Field(() => InvestmentListRelationFilter, { nullable: true })
+  @Type(() => InvestmentListRelationFilter)
+  investments?: InstanceType<typeof InvestmentListRelationFilter>;
 }
 
 @ObjectType()
@@ -1925,6 +2305,8 @@ export class Account {
   institution?: InstanceType<typeof Institution>;
   @Field(() => [Transaction], { nullable: true })
   transactions?: Array<Transaction>;
+  @Field(() => [Investment], { nullable: true })
+  investments?: Array<Investment>;
   @Field(() => AccountCount, { nullable: false })
   _count?: InstanceType<typeof AccountCount>;
 }
@@ -3156,11 +3538,15 @@ export class InvestmentCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -3188,11 +3574,15 @@ export class InvestmentCountAggregate {
   @Field(() => Int, { nullable: false })
   lastCorrectedAt!: number;
   @Field(() => Int, { nullable: false })
+  status!: number;
+  @Field(() => Int, { nullable: false })
   regimeName!: number;
   @Field(() => Int, { nullable: false })
   regimePercentage!: number;
   @Field(() => Int, { nullable: false })
   userId!: number;
+  @Field(() => Int, { nullable: false })
+  accountId!: number;
   @Field(() => Int, { nullable: false })
   createdAt!: number;
   @Field(() => Int, { nullable: false })
@@ -3220,15 +3610,66 @@ export class InvestmentCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
+}
+
+@ObjectType()
+export class InvestmentCount {
+  @Field(() => Int, { nullable: false })
+  transactions?: number;
+}
+
+@InputType()
+export class InvestmentCreateManyAccountInputEnvelope {
+  @Field(() => [InvestmentCreateManyAccountInput], { nullable: false })
+  @Type(() => InvestmentCreateManyAccountInput)
+  data!: Array<InvestmentCreateManyAccountInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class InvestmentCreateManyAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
+  @Field(() => Regime, { nullable: false })
+  regimeName!: keyof typeof Regime;
+  @Field(() => Float, { nullable: true })
+  regimePercentage?: number;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
 }
 
 @InputType()
@@ -3258,10 +3699,14 @@ export class InvestmentCreateManyUserInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3286,16 +3731,38 @@ export class InvestmentCreateManyInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
   userId!: string;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentCreateNestedManyWithoutAccountInput {
+  @Field(() => [InvestmentCreateWithoutAccountInput], { nullable: true })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create?: Array<InvestmentCreateWithoutAccountInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutAccountInput>;
+  @Field(() => InvestmentCreateManyAccountInputEnvelope, { nullable: true })
+  @Type(() => InvestmentCreateManyAccountInputEnvelope)
+  createMany?: InstanceType<typeof InvestmentCreateManyAccountInputEnvelope>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
 }
 
 @InputType()
@@ -3315,6 +3782,43 @@ export class InvestmentCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class InvestmentCreateNestedOneWithoutTransactionsInput {
+  @Field(() => InvestmentCreateWithoutTransactionsInput, { nullable: true })
+  @Type(() => InvestmentCreateWithoutTransactionsInput)
+  create?: InstanceType<typeof InvestmentCreateWithoutTransactionsInput>;
+  @Field(() => InvestmentCreateOrConnectWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof InvestmentCreateOrConnectWithoutTransactionsInput
+  >;
+  @Field(() => InvestmentWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+}
+
+@InputType()
+export class InvestmentCreateOrConnectWithoutAccountInput {
+  @Field(() => InvestmentWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentCreateWithoutAccountInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutAccountInput>;
+}
+
+@InputType()
+export class InvestmentCreateOrConnectWithoutTransactionsInput {
+  @Field(() => InvestmentWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentCreateWithoutTransactionsInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutTransactionsInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutTransactionsInput>;
+}
+
+@InputType()
 export class InvestmentCreateOrConnectWithoutUserInput {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
@@ -3322,6 +3826,84 @@ export class InvestmentCreateOrConnectWithoutUserInput {
   @Field(() => InvestmentCreateWithoutUserInput, { nullable: false })
   @Type(() => InvestmentCreateWithoutUserInput)
   create!: InstanceType<typeof InvestmentCreateWithoutUserInput>;
+}
+
+@InputType()
+export class InvestmentCreateWithoutAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
+  @Field(() => Regime, { nullable: false })
+  regimeName!: keyof typeof Regime;
+  @Field(() => Float, { nullable: true })
+  regimePercentage?: number;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutInvestmentsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutInvestmentsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInvestmentsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutInvestmentInput
+  >;
+}
+
+@InputType()
+export class InvestmentCreateWithoutTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
+  @Field(() => Regime, { nullable: false })
+  regimeName!: keyof typeof Regime;
+  @Field(() => Float, { nullable: true })
+  regimePercentage?: number;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutInvestmentsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutInvestmentsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInvestmentsInput>;
+  @Field(() => AccountCreateNestedOneWithoutInvestmentsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutInvestmentsInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutInvestmentsInput>;
 }
 
 @InputType()
@@ -3342,6 +3924,8 @@ export class InvestmentCreateWithoutUserInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -3350,6 +3934,18 @@ export class InvestmentCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutInvestmentsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutInvestmentsInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutInvestmentsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutInvestmentInput
+  >;
 }
 
 @InputType()
@@ -3370,6 +3966,8 @@ export class InvestmentCreateInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
@@ -3381,6 +3979,18 @@ export class InvestmentCreateInput {
   @Field(() => UserCreateNestedOneWithoutInvestmentsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutInvestmentsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutInvestmentsInput>;
+  @Field(() => AccountCreateNestedOneWithoutInvestmentsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutInvestmentsInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutInvestmentsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutInvestmentInput
+  >;
 }
 
 @ArgsType()
@@ -3428,12 +4038,16 @@ export class InvestmentGroupBy {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: false })
+  status!: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
   userId!: string;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
@@ -3479,11 +4093,15 @@ export class InvestmentMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -3508,12 +4126,16 @@ export class InvestmentMaxAggregate {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: true })
   userId?: string;
+  @Field(() => String, { nullable: true })
+  accountId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3539,11 +4161,15 @@ export class InvestmentMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3569,11 +4195,15 @@ export class InvestmentMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   lastCorrectedAt?: true;
   @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
   regimeName?: true;
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -3598,12 +4228,16 @@ export class InvestmentMinAggregate {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: true })
   regimeName?: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: true })
   userId?: string;
+  @Field(() => String, { nullable: true })
+  accountId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3629,11 +4263,15 @@ export class InvestmentMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   lastCorrectedAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3665,11 +4303,15 @@ export class InvestmentOrderByWithAggregationInput {
   @Field(() => SortOrderInput, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   regimePercentage?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3705,11 +4347,15 @@ export class InvestmentOrderByWithRelationInput {
   @Field(() => SortOrderInput, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   regimeName?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   regimePercentage?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3717,6 +4363,24 @@ export class InvestmentOrderByWithRelationInput {
   @Field(() => UserOrderByWithRelationInput, { nullable: true })
   @Type(() => UserOrderByWithRelationInput)
   user?: InstanceType<typeof UserOrderByWithRelationInput>;
+  @Field(() => AccountOrderByWithRelationInput, { nullable: true })
+  @Type(() => AccountOrderByWithRelationInput)
+  account?: InstanceType<typeof AccountOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionOrderByRelationAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByRelationAggregateInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionOrderByRelationAggregateInput
+  >;
+}
+
+@InputType()
+export class InvestmentRelationFilter {
+  @Field(() => InvestmentWhereInput, { nullable: true })
+  is?: InstanceType<typeof InvestmentWhereInput>;
+  @Field(() => InvestmentWhereInput, { nullable: true })
+  isNot?: InstanceType<typeof InvestmentWhereInput>;
 }
 
 @InputType()
@@ -3743,12 +4407,16 @@ export class InvestmentScalarWhereWithAggregatesInput {
   finishedAt?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
   @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => EnumInvestmentStatusWithAggregatesFilter, { nullable: true })
+  status?: InstanceType<typeof EnumInvestmentStatusWithAggregatesFilter>;
   @Field(() => EnumRegimeWithAggregatesFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeWithAggregatesFilter>;
   @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   userId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -3779,12 +4447,16 @@ export class InvestmentScalarWhereInput {
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => EnumInvestmentStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumInvestmentStatusFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -3834,6 +4506,24 @@ export class InvestmentSumOrderByAggregateInput {
 }
 
 @InputType()
+export class InvestmentUncheckedCreateNestedManyWithoutAccountInput {
+  @Field(() => [InvestmentCreateWithoutAccountInput], { nullable: true })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create?: Array<InvestmentCreateWithoutAccountInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutAccountInput>;
+  @Field(() => InvestmentCreateManyAccountInputEnvelope, { nullable: true })
+  @Type(() => InvestmentCreateManyAccountInputEnvelope)
+  createMany?: InstanceType<typeof InvestmentCreateManyAccountInputEnvelope>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
 export class InvestmentUncheckedCreateNestedManyWithoutUserInput {
   @Field(() => [InvestmentCreateWithoutUserInput], { nullable: true })
   @Type(() => InvestmentCreateWithoutUserInput)
@@ -3847,6 +4537,82 @@ export class InvestmentUncheckedCreateNestedManyWithoutUserInput {
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class InvestmentUncheckedCreateWithoutAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
+  @Field(() => Regime, { nullable: false })
+  regimeName!: keyof typeof Regime;
+  @Field(() => Float, { nullable: true })
+  regimePercentage?: number;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput
+  >;
+}
+
+@InputType()
+export class InvestmentUncheckedCreateWithoutTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+  @Field(() => Float, { nullable: true })
+  correctedAmount?: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
+  @Field(() => Int, { nullable: true })
+  duration?: number;
+  @Field(() => Date, { nullable: true })
+  finishedAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
+  @Field(() => Regime, { nullable: false })
+  regimeName!: keyof typeof Regime;
+  @Field(() => Float, { nullable: true })
+  regimePercentage?: number;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
 }
 
 @InputType()
@@ -3867,14 +4633,28 @@ export class InvestmentUncheckedCreateWithoutUserInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput
+  >;
 }
 
 @InputType()
@@ -3895,16 +4675,115 @@ export class InvestmentUncheckedCreateInput {
   finishedAt?: Date | string;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt?: Date | string;
+  @Field(() => InvestmentStatus, { nullable: true })
+  status?: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
   userId!: string;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput
+  >;
+}
+
+@InputType()
+export class InvestmentUncheckedUpdateManyWithoutAccountNestedInput {
+  @Field(() => [InvestmentCreateWithoutAccountInput], { nullable: true })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create?: Array<InvestmentCreateWithoutAccountInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutAccountInput>;
+  @Field(() => [InvestmentUpsertWithWhereUniqueWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpsertWithWhereUniqueWithoutAccountInput)
+  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutAccountInput>;
+  @Field(() => InvestmentCreateManyAccountInputEnvelope, { nullable: true })
+  @Type(() => InvestmentCreateManyAccountInputEnvelope)
+  createMany?: InstanceType<typeof InvestmentCreateManyAccountInputEnvelope>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentUpdateWithWhereUniqueWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateWithWhereUniqueWithoutAccountInput)
+  update?: Array<InvestmentUpdateWithWhereUniqueWithoutAccountInput>;
+  @Field(() => [InvestmentUpdateManyWithWhereWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithWhereWithoutAccountInput)
+  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutAccountInput>;
+  @Field(() => [InvestmentScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentScalarWhereInput)
+  deleteMany?: Array<InvestmentScalarWhereInput>;
+}
+
+@InputType()
+export class InvestmentUncheckedUpdateManyWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
+  amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
+  regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  regimePercentage?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
 }
 
 @InputType()
@@ -3972,12 +4851,18 @@ export class InvestmentUncheckedUpdateManyWithoutUserInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
   regimePercentage?: InstanceType<
     typeof NullableFloatFieldUpdateOperationsInput
   >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4006,6 +4891,10 @@ export class InvestmentUncheckedUpdateManyInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -4014,6 +4903,100 @@ export class InvestmentUncheckedUpdateManyInput {
   >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentUncheckedUpdateWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
+  amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
+  regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  regimePercentage?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentUncheckedUpdateWithoutTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
+  amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
+  regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  regimePercentage?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4042,16 +5025,32 @@ export class InvestmentUncheckedUpdateWithoutUserInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
   regimePercentage?: InstanceType<
     typeof NullableFloatFieldUpdateOperationsInput
   >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput
+  >;
 }
 
 @InputType()
@@ -4076,6 +5075,10 @@ export class InvestmentUncheckedUpdateInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -4084,10 +5087,22 @@ export class InvestmentUncheckedUpdateInput {
   >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput,
+  )
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput
+  >;
 }
 
 @InputType()
@@ -4112,6 +5127,10 @@ export class InvestmentUpdateManyMutationInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -4125,6 +5144,16 @@ export class InvestmentUpdateManyMutationInput {
 }
 
 @InputType()
+export class InvestmentUpdateManyWithWhereWithoutAccountInput {
+  @Field(() => InvestmentScalarWhereInput, { nullable: false })
+  @Type(() => InvestmentScalarWhereInput)
+  where!: InstanceType<typeof InvestmentScalarWhereInput>;
+  @Field(() => InvestmentUpdateManyMutationInput, { nullable: false })
+  @Type(() => InvestmentUpdateManyMutationInput)
+  data!: InstanceType<typeof InvestmentUpdateManyMutationInput>;
+}
+
+@InputType()
 export class InvestmentUpdateManyWithWhereWithoutUserInput {
   @Field(() => InvestmentScalarWhereInput, { nullable: false })
   @Type(() => InvestmentScalarWhereInput)
@@ -4132,6 +5161,51 @@ export class InvestmentUpdateManyWithWhereWithoutUserInput {
   @Field(() => InvestmentUpdateManyMutationInput, { nullable: false })
   @Type(() => InvestmentUpdateManyMutationInput)
   data!: InstanceType<typeof InvestmentUpdateManyMutationInput>;
+}
+
+@InputType()
+export class InvestmentUpdateManyWithoutAccountNestedInput {
+  @Field(() => [InvestmentCreateWithoutAccountInput], { nullable: true })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create?: Array<InvestmentCreateWithoutAccountInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutAccountInput>;
+  @Field(() => [InvestmentUpsertWithWhereUniqueWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpsertWithWhereUniqueWithoutAccountInput)
+  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutAccountInput>;
+  @Field(() => InvestmentCreateManyAccountInputEnvelope, { nullable: true })
+  @Type(() => InvestmentCreateManyAccountInputEnvelope)
+  createMany?: InstanceType<typeof InvestmentCreateManyAccountInputEnvelope>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentUpdateWithWhereUniqueWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateWithWhereUniqueWithoutAccountInput)
+  update?: Array<InvestmentUpdateWithWhereUniqueWithoutAccountInput>;
+  @Field(() => [InvestmentUpdateManyWithWhereWithoutAccountInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithWhereWithoutAccountInput)
+  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutAccountInput>;
+  @Field(() => [InvestmentScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentScalarWhereInput)
+  deleteMany?: Array<InvestmentScalarWhereInput>;
 }
 
 @InputType()
@@ -4178,6 +5252,53 @@ export class InvestmentUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class InvestmentUpdateOneRequiredWithoutTransactionsNestedInput {
+  @Field(() => InvestmentCreateWithoutTransactionsInput, { nullable: true })
+  @Type(() => InvestmentCreateWithoutTransactionsInput)
+  create?: InstanceType<typeof InvestmentCreateWithoutTransactionsInput>;
+  @Field(() => InvestmentCreateOrConnectWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateOrConnectWithoutTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof InvestmentCreateOrConnectWithoutTransactionsInput
+  >;
+  @Field(() => InvestmentUpsertWithoutTransactionsInput, { nullable: true })
+  @Type(() => InvestmentUpsertWithoutTransactionsInput)
+  upsert?: InstanceType<typeof InvestmentUpsertWithoutTransactionsInput>;
+  @Field(() => InvestmentWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentWhereUniqueInput)
+  connect?: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentUpdateToOneWithWhereWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateToOneWithWhereWithoutTransactionsInput)
+  update?: InstanceType<
+    typeof InvestmentUpdateToOneWithWhereWithoutTransactionsInput
+  >;
+}
+
+@InputType()
+export class InvestmentUpdateToOneWithWhereWithoutTransactionsInput {
+  @Field(() => InvestmentWhereInput, { nullable: true })
+  @Type(() => InvestmentWhereInput)
+  where?: InstanceType<typeof InvestmentWhereInput>;
+  @Field(() => InvestmentUpdateWithoutTransactionsInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutTransactionsInput)
+  data!: InstanceType<typeof InvestmentUpdateWithoutTransactionsInput>;
+}
+
+@InputType()
+export class InvestmentUpdateWithWhereUniqueWithoutAccountInput {
+  @Field(() => InvestmentWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutAccountInput)
+  data!: InstanceType<typeof InvestmentUpdateWithoutAccountInput>;
+}
+
+@InputType()
 export class InvestmentUpdateWithWhereUniqueWithoutUserInput {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
@@ -4185,6 +5306,110 @@ export class InvestmentUpdateWithWhereUniqueWithoutUserInput {
   @Field(() => InvestmentUpdateWithoutUserInput, { nullable: false })
   @Type(() => InvestmentUpdateWithoutUserInput)
   data!: InstanceType<typeof InvestmentUpdateWithoutUserInput>;
+}
+
+@InputType()
+export class InvestmentUpdateWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
+  amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
+  regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  regimePercentage?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutInvestmentsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutInvestmentsNestedInput)
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutInvestmentsNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutInvestmentNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentUpdateWithoutTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
+  amount?: InstanceType<typeof FloatFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  correctedAmount?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  taxedAmount?: InstanceType<typeof NullableFloatFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  duration?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  finishedAt?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  lastCorrectedAt?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
+  regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
+  @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
+  regimePercentage?: InstanceType<
+    typeof NullableFloatFieldUpdateOperationsInput
+  >;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutInvestmentsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutInvestmentsNestedInput)
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutInvestmentsNestedInput
+  >;
+  @Field(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutInvestmentsNestedInput
+  >;
 }
 
 @InputType()
@@ -4209,6 +5434,10 @@ export class InvestmentUpdateWithoutUserInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -4219,6 +5448,20 @@ export class InvestmentUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutInvestmentsNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutInvestmentNestedInput
+  >;
 }
 
 @InputType()
@@ -4243,6 +5486,10 @@ export class InvestmentUpdateInput {
   lastCorrectedAt?: InstanceType<
     typeof NullableDateTimeFieldUpdateOperationsInput
   >;
+  @Field(() => EnumInvestmentStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumInvestmentStatusFieldUpdateOperationsInput>;
   @Field(() => EnumRegimeFieldUpdateOperationsInput, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFieldUpdateOperationsInput>;
   @Field(() => NullableFloatFieldUpdateOperationsInput, { nullable: true })
@@ -4260,6 +5507,33 @@ export class InvestmentUpdateInput {
   user?: InstanceType<
     typeof UserUpdateOneRequiredWithoutInvestmentsNestedInput
   >;
+  @Field(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutInvestmentsNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutInvestmentsNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput)
+  transactions?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutInvestmentNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentUpsertWithWhereUniqueWithoutAccountInput {
+  @Field(() => InvestmentWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutAccountInput)
+  update!: InstanceType<typeof InvestmentUpdateWithoutAccountInput>;
+  @Field(() => InvestmentCreateWithoutAccountInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutAccountInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutAccountInput>;
 }
 
 @InputType()
@@ -4273,6 +5547,19 @@ export class InvestmentUpsertWithWhereUniqueWithoutUserInput {
   @Field(() => InvestmentCreateWithoutUserInput, { nullable: false })
   @Type(() => InvestmentCreateWithoutUserInput)
   create!: InstanceType<typeof InvestmentCreateWithoutUserInput>;
+}
+
+@InputType()
+export class InvestmentUpsertWithoutTransactionsInput {
+  @Field(() => InvestmentUpdateWithoutTransactionsInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutTransactionsInput)
+  update!: InstanceType<typeof InvestmentUpdateWithoutTransactionsInput>;
+  @Field(() => InvestmentCreateWithoutTransactionsInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutTransactionsInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutTransactionsInput>;
+  @Field(() => InvestmentWhereInput, { nullable: true })
+  @Type(() => InvestmentWhereInput)
+  where?: InstanceType<typeof InvestmentWhereInput>;
 }
 
 @InputType()
@@ -4299,12 +5586,16 @@ export class InvestmentWhereUniqueInput {
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => EnumInvestmentStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumInvestmentStatusFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -4312,6 +5603,12 @@ export class InvestmentWhereUniqueInput {
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
+  @Field(() => AccountRelationFilter, { nullable: true })
+  @Type(() => AccountRelationFilter)
+  account?: InstanceType<typeof AccountRelationFilter>;
+  @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
+  @Type(() => InvestmentTransactionListRelationFilter)
+  transactions?: InstanceType<typeof InvestmentTransactionListRelationFilter>;
 }
 
 @InputType()
@@ -4338,12 +5635,16 @@ export class InvestmentWhereInput {
   finishedAt?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => DateTimeNullableFilter, { nullable: true })
   lastCorrectedAt?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => EnumInvestmentStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumInvestmentStatusFilter>;
   @Field(() => EnumRegimeFilter, { nullable: true })
   regimeName?: InstanceType<typeof EnumRegimeFilter>;
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -4351,6 +5652,12 @@ export class InvestmentWhereInput {
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
+  @Field(() => AccountRelationFilter, { nullable: true })
+  @Type(() => AccountRelationFilter)
+  account?: InstanceType<typeof AccountRelationFilter>;
+  @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
+  @Type(() => InvestmentTransactionListRelationFilter)
+  transactions?: InstanceType<typeof InvestmentTransactionListRelationFilter>;
 }
 
 @ObjectType()
@@ -4371,18 +5678,28 @@ export class Investment {
   finishedAt!: Date | null;
   @Field(() => Date, { nullable: true })
   lastCorrectedAt!: Date | null;
+  @Field(() => InvestmentStatus, { nullable: false, defaultValue: 'OPEN' })
+  status!: keyof typeof InvestmentStatus;
   @Field(() => Regime, { nullable: false })
   regimeName!: keyof typeof Regime;
   @Field(() => Float, { nullable: true, defaultValue: 100 })
   regimePercentage!: number | null;
   @Field(() => String, { nullable: false })
   userId!: string;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
   @Field(() => User, { nullable: false })
   user?: InstanceType<typeof User>;
+  @Field(() => Account, { nullable: false })
+  account?: InstanceType<typeof Account>;
+  @Field(() => [InvestmentTransaction], { nullable: true })
+  transactions?: Array<InvestmentTransaction>;
+  @Field(() => InvestmentCount, { nullable: false })
+  _count?: InstanceType<typeof InvestmentCount>;
 }
 
 @ArgsType()
@@ -4418,6 +5735,1608 @@ export class UpsertOneInvestmentArgs {
   @Field(() => InvestmentUpdateInput, { nullable: false })
   @Type(() => InvestmentUpdateInput)
   update!: InstanceType<typeof InvestmentUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ObjectType()
+export class AggregateInvestmentTransaction {
+  @Field(() => InvestmentTransactionCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof InvestmentTransactionCountAggregate>;
+  @Field(() => InvestmentTransactionAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof InvestmentTransactionAvgAggregate>;
+  @Field(() => InvestmentTransactionSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof InvestmentTransactionSumAggregate>;
+  @Field(() => InvestmentTransactionMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof InvestmentTransactionMinAggregate>;
+  @Field(() => InvestmentTransactionMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof InvestmentTransactionMaxAggregate>;
+}
+
+@ArgsType()
+export class CreateManyInvestmentTransactionArgs {
+  @Field(() => [InvestmentTransactionCreateManyInput], { nullable: false })
+  @Type(() => InvestmentTransactionCreateManyInput)
+  data!: Array<InvestmentTransactionCreateManyInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@ArgsType()
+export class CreateOneInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionCreateInput, { nullable: false })
+  @Type(() => InvestmentTransactionCreateInput)
+  data!: InstanceType<typeof InvestmentTransactionCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class DeleteManyInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+}
+
+@ArgsType()
+export class DeleteOneInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstInvestmentTransactionOrThrowArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionOrderByWithRelationInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByWithRelationInput)
+  orderBy?: Array<InvestmentTransactionOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  cursor?: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [InvestmentTransactionScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InvestmentTransactionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionOrderByWithRelationInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByWithRelationInput)
+  orderBy?: Array<InvestmentTransactionOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  cursor?: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [InvestmentTransactionScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InvestmentTransactionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindManyInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionOrderByWithRelationInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByWithRelationInput)
+  orderBy?: Array<InvestmentTransactionOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  cursor?: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [InvestmentTransactionScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InvestmentTransactionScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueInvestmentTransactionOrThrowArgs {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class InvestmentTransactionAggregateArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionOrderByWithRelationInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByWithRelationInput)
+  orderBy?: Array<InvestmentTransactionOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  cursor?: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => InvestmentTransactionCountAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionCountAggregateInput)
+  _count?: InstanceType<typeof InvestmentTransactionCountAggregateInput>;
+  @Field(() => InvestmentTransactionAvgAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionAvgAggregateInput)
+  _avg?: InstanceType<typeof InvestmentTransactionAvgAggregateInput>;
+  @Field(() => InvestmentTransactionSumAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionSumAggregateInput)
+  _sum?: InstanceType<typeof InvestmentTransactionSumAggregateInput>;
+  @Field(() => InvestmentTransactionMinAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionMinAggregateInput)
+  _min?: InstanceType<typeof InvestmentTransactionMinAggregateInput>;
+  @Field(() => InvestmentTransactionMaxAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionMaxAggregateInput)
+  _max?: InstanceType<typeof InvestmentTransactionMaxAggregateInput>;
+}
+
+@InputType()
+export class InvestmentTransactionAvgAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  amount?: true;
+}
+
+@ObjectType()
+export class InvestmentTransactionAvgAggregate {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  amount?: Decimal;
+}
+
+@InputType()
+export class InvestmentTransactionAvgOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionCountAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  role?: true;
+  @Field(() => Boolean, { nullable: true })
+  amount?: true;
+  @Field(() => Boolean, { nullable: true })
+  investmentId?: true;
+  @Field(() => Boolean, { nullable: true })
+  transactionId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  _all?: true;
+}
+
+@ObjectType()
+export class InvestmentTransactionCountAggregate {
+  @Field(() => Int, { nullable: false })
+  id!: number;
+  @Field(() => Int, { nullable: false })
+  role!: number;
+  @Field(() => Int, { nullable: false })
+  amount!: number;
+  @Field(() => Int, { nullable: false })
+  investmentId!: number;
+  @Field(() => Int, { nullable: false })
+  transactionId!: number;
+  @Field(() => Int, { nullable: false })
+  createdAt!: number;
+  @Field(() => Int, { nullable: false })
+  updatedAt!: number;
+  @Field(() => Int, { nullable: false })
+  _all!: number;
+}
+
+@InputType()
+export class InvestmentTransactionCountOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  role?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  investmentId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  transactionId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionCreateManyInvestmentInputEnvelope {
+  @Field(() => [InvestmentTransactionCreateManyInvestmentInput], {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateManyInvestmentInput)
+  data!: Array<InvestmentTransactionCreateManyInvestmentInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class InvestmentTransactionCreateManyInvestmentInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionCreateManyTransactionInputEnvelope {
+  @Field(() => [InvestmentTransactionCreateManyTransactionInput], {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateManyTransactionInput)
+  data!: Array<InvestmentTransactionCreateManyTransactionInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class InvestmentTransactionCreateManyTransactionInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionCreateManyInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionCreateNestedManyWithoutInvestmentInput {
+  @Field(() => [InvestmentTransactionCreateWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create?: Array<InvestmentTransactionCreateWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutInvestmentInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutInvestmentInput>;
+  @Field(() => InvestmentTransactionCreateManyInvestmentInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyInvestmentInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyInvestmentInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class InvestmentTransactionCreateNestedManyWithoutTransactionInput {
+  @Field(() => [InvestmentTransactionCreateWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create?: Array<InvestmentTransactionCreateWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutTransactionInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutTransactionInput>;
+  @Field(() => InvestmentTransactionCreateManyTransactionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyTransactionInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyTransactionInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class InvestmentTransactionCreateOrConnectWithoutInvestmentInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionCreateWithoutInvestmentInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create!: InstanceType<
+    typeof InvestmentTransactionCreateWithoutInvestmentInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionCreateOrConnectWithoutTransactionInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionCreateWithoutTransactionInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create!: InstanceType<
+    typeof InvestmentTransactionCreateWithoutTransactionInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionCreateWithoutInvestmentInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionCreateNestedOneWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionCreateNestedOneWithoutInvestmentLinksInput)
+  transaction!: InstanceType<
+    typeof TransactionCreateNestedOneWithoutInvestmentLinksInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionCreateWithoutTransactionInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => InvestmentCreateNestedOneWithoutTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentCreateNestedOneWithoutTransactionsInput)
+  investment!: InstanceType<
+    typeof InvestmentCreateNestedOneWithoutTransactionsInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => InvestmentCreateNestedOneWithoutTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentCreateNestedOneWithoutTransactionsInput)
+  investment!: InstanceType<
+    typeof InvestmentCreateNestedOneWithoutTransactionsInput
+  >;
+  @Field(() => TransactionCreateNestedOneWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionCreateNestedOneWithoutInvestmentLinksInput)
+  transaction!: InstanceType<
+    typeof TransactionCreateNestedOneWithoutInvestmentLinksInput
+  >;
+}
+
+@ArgsType()
+export class InvestmentTransactionGroupByArgs {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionOrderByWithAggregationInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByWithAggregationInput)
+  orderBy?: Array<InvestmentTransactionOrderByWithAggregationInput>;
+  @Field(() => [InvestmentTransactionScalarFieldEnum], { nullable: false })
+  by!: Array<keyof typeof InvestmentTransactionScalarFieldEnum>;
+  @Field(() => InvestmentTransactionScalarWhereWithAggregatesInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionScalarWhereWithAggregatesInput)
+  having?: InstanceType<
+    typeof InvestmentTransactionScalarWhereWithAggregatesInput
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => InvestmentTransactionCountAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionCountAggregateInput)
+  _count?: InstanceType<typeof InvestmentTransactionCountAggregateInput>;
+  @Field(() => InvestmentTransactionAvgAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionAvgAggregateInput)
+  _avg?: InstanceType<typeof InvestmentTransactionAvgAggregateInput>;
+  @Field(() => InvestmentTransactionSumAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionSumAggregateInput)
+  _sum?: InstanceType<typeof InvestmentTransactionSumAggregateInput>;
+  @Field(() => InvestmentTransactionMinAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionMinAggregateInput)
+  _min?: InstanceType<typeof InvestmentTransactionMinAggregateInput>;
+  @Field(() => InvestmentTransactionMaxAggregateInput, { nullable: true })
+  @Type(() => InvestmentTransactionMaxAggregateInput)
+  _max?: InstanceType<typeof InvestmentTransactionMaxAggregateInput>;
+}
+
+@ObjectType()
+export class InvestmentTransactionGroupBy {
+  @Field(() => String, { nullable: false })
+  id!: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date | string;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date | string;
+  @Field(() => InvestmentTransactionCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof InvestmentTransactionCountAggregate>;
+  @Field(() => InvestmentTransactionAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof InvestmentTransactionAvgAggregate>;
+  @Field(() => InvestmentTransactionSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof InvestmentTransactionSumAggregate>;
+  @Field(() => InvestmentTransactionMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof InvestmentTransactionMinAggregate>;
+  @Field(() => InvestmentTransactionMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof InvestmentTransactionMaxAggregate>;
+}
+
+@InputType()
+export class InvestmentTransactionListRelationFilter {
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  every?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  some?: InstanceType<typeof InvestmentTransactionWhereInput>;
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  none?: InstanceType<typeof InvestmentTransactionWhereInput>;
+}
+
+@InputType()
+export class InvestmentTransactionMaxAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  role?: true;
+  @Field(() => Boolean, { nullable: true })
+  amount?: true;
+  @Field(() => Boolean, { nullable: true })
+  investmentId?: true;
+  @Field(() => Boolean, { nullable: true })
+  transactionId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class InvestmentTransactionMaxAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  role?: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  amount?: Decimal;
+  @Field(() => String, { nullable: true })
+  investmentId?: string;
+  @Field(() => String, { nullable: true })
+  transactionId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionMaxOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  role?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  investmentId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  transactionId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionMinAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  role?: true;
+  @Field(() => Boolean, { nullable: true })
+  amount?: true;
+  @Field(() => Boolean, { nullable: true })
+  investmentId?: true;
+  @Field(() => Boolean, { nullable: true })
+  transactionId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class InvestmentTransactionMinAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  role?: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  amount?: Decimal;
+  @Field(() => String, { nullable: true })
+  investmentId?: string;
+  @Field(() => String, { nullable: true })
+  transactionId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionMinOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  role?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  investmentId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  transactionId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionOrderByRelationAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  _count?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionOrderByWithAggregationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  role?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  investmentId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  transactionId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => InvestmentTransactionCountOrderByAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCountOrderByAggregateInput)
+  _count?: InstanceType<typeof InvestmentTransactionCountOrderByAggregateInput>;
+  @Field(() => InvestmentTransactionAvgOrderByAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionAvgOrderByAggregateInput)
+  _avg?: InstanceType<typeof InvestmentTransactionAvgOrderByAggregateInput>;
+  @Field(() => InvestmentTransactionMaxOrderByAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionMaxOrderByAggregateInput)
+  _max?: InstanceType<typeof InvestmentTransactionMaxOrderByAggregateInput>;
+  @Field(() => InvestmentTransactionMinOrderByAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionMinOrderByAggregateInput)
+  _min?: InstanceType<typeof InvestmentTransactionMinOrderByAggregateInput>;
+  @Field(() => InvestmentTransactionSumOrderByAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionSumOrderByAggregateInput)
+  _sum?: InstanceType<typeof InvestmentTransactionSumOrderByAggregateInput>;
+}
+
+@InputType()
+export class InvestmentTransactionOrderByWithRelationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  role?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  investmentId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  transactionId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => InvestmentOrderByWithRelationInput, { nullable: true })
+  @Type(() => InvestmentOrderByWithRelationInput)
+  investment?: InstanceType<typeof InvestmentOrderByWithRelationInput>;
+  @Field(() => TransactionOrderByWithRelationInput, { nullable: true })
+  @Type(() => TransactionOrderByWithRelationInput)
+  transaction?: InstanceType<typeof TransactionOrderByWithRelationInput>;
+}
+
+@InputType()
+export class InvestmentTransactionScalarWhereWithAggregatesInput {
+  @Field(() => [InvestmentTransactionScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionScalarWhereWithAggregatesInput)
+  AND?: Array<InvestmentTransactionScalarWhereWithAggregatesInput>;
+  @Field(() => [InvestmentTransactionScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionScalarWhereWithAggregatesInput)
+  OR?: Array<InvestmentTransactionScalarWhereWithAggregatesInput>;
+  @Field(() => [InvestmentTransactionScalarWhereWithAggregatesInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionScalarWhereWithAggregatesInput)
+  NOT?: Array<InvestmentTransactionScalarWhereWithAggregatesInput>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  id?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => EnumInvestmentTransactionRoleWithAggregatesFilter, {
+    nullable: true,
+  })
+  role?: InstanceType<typeof EnumInvestmentTransactionRoleWithAggregatesFilter>;
+  @Field(() => DecimalWithAggregatesFilter, { nullable: true })
+  @Type(() => DecimalWithAggregatesFilter)
+  amount?: InstanceType<typeof DecimalWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  investmentId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  transactionId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+}
+
+@InputType()
+export class InvestmentTransactionScalarWhereInput {
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  AND?: Array<InvestmentTransactionScalarWhereInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  OR?: Array<InvestmentTransactionScalarWhereInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  NOT?: Array<InvestmentTransactionScalarWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => EnumInvestmentTransactionRoleFilter, { nullable: true })
+  role?: InstanceType<typeof EnumInvestmentTransactionRoleFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  amount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  investmentId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  transactionId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+}
+
+@InputType()
+export class InvestmentTransactionSumAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  amount?: true;
+}
+
+@ObjectType()
+export class InvestmentTransactionSumAggregate {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  amount?: Decimal;
+}
+
+@InputType()
+export class InvestmentTransactionSumOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  amount?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedCreateNestedManyWithoutInvestmentInput {
+  @Field(() => [InvestmentTransactionCreateWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create?: Array<InvestmentTransactionCreateWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutInvestmentInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutInvestmentInput>;
+  @Field(() => InvestmentTransactionCreateManyInvestmentInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyInvestmentInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyInvestmentInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput {
+  @Field(() => [InvestmentTransactionCreateWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create?: Array<InvestmentTransactionCreateWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutTransactionInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutTransactionInput>;
+  @Field(() => InvestmentTransactionCreateManyTransactionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyTransactionInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyTransactionInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedCreateWithoutInvestmentInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedCreateWithoutTransactionInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateManyWithoutInvestmentNestedInput {
+  @Field(() => [InvestmentTransactionCreateWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create?: Array<InvestmentTransactionCreateWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutInvestmentInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutInvestmentInput>;
+  @Field(
+    () => [InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput)
+  upsert?: Array<InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput>;
+  @Field(() => InvestmentTransactionCreateManyInvestmentInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyInvestmentInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyInvestmentInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(
+    () => [InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput)
+  update?: Array<InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput>;
+  @Field(
+    () => [InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput)
+  updateMany?: Array<InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  deleteMany?: Array<InvestmentTransactionScalarWhereInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateManyWithoutInvestmentInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  transactionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput {
+  @Field(() => [InvestmentTransactionCreateWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create?: Array<InvestmentTransactionCreateWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutTransactionInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutTransactionInput>;
+  @Field(
+    () => [InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput)
+  upsert?: Array<InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput>;
+  @Field(() => InvestmentTransactionCreateManyTransactionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyTransactionInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyTransactionInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(
+    () => [InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput)
+  update?: Array<InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput>;
+  @Field(
+    () => [InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput)
+  updateMany?: Array<InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  deleteMany?: Array<InvestmentTransactionScalarWhereInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateManyWithoutTransactionInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  investmentId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateManyInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  investmentId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  transactionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateWithoutInvestmentInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  transactionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateWithoutTransactionInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  investmentId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUncheckedUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  investmentId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  transactionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateManyMutationInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput {
+  @Field(() => InvestmentTransactionScalarWhereInput, { nullable: false })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  where!: InstanceType<typeof InvestmentTransactionScalarWhereInput>;
+  @Field(() => InvestmentTransactionUpdateManyMutationInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateManyMutationInput)
+  data!: InstanceType<typeof InvestmentTransactionUpdateManyMutationInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput {
+  @Field(() => InvestmentTransactionScalarWhereInput, { nullable: false })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  where!: InstanceType<typeof InvestmentTransactionScalarWhereInput>;
+  @Field(() => InvestmentTransactionUpdateManyMutationInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateManyMutationInput)
+  data!: InstanceType<typeof InvestmentTransactionUpdateManyMutationInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateManyWithoutInvestmentNestedInput {
+  @Field(() => [InvestmentTransactionCreateWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create?: Array<InvestmentTransactionCreateWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutInvestmentInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutInvestmentInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutInvestmentInput>;
+  @Field(
+    () => [InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput)
+  upsert?: Array<InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput>;
+  @Field(() => InvestmentTransactionCreateManyInvestmentInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyInvestmentInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyInvestmentInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(
+    () => [InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput)
+  update?: Array<InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput>;
+  @Field(
+    () => [InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput)
+  updateMany?: Array<InvestmentTransactionUpdateManyWithWhereWithoutInvestmentInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  deleteMany?: Array<InvestmentTransactionScalarWhereInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateManyWithoutTransactionNestedInput {
+  @Field(() => [InvestmentTransactionCreateWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create?: Array<InvestmentTransactionCreateWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionCreateOrConnectWithoutTransactionInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateOrConnectWithoutTransactionInput)
+  connectOrCreate?: Array<InvestmentTransactionCreateOrConnectWithoutTransactionInput>;
+  @Field(
+    () => [InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput)
+  upsert?: Array<InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput>;
+  @Field(() => InvestmentTransactionCreateManyTransactionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateManyTransactionInputEnvelope)
+  createMany?: InstanceType<
+    typeof InvestmentTransactionCreateManyTransactionInputEnvelope
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>
+  >;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [InvestmentTransactionWhereUniqueInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>>;
+  @Field(
+    () => [InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput)
+  update?: Array<InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput>;
+  @Field(
+    () => [InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput],
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput)
+  updateMany?: Array<InvestmentTransactionUpdateManyWithWhereWithoutTransactionInput>;
+  @Field(() => [InvestmentTransactionScalarWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionScalarWhereInput)
+  deleteMany?: Array<InvestmentTransactionScalarWhereInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateWithWhereUniqueWithoutInvestmentInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionUpdateWithoutInvestmentInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateWithoutInvestmentInput)
+  data!: InstanceType<typeof InvestmentTransactionUpdateWithoutInvestmentInput>;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateWithWhereUniqueWithoutTransactionInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionUpdateWithoutTransactionInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateWithoutTransactionInput)
+  data!: InstanceType<
+    typeof InvestmentTransactionUpdateWithoutTransactionInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateWithoutInvestmentInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput)
+  transaction?: InstanceType<
+    typeof TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateWithoutTransactionInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => InvestmentUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateOneRequiredWithoutTransactionsNestedInput)
+  investment?: InstanceType<
+    typeof InvestmentUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumInvestmentTransactionRoleFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  role?: InstanceType<
+    typeof EnumInvestmentTransactionRoleFieldUpdateOperationsInput
+  >;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => InvestmentUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateOneRequiredWithoutTransactionsNestedInput)
+  investment?: InstanceType<
+    typeof InvestmentUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+  @Field(() => TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput)
+  transaction?: InstanceType<
+    typeof TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionUpsertWithWhereUniqueWithoutInvestmentInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionUpdateWithoutInvestmentInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateWithoutInvestmentInput)
+  update!: InstanceType<
+    typeof InvestmentTransactionUpdateWithoutInvestmentInput
+  >;
+  @Field(() => InvestmentTransactionCreateWithoutInvestmentInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutInvestmentInput)
+  create!: InstanceType<
+    typeof InvestmentTransactionCreateWithoutInvestmentInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionUpsertWithWhereUniqueWithoutTransactionInput {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionUpdateWithoutTransactionInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateWithoutTransactionInput)
+  update!: InstanceType<
+    typeof InvestmentTransactionUpdateWithoutTransactionInput
+  >;
+  @Field(() => InvestmentTransactionCreateWithoutTransactionInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionCreateWithoutTransactionInput)
+  create!: InstanceType<
+    typeof InvestmentTransactionCreateWithoutTransactionInput
+  >;
+}
+
+@InputType()
+export class InvestmentTransactionWhereUniqueInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  AND?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  OR?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  NOT?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => EnumInvestmentTransactionRoleFilter, { nullable: true })
+  role?: InstanceType<typeof EnumInvestmentTransactionRoleFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  amount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  investmentId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  transactionId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => InvestmentRelationFilter, { nullable: true })
+  @Type(() => InvestmentRelationFilter)
+  investment?: InstanceType<typeof InvestmentRelationFilter>;
+  @Field(() => TransactionRelationFilter, { nullable: true })
+  @Type(() => TransactionRelationFilter)
+  transaction?: InstanceType<typeof TransactionRelationFilter>;
+}
+
+@InputType()
+export class InvestmentTransactionWhereInput {
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  AND?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  OR?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => [InvestmentTransactionWhereInput], { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  NOT?: Array<InvestmentTransactionWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => EnumInvestmentTransactionRoleFilter, { nullable: true })
+  role?: InstanceType<typeof EnumInvestmentTransactionRoleFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  amount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  investmentId?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  transactionId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => InvestmentRelationFilter, { nullable: true })
+  @Type(() => InvestmentRelationFilter)
+  investment?: InstanceType<typeof InvestmentRelationFilter>;
+  @Field(() => TransactionRelationFilter, { nullable: true })
+  @Type(() => TransactionRelationFilter)
+  transaction?: InstanceType<typeof TransactionRelationFilter>;
+}
+
+@ObjectType()
+export class InvestmentTransaction {
+  @Field(() => ID, { nullable: false })
+  id!: string;
+  @Field(() => InvestmentTransactionRole, { nullable: false })
+  role!: keyof typeof InvestmentTransactionRole;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  amount!: Decimal;
+  @Field(() => String, { nullable: false })
+  investmentId!: string;
+  @Field(() => String, { nullable: false })
+  transactionId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date;
+  @Field(() => Investment, { nullable: false })
+  investment?: InstanceType<typeof Investment>;
+  @Field(() => Transaction, { nullable: false })
+  transaction?: InstanceType<typeof Transaction>;
+}
+
+@ArgsType()
+export class UpdateManyInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionUpdateManyMutationInput, {
+    nullable: false,
+  })
+  @Type(() => InvestmentTransactionUpdateManyMutationInput)
+  data!: InstanceType<typeof InvestmentTransactionUpdateManyMutationInput>;
+  @Field(() => InvestmentTransactionWhereInput, { nullable: true })
+  @Type(() => InvestmentTransactionWhereInput)
+  where?: InstanceType<typeof InvestmentTransactionWhereInput>;
+}
+
+@ArgsType()
+export class UpdateOneInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionUpdateInput, { nullable: false })
+  @Type(() => InvestmentTransactionUpdateInput)
+  data!: InstanceType<typeof InvestmentTransactionUpdateInput>;
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class UpsertOneInvestmentTransactionArgs {
+  @Field(() => InvestmentTransactionWhereUniqueInput, { nullable: false })
+  @Type(() => InvestmentTransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<InvestmentTransactionWhereUniqueInput, 'id'>;
+  @Field(() => InvestmentTransactionCreateInput, { nullable: false })
+  @Type(() => InvestmentTransactionCreateInput)
+  create!: InstanceType<typeof InvestmentTransactionCreateInput>;
+  @Field(() => InvestmentTransactionUpdateInput, { nullable: false })
+  @Type(() => InvestmentTransactionUpdateInput)
+  update!: InstanceType<typeof InvestmentTransactionUpdateInput>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -4690,6 +7609,84 @@ export class EnumAccountTypeWithAggregatesFilter {
   _min?: InstanceType<typeof NestedEnumAccountTypeFilter>;
   @Field(() => NestedEnumAccountTypeFilter, { nullable: true })
   _max?: InstanceType<typeof NestedEnumAccountTypeFilter>;
+}
+
+@InputType()
+export class EnumInvestmentStatusFieldUpdateOperationsInput {
+  @Field(() => InvestmentStatus, { nullable: true })
+  set?: keyof typeof InvestmentStatus;
+}
+
+@InputType()
+export class EnumInvestmentStatusFilter {
+  @Field(() => InvestmentStatus, { nullable: true })
+  equals?: keyof typeof InvestmentStatus;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  in?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+}
+
+@InputType()
+export class EnumInvestmentStatusWithAggregatesFilter {
+  @Field(() => InvestmentStatus, { nullable: true })
+  equals?: keyof typeof InvestmentStatus;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  in?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => NestedEnumInvestmentStatusWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumInvestmentStatusWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+}
+
+@InputType()
+export class EnumInvestmentTransactionRoleFieldUpdateOperationsInput {
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  set?: keyof typeof InvestmentTransactionRole;
+}
+
+@InputType()
+export class EnumInvestmentTransactionRoleFilter {
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  equals?: keyof typeof InvestmentTransactionRole;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  in?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+}
+
+@InputType()
+export class EnumInvestmentTransactionRoleWithAggregatesFilter {
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  equals?: keyof typeof InvestmentTransactionRole;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  in?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => NestedEnumInvestmentTransactionRoleWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<
+    typeof NestedEnumInvestmentTransactionRoleWithAggregatesFilter
+  >;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
 }
 
 @InputType()
@@ -5224,6 +8221,72 @@ export class NestedEnumAccountTypeWithAggregatesFilter {
   _min?: InstanceType<typeof NestedEnumAccountTypeFilter>;
   @Field(() => NestedEnumAccountTypeFilter, { nullable: true })
   _max?: InstanceType<typeof NestedEnumAccountTypeFilter>;
+}
+
+@InputType()
+export class NestedEnumInvestmentStatusFilter {
+  @Field(() => InvestmentStatus, { nullable: true })
+  equals?: keyof typeof InvestmentStatus;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  in?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+}
+
+@InputType()
+export class NestedEnumInvestmentStatusWithAggregatesFilter {
+  @Field(() => InvestmentStatus, { nullable: true })
+  equals?: keyof typeof InvestmentStatus;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  in?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => [InvestmentStatus], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentStatus>;
+  @Field(() => NestedEnumInvestmentStatusWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumInvestmentStatusWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+  @Field(() => NestedEnumInvestmentStatusFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumInvestmentStatusFilter>;
+}
+
+@InputType()
+export class NestedEnumInvestmentTransactionRoleFilter {
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  equals?: keyof typeof InvestmentTransactionRole;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  in?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+}
+
+@InputType()
+export class NestedEnumInvestmentTransactionRoleWithAggregatesFilter {
+  @Field(() => InvestmentTransactionRole, { nullable: true })
+  equals?: keyof typeof InvestmentTransactionRole;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  in?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => [InvestmentTransactionRole], { nullable: true })
+  notIn?: Array<keyof typeof InvestmentTransactionRole>;
+  @Field(() => NestedEnumInvestmentTransactionRoleWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<
+    typeof NestedEnumInvestmentTransactionRoleWithAggregatesFilter
+  >;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+  @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
 }
 
 @InputType()
@@ -6069,6 +9132,12 @@ export class TransactionCountOrderByAggregateInput {
   updatedAt?: keyof typeof SortOrder;
 }
 
+@ObjectType()
+export class TransactionCount {
+  @Field(() => Int, { nullable: false })
+  investmentLinks?: number;
+}
+
 @InputType()
 export class TransactionCreateManyAccountInputEnvelope {
   @Field(() => [TransactionCreateManyAccountInput], { nullable: false })
@@ -6196,6 +9265,23 @@ export class TransactionCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class TransactionCreateNestedOneWithoutInvestmentLinksInput {
+  @Field(() => TransactionCreateWithoutInvestmentLinksInput, { nullable: true })
+  @Type(() => TransactionCreateWithoutInvestmentLinksInput)
+  create?: InstanceType<typeof TransactionCreateWithoutInvestmentLinksInput>;
+  @Field(() => TransactionCreateOrConnectWithoutInvestmentLinksInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutInvestmentLinksInput)
+  connectOrCreate?: InstanceType<
+    typeof TransactionCreateOrConnectWithoutInvestmentLinksInput
+  >;
+  @Field(() => TransactionWhereUniqueInput, { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+}
+
+@InputType()
 export class TransactionCreateOrConnectWithoutAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
@@ -6203,6 +9289,18 @@ export class TransactionCreateOrConnectWithoutAccountInput {
   @Field(() => TransactionCreateWithoutAccountInput, { nullable: false })
   @Type(() => TransactionCreateWithoutAccountInput)
   create!: InstanceType<typeof TransactionCreateWithoutAccountInput>;
+}
+
+@InputType()
+export class TransactionCreateOrConnectWithoutInvestmentLinksInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionCreateWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionCreateWithoutInvestmentLinksInput)
+  create!: InstanceType<typeof TransactionCreateWithoutInvestmentLinksInput>;
 }
 
 @InputType()
@@ -6238,6 +9336,43 @@ export class TransactionCreateWithoutAccountInput {
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutTransactionInput
+  >;
+}
+
+@InputType()
+export class TransactionCreateWithoutInvestmentLinksInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutTransactionsInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutTransactionsInput>;
+  @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutTransactionsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
 }
 
 @InputType()
@@ -6265,6 +9400,13 @@ export class TransactionCreateWithoutUserInput {
   })
   @Type(() => AccountCreateNestedOneWithoutTransactionsInput)
   account!: InstanceType<typeof AccountCreateNestedOneWithoutTransactionsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @InputType()
@@ -6295,6 +9437,13 @@ export class TransactionCreateInput {
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @ArgsType()
@@ -6595,6 +9744,23 @@ export class TransactionOrderByWithRelationInput {
   @Field(() => UserOrderByWithRelationInput, { nullable: true })
   @Type(() => UserOrderByWithRelationInput)
   user?: InstanceType<typeof UserOrderByWithRelationInput>;
+  @Field(() => InvestmentTransactionOrderByRelationAggregateInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionOrderByRelationAggregateInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionOrderByRelationAggregateInput
+  >;
+}
+
+@InputType()
+export class TransactionRelationFilter {
+  @Field(() => TransactionWhereInput, { nullable: true })
+  @Type(() => TransactionWhereInput)
+  is?: InstanceType<typeof TransactionWhereInput>;
+  @Field(() => TransactionWhereInput, { nullable: true })
+  @Type(() => TransactionWhereInput)
+  isNot?: InstanceType<typeof TransactionWhereInput>;
 }
 
 @InputType()
@@ -6739,6 +9905,42 @@ export class TransactionUncheckedCreateWithoutAccountInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput
+  >;
+}
+
+@InputType()
+export class TransactionUncheckedCreateWithoutInvestmentLinksInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
 }
 
 @InputType()
@@ -6763,6 +9965,16 @@ export class TransactionUncheckedCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @InputType()
@@ -6789,6 +10001,16 @@ export class TransactionUncheckedCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @InputType()
@@ -6987,6 +10209,45 @@ export class TransactionUncheckedUpdateWithoutAccountInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput
+  >;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateWithoutInvestmentLinksInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
 }
 
 @InputType()
@@ -7014,6 +10275,16 @@ export class TransactionUncheckedUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput
+  >;
 }
 
 @InputType()
@@ -7043,6 +10314,16 @@ export class TransactionUncheckedUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput
+  >;
 }
 
 @InputType()
@@ -7179,6 +10460,45 @@ export class TransactionUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class TransactionUpdateOneRequiredWithoutInvestmentLinksNestedInput {
+  @Field(() => TransactionCreateWithoutInvestmentLinksInput, { nullable: true })
+  @Type(() => TransactionCreateWithoutInvestmentLinksInput)
+  create?: InstanceType<typeof TransactionCreateWithoutInvestmentLinksInput>;
+  @Field(() => TransactionCreateOrConnectWithoutInvestmentLinksInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutInvestmentLinksInput)
+  connectOrCreate?: InstanceType<
+    typeof TransactionCreateOrConnectWithoutInvestmentLinksInput
+  >;
+  @Field(() => TransactionUpsertWithoutInvestmentLinksInput, { nullable: true })
+  @Type(() => TransactionUpsertWithoutInvestmentLinksInput)
+  upsert?: InstanceType<typeof TransactionUpsertWithoutInvestmentLinksInput>;
+  @Field(() => TransactionWhereUniqueInput, { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionUpdateToOneWithWhereWithoutInvestmentLinksInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateToOneWithWhereWithoutInvestmentLinksInput)
+  update?: InstanceType<
+    typeof TransactionUpdateToOneWithWhereWithoutInvestmentLinksInput
+  >;
+}
+
+@InputType()
+export class TransactionUpdateToOneWithWhereWithoutInvestmentLinksInput {
+  @Field(() => TransactionWhereInput, { nullable: true })
+  @Type(() => TransactionWhereInput)
+  where?: InstanceType<typeof TransactionWhereInput>;
+  @Field(() => TransactionUpdateWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionUpdateWithoutInvestmentLinksInput)
+  data!: InstanceType<typeof TransactionUpdateWithoutInvestmentLinksInput>;
+}
+
+@InputType()
 export class TransactionUpdateWithWhereUniqueWithoutAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
@@ -7228,6 +10548,52 @@ export class TransactionUpdateWithoutAccountInput {
   user?: InstanceType<
     typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
   >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutTransactionNestedInput
+  >;
+}
+
+@InputType()
+export class TransactionUpdateWithoutInvestmentLinksInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+  @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutTransactionsNestedInput)
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
 }
 
 @InputType()
@@ -7259,6 +10625,13 @@ export class TransactionUpdateWithoutUserInput {
   @Type(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput)
   account?: InstanceType<
     typeof AccountUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutTransactionNestedInput
   >;
 }
 
@@ -7299,6 +10672,13 @@ export class TransactionUpdateInput {
   user?: InstanceType<
     typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
   >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutTransactionNestedInput
+  >;
 }
 
 @InputType()
@@ -7325,6 +10705,23 @@ export class TransactionUpsertWithWhereUniqueWithoutUserInput {
   @Field(() => TransactionCreateWithoutUserInput, { nullable: false })
   @Type(() => TransactionCreateWithoutUserInput)
   create!: InstanceType<typeof TransactionCreateWithoutUserInput>;
+}
+
+@InputType()
+export class TransactionUpsertWithoutInvestmentLinksInput {
+  @Field(() => TransactionUpdateWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionUpdateWithoutInvestmentLinksInput)
+  update!: InstanceType<typeof TransactionUpdateWithoutInvestmentLinksInput>;
+  @Field(() => TransactionCreateWithoutInvestmentLinksInput, {
+    nullable: false,
+  })
+  @Type(() => TransactionCreateWithoutInvestmentLinksInput)
+  create!: InstanceType<typeof TransactionCreateWithoutInvestmentLinksInput>;
+  @Field(() => TransactionWhereInput, { nullable: true })
+  @Type(() => TransactionWhereInput)
+  where?: InstanceType<typeof TransactionWhereInput>;
 }
 
 @InputType()
@@ -7365,6 +10762,11 @@ export class TransactionWhereUniqueInput {
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
+  @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
+  @Type(() => InvestmentTransactionListRelationFilter)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionListRelationFilter
+  >;
 }
 
 @InputType()
@@ -7405,6 +10807,11 @@ export class TransactionWhereInput {
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
+  @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
+  @Type(() => InvestmentTransactionListRelationFilter)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionListRelationFilter
+  >;
 }
 
 @ObjectType()
@@ -7433,6 +10840,10 @@ export class Transaction {
   account?: InstanceType<typeof Account>;
   @Field(() => User, { nullable: false })
   user?: InstanceType<typeof User>;
+  @Field(() => [InvestmentTransaction], { nullable: true })
+  investmentLinks?: Array<InvestmentTransaction>;
+  @Field(() => TransactionCount, { nullable: false })
+  _count?: InstanceType<typeof TransactionCount>;
 }
 
 @ArgsType()
@@ -7827,6 +11238,7 @@ export class UserCreateWithoutAccountsInput {
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
   @Field(() => InvestmentCreateNestedManyWithoutUserInput, { nullable: true })
+  @Type(() => InvestmentCreateNestedManyWithoutUserInput)
   investments?: InstanceType<typeof InvestmentCreateNestedManyWithoutUserInput>;
   @Field(() => TransactionCreateNestedManyWithoutUserInput, { nullable: true })
   @Type(() => TransactionCreateNestedManyWithoutUserInput)
@@ -7881,6 +11293,7 @@ export class UserCreateWithoutTransactionsInput {
   @Type(() => AccountCreateNestedManyWithoutUserInput)
   accounts?: InstanceType<typeof AccountCreateNestedManyWithoutUserInput>;
   @Field(() => InvestmentCreateNestedManyWithoutUserInput, { nullable: true })
+  @Type(() => InvestmentCreateNestedManyWithoutUserInput)
   investments?: InstanceType<typeof InvestmentCreateNestedManyWithoutUserInput>;
 }
 
@@ -7904,6 +11317,7 @@ export class UserCreateInput {
   @Type(() => AccountCreateNestedManyWithoutUserInput)
   accounts?: InstanceType<typeof AccountCreateNestedManyWithoutUserInput>;
   @Field(() => InvestmentCreateNestedManyWithoutUserInput, { nullable: true })
+  @Type(() => InvestmentCreateNestedManyWithoutUserInput)
   investments?: InstanceType<typeof InvestmentCreateNestedManyWithoutUserInput>;
   @Field(() => TransactionCreateNestedManyWithoutUserInput, { nullable: true })
   @Type(() => TransactionCreateNestedManyWithoutUserInput)
@@ -8111,6 +11525,7 @@ export class UserOrderByWithRelationInput {
   @Type(() => AccountOrderByRelationAggregateInput)
   accounts?: InstanceType<typeof AccountOrderByRelationAggregateInput>;
   @Field(() => InvestmentOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => InvestmentOrderByRelationAggregateInput)
   investments?: InstanceType<typeof InvestmentOrderByRelationAggregateInput>;
   @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
   @Type(() => TransactionOrderByRelationAggregateInput)
@@ -8168,6 +11583,7 @@ export class UserUncheckedCreateWithoutAccountsInput {
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutUserInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedCreateNestedManyWithoutUserInput
   >;
@@ -8238,6 +11654,7 @@ export class UserUncheckedCreateWithoutTransactionsInput {
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutUserInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedCreateNestedManyWithoutUserInput
   >;
@@ -8269,6 +11686,7 @@ export class UserUncheckedCreateInput {
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutUserInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedCreateNestedManyWithoutUserInput
   >;
@@ -8318,6 +11736,7 @@ export class UserUncheckedUpdateWithoutAccountsInput {
   @Field(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedUpdateManyWithoutUserNestedInput
   >;
@@ -8388,6 +11807,7 @@ export class UserUncheckedUpdateWithoutTransactionsInput {
   @Field(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedUpdateManyWithoutUserNestedInput
   >;
@@ -8419,6 +11839,7 @@ export class UserUncheckedUpdateInput {
   @Field(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<
     typeof InvestmentUncheckedUpdateManyWithoutUserNestedInput
   >;
@@ -8565,6 +11986,7 @@ export class UserUpdateWithoutAccountsInput {
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => InvestmentUpdateManyWithoutUserNestedInput, { nullable: true })
+  @Type(() => InvestmentUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<typeof InvestmentUpdateManyWithoutUserNestedInput>;
   @Field(() => TransactionUpdateManyWithoutUserNestedInput, { nullable: true })
   @Type(() => TransactionUpdateManyWithoutUserNestedInput)
@@ -8619,6 +12041,7 @@ export class UserUpdateWithoutTransactionsInput {
   @Type(() => AccountUpdateManyWithoutUserNestedInput)
   accounts?: InstanceType<typeof AccountUpdateManyWithoutUserNestedInput>;
   @Field(() => InvestmentUpdateManyWithoutUserNestedInput, { nullable: true })
+  @Type(() => InvestmentUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<typeof InvestmentUpdateManyWithoutUserNestedInput>;
 }
 
@@ -8642,6 +12065,7 @@ export class UserUpdateInput {
   @Type(() => AccountUpdateManyWithoutUserNestedInput)
   accounts?: InstanceType<typeof AccountUpdateManyWithoutUserNestedInput>;
   @Field(() => InvestmentUpdateManyWithoutUserNestedInput, { nullable: true })
+  @Type(() => InvestmentUpdateManyWithoutUserNestedInput)
   investments?: InstanceType<typeof InvestmentUpdateManyWithoutUserNestedInput>;
   @Field(() => TransactionUpdateManyWithoutUserNestedInput, { nullable: true })
   @Type(() => TransactionUpdateManyWithoutUserNestedInput)
@@ -8715,6 +12139,7 @@ export class UserWhereUniqueInput {
   @Type(() => AccountListRelationFilter)
   accounts?: InstanceType<typeof AccountListRelationFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
+  @Type(() => InvestmentListRelationFilter)
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
@@ -8747,6 +12172,7 @@ export class UserWhereInput {
   @Type(() => AccountListRelationFilter)
   accounts?: InstanceType<typeof AccountListRelationFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
+  @Type(() => InvestmentListRelationFilter)
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)

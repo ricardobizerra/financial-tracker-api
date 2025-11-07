@@ -28,7 +28,7 @@ model User {
   transactions Transaction[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Institution {
@@ -41,7 +41,7 @@ model Institution {
   accounts Account[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -52,13 +52,14 @@ model Account {
   description String?
   isActive    Boolean     @default(true)
 
-  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
-  institutionId String
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institutionId String
 
   transactions Transaction[]
+  investments  Investment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,14 +75,39 @@ model Investment {
   finishedAt      DateTime?
   lastCorrectedAt DateTime?
 
+  status InvestmentStatus @default(OPEN)
+
   regimeName       Regime
   regimePercentage Float? @default(100)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+
+  transactions InvestmentTransaction[]
+
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InvestmentTransaction {
+  id     String                    @id @default(uuid())
+  role   InvestmentTransactionRole
+  amount Decimal
+
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  investmentId String
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([investmentId])
+  @@index([transactionId])
 }
 
 model Transaction {
@@ -92,11 +118,13 @@ model Transaction {
   status      TransactionStatus
   type        TransactionType
 
-  accountId String
   account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
 
-  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  investmentLinks InvestmentTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,6 +139,11 @@ enum AccountType {
   OTHER // Outros tipos
 }
 
+enum InvestmentStatus {
+  OPEN
+  CLOSED
+}
+
 enum Role {
   ADMIN
   USER
@@ -119,6 +152,13 @@ enum Role {
 enum Regime {
   CDI
   POUPANCA
+}
+
+enum InvestmentTransactionRole {
+  FUNDING
+  REDEMPTION
+  INCOME
+  FEE
 }
 
 enum TransactionStatus {

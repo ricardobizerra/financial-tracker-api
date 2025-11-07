@@ -25,6 +25,7 @@ type AccountCountAggregate {
 
 type AccountCount {
   transactions: Int!
+  investments: Int!
 }
 
 type AccountMaxAggregate {
@@ -85,6 +86,7 @@ type Account {
   user: User!
   institution: Institution!
   transactions: [Transaction!]
+  investments: [Investment!]
   _count: AccountCount!
 }
 
@@ -152,12 +154,18 @@ type InvestmentCountAggregate {
   duration: Int!
   finishedAt: Int!
   lastCorrectedAt: Int!
+  status: Int!
   regimeName: Int!
   regimePercentage: Int!
   userId: Int!
+  accountId: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
+}
+
+type InvestmentCount {
+  transactions: Int!
 }
 
 type InvestmentMaxAggregate {
@@ -169,11 +177,18 @@ type InvestmentMaxAggregate {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime
   regimePercentage: Float
   userId: String
+  accountId: String
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+enum InvestmentStatus {
+  OPEN
+  CLOSED
 }
 
 enum Regime {
@@ -190,9 +205,11 @@ type InvestmentMinAggregate {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime
   regimePercentage: Float
   userId: String
+  accountId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -214,12 +231,75 @@ type Investment {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus!
   regimeName: Regime!
   regimePercentage: Float
   userId: String!
+  accountId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   user: User!
+  account: Account!
+  transactions: [InvestmentTransaction!]
+  _count: InvestmentCount!
+}
+
+type InvestmentTransactionAvgAggregate {
+  amount: Decimal
+}
+
+type InvestmentTransactionCountAggregate {
+  id: Int!
+  role: Int!
+  amount: Int!
+  investmentId: Int!
+  transactionId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type InvestmentTransactionMaxAggregate {
+  id: String
+  role: InvestmentTransactionRole
+  amount: Decimal
+  investmentId: String
+  transactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum InvestmentTransactionRole {
+  FUNDING
+  REDEMPTION
+  INCOME
+  FEE
+}
+
+type InvestmentTransactionMinAggregate {
+  id: String
+  role: InvestmentTransactionRole
+  amount: Decimal
+  investmentId: String
+  transactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type InvestmentTransactionSumAggregate {
+  amount: Decimal
+}
+
+type InvestmentTransaction {
+  id: ID!
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  investmentId: String!
+  transactionId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  investment: Investment!
+  transaction: Transaction!
 }
 
 type TransactionAvgAggregate {
@@ -238,6 +318,10 @@ type TransactionCountAggregate {
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
+}
+
+type TransactionCount {
+  investmentLinks: Int!
 }
 
 type TransactionMaxAggregate {
@@ -294,6 +378,8 @@ type Transaction {
   updatedAt: DateTime!
   account: Account!
   user: User!
+  investmentLinks: [InvestmentTransaction!]
+  _count: TransactionCount!
 }
 
 type UserCountAggregate {
@@ -390,10 +476,14 @@ type InvestmentModel {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus!
   regimeName: Regime!
   regimePercentage: Float
+  accountId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
+  account: Account!
+  transactions: [InvestmentTransaction!]
   currentVariation: String!
   taxPercentage: String!
   taxedVariation: String!
@@ -449,6 +539,7 @@ type AccountModel {
   updatedAt: DateTime!
   institution: Institution!
   transactions: [Transaction!]
+  investments: [Investment!]
   _count: AccountCount!
 }
 
@@ -494,6 +585,8 @@ type TransactionModel {
   createdAt: DateTime!
   updatedAt: DateTime!
   account: Account!
+  investmentLinks: [InvestmentTransaction!]
+  _count: TransactionCount!
 }
 
 type TransactionConnection {
@@ -541,10 +634,14 @@ enum OrdenationInvestmentModel {
   duration
   finishedAt
   lastCorrectedAt
+  status
   regimeName
   regimePercentage
+  accountId
   createdAt
   updatedAt
+  account
+  transactions
 }
 
 enum OrdenationAccountModel {
@@ -557,6 +654,7 @@ enum OrdenationAccountModel {
   updatedAt
   institution
   transactions
+  investments
   _count
 }
 
@@ -581,6 +679,8 @@ enum OrdenationTransactionModel {
   createdAt
   updatedAt
   account
+  investmentLinks
+  _count
 }
 
 type Mutation {
@@ -623,6 +723,7 @@ input AccountCreateWithoutUserInput {
   updatedAt: DateTime
   institution: InstitutionCreateNestedOneWithoutAccountsInput!
   transactions: TransactionCreateNestedManyWithoutAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
 }
 
 input InstitutionCreateNestedOneWithoutAccountsInput {
@@ -782,6 +883,7 @@ input AccountWhereInput {
   user: UserRelationFilter
   institution: InstitutionRelationFilter
   transactions: TransactionListRelationFilter
+  investments: InvestmentListRelationFilter
 }
 
 input EnumAccountTypeFilter {
@@ -883,12 +985,16 @@ input InvestmentWhereInput {
   duration: IntNullableFilter
   finishedAt: DateTimeNullableFilter
   lastCorrectedAt: DateTimeNullableFilter
+  status: EnumInvestmentStatusFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   userId: StringFilter
+  accountId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   user: UserRelationFilter
+  account: AccountRelationFilter
+  transactions: InvestmentTransactionListRelationFilter
 }
 
 input FloatFilter {
@@ -979,6 +1085,20 @@ input NestedDateTimeNullableFilter {
   not: NestedDateTimeNullableFilter
 }
 
+input EnumInvestmentStatusFilter {
+  equals: InvestmentStatus
+  in: [InvestmentStatus!]
+  notIn: [InvestmentStatus!]
+  not: NestedEnumInvestmentStatusFilter
+}
+
+input NestedEnumInvestmentStatusFilter {
+  equals: InvestmentStatus
+  in: [InvestmentStatus!]
+  notIn: [InvestmentStatus!]
+  not: NestedEnumInvestmentStatusFilter
+}
+
 input EnumRegimeFilter {
   equals: Regime
   in: [Regime!]
@@ -993,10 +1113,54 @@ input NestedEnumRegimeFilter {
   not: NestedEnumRegimeFilter
 }
 
-input TransactionListRelationFilter {
-  every: TransactionWhereInput
-  some: TransactionWhereInput
-  none: TransactionWhereInput
+input AccountRelationFilter {
+  is: AccountWhereInput
+  isNot: AccountWhereInput
+}
+
+input InvestmentTransactionListRelationFilter {
+  every: InvestmentTransactionWhereInput
+  some: InvestmentTransactionWhereInput
+  none: InvestmentTransactionWhereInput
+}
+
+input InvestmentTransactionWhereInput {
+  AND: [InvestmentTransactionWhereInput!]
+  OR: [InvestmentTransactionWhereInput!]
+  NOT: [InvestmentTransactionWhereInput!]
+  id: StringFilter
+  role: EnumInvestmentTransactionRoleFilter
+  amount: DecimalFilter
+  investmentId: StringFilter
+  transactionId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  investment: InvestmentRelationFilter
+  transaction: TransactionRelationFilter
+}
+
+input EnumInvestmentTransactionRoleFilter {
+  equals: InvestmentTransactionRole
+  in: [InvestmentTransactionRole!]
+  notIn: [InvestmentTransactionRole!]
+  not: NestedEnumInvestmentTransactionRoleFilter
+}
+
+input NestedEnumInvestmentTransactionRoleFilter {
+  equals: InvestmentTransactionRole
+  in: [InvestmentTransactionRole!]
+  notIn: [InvestmentTransactionRole!]
+  not: NestedEnumInvestmentTransactionRoleFilter
+}
+
+input InvestmentRelationFilter {
+  is: InvestmentWhereInput
+  isNot: InvestmentWhereInput
+}
+
+input TransactionRelationFilter {
+  is: TransactionWhereInput
+  isNot: TransactionWhereInput
 }
 
 input TransactionWhereInput {
@@ -1015,6 +1179,7 @@ input TransactionWhereInput {
   updatedAt: DateTimeFilter
   account: AccountRelationFilter
   user: UserRelationFilter
+  investmentLinks: InvestmentTransactionListRelationFilter
 }
 
 input EnumTransactionStatusFilter {
@@ -1045,9 +1210,10 @@ input NestedEnumTransactionTypeFilter {
   not: NestedEnumTransactionTypeFilter
 }
 
-input AccountRelationFilter {
-  is: AccountWhereInput
-  isNot: AccountWhereInput
+input TransactionListRelationFilter {
+  every: TransactionWhereInput
+  some: TransactionWhereInput
+  none: TransactionWhereInput
 }
 
 input InstitutionRelationFilter {
@@ -1072,6 +1238,7 @@ input TransactionCreateWithoutAccountInput {
   createdAt: DateTime
   updatedAt: DateTime
   user: UserCreateNestedOneWithoutTransactionsInput!
+  investmentLinks: InvestmentTransactionCreateNestedManyWithoutTransactionInput
 }
 
 input UserCreateNestedOneWithoutTransactionsInput {
@@ -1108,43 +1275,101 @@ input InvestmentCreateWithoutUserInput {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
   updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutInvestmentsInput!
+  transactions: InvestmentTransactionCreateNestedManyWithoutInvestmentInput
 }
 
-input InvestmentCreateOrConnectWithoutUserInput {
-  where: InvestmentWhereUniqueInput!
-  create: InvestmentCreateWithoutUserInput!
+input AccountCreateNestedOneWithoutInvestmentsInput {
+  create: AccountCreateWithoutInvestmentsInput
+  connectOrCreate: AccountCreateOrConnectWithoutInvestmentsInput
+  connect: AccountWhereUniqueInput
 }
 
-input InvestmentWhereUniqueInput {
+input AccountCreateWithoutInvestmentsInput {
   id: String
-  AND: [InvestmentWhereInput!]
-  OR: [InvestmentWhereInput!]
-  NOT: [InvestmentWhereInput!]
-  amount: FloatFilter
-  correctedAmount: FloatNullableFilter
-  taxedAmount: FloatNullableFilter
-  startDate: DateTimeFilter
-  duration: IntNullableFilter
-  finishedAt: DateTimeNullableFilter
-  lastCorrectedAt: DateTimeNullableFilter
-  regimeName: EnumRegimeFilter
-  regimePercentage: FloatNullableFilter
-  userId: StringFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  user: UserRelationFilter
+  name: String!
+  type: AccountType!
+  balance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  transactions: TransactionCreateNestedManyWithoutAccountInput
 }
 
-input InvestmentCreateManyUserInputEnvelope {
-  data: [InvestmentCreateManyUserInput!]!
-  skipDuplicates: Boolean
+input UserCreateNestedOneWithoutAccountsInput {
+  create: UserCreateWithoutAccountsInput
+  connectOrCreate: UserCreateOrConnectWithoutAccountsInput
+  connect: UserWhereUniqueInput
 }
 
-input InvestmentCreateManyUserInput {
+input UserCreateWithoutAccountsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+}
+
+input TransactionCreateNestedManyWithoutUserInput {
+  create: [TransactionCreateWithoutUserInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutUserInput!]
+  createMany: TransactionCreateManyUserInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutUserInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  createdAt: DateTime
+  updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutTransactionsInput!
+  investmentLinks: InvestmentTransactionCreateNestedManyWithoutTransactionInput
+}
+
+input AccountCreateNestedOneWithoutTransactionsInput {
+  create: AccountCreateWithoutTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  balance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+}
+
+input InvestmentCreateNestedManyWithoutAccountInput {
+  create: [InvestmentCreateWithoutAccountInput!]
+  connectOrCreate: [InvestmentCreateOrConnectWithoutAccountInput!]
+  createMany: InvestmentCreateManyAccountInputEnvelope
+  connect: [InvestmentWhereUniqueInput!]
+}
+
+input InvestmentCreateWithoutAccountInput {
   id: String
   amount: Float!
   correctedAmount: Float
@@ -1153,15 +1378,36 @@ input InvestmentCreateManyUserInput {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
   updatedAt: DateTime
+  user: UserCreateNestedOneWithoutInvestmentsInput!
+  transactions: InvestmentTransactionCreateNestedManyWithoutInvestmentInput
 }
 
-input UserCreateOrConnectWithoutTransactionsInput {
+input UserCreateNestedOneWithoutInvestmentsInput {
+  create: UserCreateWithoutInvestmentsInput
+  connectOrCreate: UserCreateOrConnectWithoutInvestmentsInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutInvestmentsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+}
+
+input UserCreateOrConnectWithoutInvestmentsInput {
   where: UserWhereUniqueInput!
-  create: UserCreateWithoutTransactionsInput!
+  create: UserCreateWithoutInvestmentsInput!
 }
 
 input UserWhereUniqueInput {
@@ -1180,9 +1426,44 @@ input UserWhereUniqueInput {
   transactions: TransactionListRelationFilter
 }
 
-input TransactionCreateOrConnectWithoutAccountInput {
+input InvestmentTransactionCreateNestedManyWithoutInvestmentInput {
+  create: [InvestmentTransactionCreateWithoutInvestmentInput!]
+  connectOrCreate: [InvestmentTransactionCreateOrConnectWithoutInvestmentInput!]
+  createMany: InvestmentTransactionCreateManyInvestmentInputEnvelope
+  connect: [InvestmentTransactionWhereUniqueInput!]
+}
+
+input InvestmentTransactionCreateWithoutInvestmentInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  transaction: TransactionCreateNestedOneWithoutInvestmentLinksInput!
+}
+
+input TransactionCreateNestedOneWithoutInvestmentLinksInput {
+  create: TransactionCreateWithoutInvestmentLinksInput
+  connectOrCreate: TransactionCreateOrConnectWithoutInvestmentLinksInput
+  connect: TransactionWhereUniqueInput
+}
+
+input TransactionCreateWithoutInvestmentLinksInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  createdAt: DateTime
+  updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutTransactionsInput!
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutInvestmentLinksInput {
   where: TransactionWhereUniqueInput!
-  create: TransactionCreateWithoutAccountInput!
+  create: TransactionCreateWithoutInvestmentLinksInput!
 }
 
 input TransactionWhereUniqueInput {
@@ -1201,6 +1482,250 @@ input TransactionWhereUniqueInput {
   updatedAt: DateTimeFilter
   account: AccountRelationFilter
   user: UserRelationFilter
+  investmentLinks: InvestmentTransactionListRelationFilter
+}
+
+input InvestmentTransactionCreateOrConnectWithoutInvestmentInput {
+  where: InvestmentTransactionWhereUniqueInput!
+  create: InvestmentTransactionCreateWithoutInvestmentInput!
+}
+
+input InvestmentTransactionWhereUniqueInput {
+  id: String
+  AND: [InvestmentTransactionWhereInput!]
+  OR: [InvestmentTransactionWhereInput!]
+  NOT: [InvestmentTransactionWhereInput!]
+  role: EnumInvestmentTransactionRoleFilter
+  amount: DecimalFilter
+  investmentId: StringFilter
+  transactionId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  investment: InvestmentRelationFilter
+  transaction: TransactionRelationFilter
+}
+
+input InvestmentTransactionCreateManyInvestmentInputEnvelope {
+  data: [InvestmentTransactionCreateManyInvestmentInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentTransactionCreateManyInvestmentInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  transactionId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InvestmentCreateOrConnectWithoutAccountInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutAccountInput!
+}
+
+input InvestmentWhereUniqueInput {
+  id: String
+  AND: [InvestmentWhereInput!]
+  OR: [InvestmentWhereInput!]
+  NOT: [InvestmentWhereInput!]
+  amount: FloatFilter
+  correctedAmount: FloatNullableFilter
+  taxedAmount: FloatNullableFilter
+  startDate: DateTimeFilter
+  duration: IntNullableFilter
+  finishedAt: DateTimeNullableFilter
+  lastCorrectedAt: DateTimeNullableFilter
+  status: EnumInvestmentStatusFilter
+  regimeName: EnumRegimeFilter
+  regimePercentage: FloatNullableFilter
+  userId: StringFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  account: AccountRelationFilter
+  transactions: InvestmentTransactionListRelationFilter
+}
+
+input InvestmentCreateManyAccountInputEnvelope {
+  data: [InvestmentCreateManyAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentCreateManyAccountInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutTransactionsInput!
+}
+
+input AccountWhereUniqueInput {
+  id: String
+  AND: [AccountWhereInput!]
+  OR: [AccountWhereInput!]
+  NOT: [AccountWhereInput!]
+  name: StringFilter
+  type: EnumAccountTypeFilter
+  balance: DecimalFilter
+  description: StringNullableFilter
+  isActive: BoolFilter
+  userId: StringFilter
+  institutionId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  institution: InstitutionRelationFilter
+  transactions: TransactionListRelationFilter
+  investments: InvestmentListRelationFilter
+}
+
+input InvestmentTransactionCreateNestedManyWithoutTransactionInput {
+  create: [InvestmentTransactionCreateWithoutTransactionInput!]
+  connectOrCreate: [InvestmentTransactionCreateOrConnectWithoutTransactionInput!]
+  createMany: InvestmentTransactionCreateManyTransactionInputEnvelope
+  connect: [InvestmentTransactionWhereUniqueInput!]
+}
+
+input InvestmentTransactionCreateWithoutTransactionInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  investment: InvestmentCreateNestedOneWithoutTransactionsInput!
+}
+
+input InvestmentCreateNestedOneWithoutTransactionsInput {
+  create: InvestmentCreateWithoutTransactionsInput
+  connectOrCreate: InvestmentCreateOrConnectWithoutTransactionsInput
+  connect: InvestmentWhereUniqueInput
+}
+
+input InvestmentCreateWithoutTransactionsInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutInvestmentsInput!
+  account: AccountCreateNestedOneWithoutInvestmentsInput!
+}
+
+input InvestmentCreateOrConnectWithoutTransactionsInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutTransactionsInput!
+}
+
+input InvestmentTransactionCreateOrConnectWithoutTransactionInput {
+  where: InvestmentTransactionWhereUniqueInput!
+  create: InvestmentTransactionCreateWithoutTransactionInput!
+}
+
+input InvestmentTransactionCreateManyTransactionInputEnvelope {
+  data: [InvestmentTransactionCreateManyTransactionInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentTransactionCreateManyTransactionInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  investmentId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TransactionCreateOrConnectWithoutUserInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutUserInput!
+}
+
+input TransactionCreateManyUserInputEnvelope {
+  data: [TransactionCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyUserInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  accountId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input UserCreateOrConnectWithoutAccountsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutAccountsInput!
+}
+
+input AccountCreateOrConnectWithoutInvestmentsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutInvestmentsInput!
+}
+
+input InvestmentCreateOrConnectWithoutUserInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutUserInput!
+}
+
+input InvestmentCreateManyUserInputEnvelope {
+  data: [InvestmentCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentCreateManyUserInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  accountId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input UserCreateOrConnectWithoutTransactionsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutAccountInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutAccountInput!
 }
 
 input TransactionCreateManyAccountInputEnvelope {
@@ -1225,25 +1750,6 @@ input AccountCreateOrConnectWithoutUserInput {
   create: AccountCreateWithoutUserInput!
 }
 
-input AccountWhereUniqueInput {
-  id: String
-  AND: [AccountWhereInput!]
-  OR: [AccountWhereInput!]
-  NOT: [AccountWhereInput!]
-  name: StringFilter
-  type: EnumAccountTypeFilter
-  balance: DecimalFilter
-  description: StringNullableFilter
-  isActive: BoolFilter
-  userId: StringFilter
-  institutionId: StringFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  user: UserRelationFilter
-  institution: InstitutionRelationFilter
-  transactions: TransactionListRelationFilter
-}
-
 input AccountCreateManyUserInputEnvelope {
   data: [AccountCreateManyUserInput!]!
   skipDuplicates: Boolean
@@ -1257,94 +1763,6 @@ input AccountCreateManyUserInput {
   description: String
   isActive: Boolean
   institutionId: String!
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input TransactionCreateNestedManyWithoutUserInput {
-  create: [TransactionCreateWithoutUserInput!]
-  connectOrCreate: [TransactionCreateOrConnectWithoutUserInput!]
-  createMany: TransactionCreateManyUserInputEnvelope
-  connect: [TransactionWhereUniqueInput!]
-}
-
-input TransactionCreateWithoutUserInput {
-  id: String
-  description: String!
-  amount: Decimal!
-  date: DateTime!
-  status: TransactionStatus!
-  type: TransactionType!
-  createdAt: DateTime
-  updatedAt: DateTime
-  account: AccountCreateNestedOneWithoutTransactionsInput!
-}
-
-input AccountCreateNestedOneWithoutTransactionsInput {
-  create: AccountCreateWithoutTransactionsInput
-  connectOrCreate: AccountCreateOrConnectWithoutTransactionsInput
-  connect: AccountWhereUniqueInput
-}
-
-input AccountCreateWithoutTransactionsInput {
-  id: String
-  name: String!
-  type: AccountType!
-  balance: Decimal
-  description: String
-  isActive: Boolean
-  createdAt: DateTime
-  updatedAt: DateTime
-  user: UserCreateNestedOneWithoutAccountsInput!
-  institution: InstitutionCreateNestedOneWithoutAccountsInput!
-}
-
-input UserCreateNestedOneWithoutAccountsInput {
-  create: UserCreateWithoutAccountsInput
-  connectOrCreate: UserCreateOrConnectWithoutAccountsInput
-  connect: UserWhereUniqueInput
-}
-
-input UserCreateWithoutAccountsInput {
-  id: String
-  email: String!
-  password: String!
-  name: String!
-  role: Role!
-  createdAt: DateTime
-  updatedAt: DateTime
-  investments: InvestmentCreateNestedManyWithoutUserInput
-  transactions: TransactionCreateNestedManyWithoutUserInput
-}
-
-input UserCreateOrConnectWithoutAccountsInput {
-  where: UserWhereUniqueInput!
-  create: UserCreateWithoutAccountsInput!
-}
-
-input AccountCreateOrConnectWithoutTransactionsInput {
-  where: AccountWhereUniqueInput!
-  create: AccountCreateWithoutTransactionsInput!
-}
-
-input TransactionCreateOrConnectWithoutUserInput {
-  where: TransactionWhereUniqueInput!
-  create: TransactionCreateWithoutUserInput!
-}
-
-input TransactionCreateManyUserInputEnvelope {
-  data: [TransactionCreateManyUserInput!]!
-  skipDuplicates: Boolean
-}
-
-input TransactionCreateManyUserInput {
-  id: String
-  description: String!
-  amount: Decimal!
-  date: DateTime!
-  status: TransactionStatus!
-  type: TransactionType!
-  accountId: String!
   createdAt: DateTime
   updatedAt: DateTime
 }

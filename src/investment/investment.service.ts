@@ -2,7 +2,13 @@ import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
-import { Investment, Regime as RegimePrisma } from '@prisma/client';
+import {
+  Investment,
+  InvestmentTransactionRole,
+  Regime as RegimePrisma,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import {
   InvestmentConnection,
@@ -83,6 +89,34 @@ export class InvestmentService {
       ? Number(investmentsLengthQuery)
       : undefined;
 
+    console.log(
+      selectObject<Investment, InvestmentModel>(queriedFields, {
+        currentVariation: ['amount'],
+        taxPercentage: ['amount'],
+        taxedVariation: ['amount'],
+        account: ['id'],
+        transactions: ['id'],
+        ...((queriedFields.includes('correctedAmount') ||
+          queriedFields.includes('taxedAmount') ||
+          queriedFields.includes('currentVariation') ||
+          queriedFields.includes('taxedVariation') ||
+          queriedFields.includes('taxPercentage')) && {
+          DEFAULT: [
+            'id',
+            'amount',
+            'startDate',
+            'finishedAt',
+            'duration',
+            'regimeName',
+            'regimePercentage',
+            'lastCorrectedAt',
+            'correctedAmount',
+            'taxedAmount',
+          ] satisfies (keyof Investment)[],
+        }),
+      }),
+    );
+
     const investmentsQuery = await this.prismaService.investment.findMany({
       take: last
         ? unbufferedCursor
@@ -115,6 +149,8 @@ export class InvestmentService {
         currentVariation: ['amount'],
         taxPercentage: ['amount'],
         taxedVariation: ['amount'],
+        account: [],
+        transactions: [],
         ...((queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
           queriedFields.includes('currentVariation') ||
@@ -218,55 +254,18 @@ export class InvestmentService {
         const taxPercentage = getIrpfTax(currentInvestmentDays);
 
         return {
-          ...(queriedFields.includes('id') && { id: investment.id }),
-          ...(queriedFields.includes('amount') && {
-            amount: investment.amount,
+          ...investment,
+          ...(correctedAmount && {
+            correctedAmount: correctedAmount,
           }),
-          ...(queriedFields.includes('correctedAmount') &&
-            correctedAmount && {
-              correctedAmount: correctedAmount,
-            }),
-          ...(queriedFields.includes('currentVariation') && {
-            currentVariation:
-              correctedVariation.toFixed(2).replace('.', ',') + '%',
+          currentVariation:
+            correctedVariation.toFixed(2).replace('.', ',') + '%',
+          taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
+          ...(taxedAmount && {
+            taxedAmount: taxedAmount,
           }),
-          ...(queriedFields.includes('taxPercentage') && {
-            taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
-          }),
-          ...(queriedFields.includes('taxedAmount') &&
-            taxedAmount && {
-              taxedAmount: taxedAmount,
-            }),
-          ...(queriedFields.includes('taxedVariation') && {
-            taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
-          }),
-          ...(queriedFields.includes('startDate') && {
-            startDate: investment.startDate,
-          }),
-          ...(queriedFields.includes('finishedAt') && {
-            finishedAt: investment.finishedAt,
-          }),
-          ...(queriedFields.includes('duration') && {
-            duration: investment.duration,
-          }),
-          ...(queriedFields.includes('regimeName') && {
-            regimeName: investment.regimeName as Regime,
-          }),
-          ...(queriedFields.includes('regimePercentage') && {
-            regimePercentage: investment.regimePercentage,
-          }),
-          ...(queriedFields.includes('finishedAt') && {
-            finishedAt: investment.finishedAt,
-          }),
-          ...(queriedFields.includes('lastCorrectedAt') && {
-            lastCorrectedAt: investment.lastCorrectedAt,
-          }),
-          ...(queriedFields.includes('createdAt') && {
-            createdAt: investment.createdAt,
-          }),
-          ...(queriedFields.includes('updatedAt') && {
-            updatedAt: investment.updatedAt,
-          }),
+          taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+          regimeName: investment.regimeName as Regime,
         };
       }),
     );
@@ -370,16 +369,64 @@ export class InvestmentService {
   }
 
   async create(data: InvestmentCreateWithoutUserInput, userId: string) {
-    const investment = await this.prismaService.investment.create({
-      data: {
-        ...data,
-        user: {
-          connect: {
-            id: userId,
+    const [investment, transaction] = await this.prismaService.$transaction([
+      this.prismaService.investment.create({
+        data: {
+          ...data,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-      },
-    });
+      }),
+      this.prismaService.transaction.create({
+        data: {
+          amount: data.amount,
+          type: TransactionType.EXPENSE,
+          account: {
+            connect: {
+              id: data.account.connect.id,
+            },
+          },
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          date: data.startDate,
+          description: `Investimento ${data.regimeName}`,
+          status:
+            data.startDate <= new Date()
+              ? TransactionStatus.PLANNED
+              : TransactionStatus.COMPLETED,
+        },
+      }),
+    ]);
+
+    if (!investment || !transaction) {
+      throw new NotFoundException(
+        'Failed to create investment and its transaction',
+      );
+    }
+
+    const investmentTransaction =
+      await this.prismaService.investmentTransaction.create({
+        data: {
+          amount: data.amount,
+          role: InvestmentTransactionRole.FUNDING,
+          investment: {
+            connect: {
+              id: investment.id,
+            },
+          },
+          transaction: {
+            connect: {
+              id: transaction.id,
+            },
+          },
+        },
+      });
 
     return investment;
   }

@@ -30,10 +30,16 @@ import {
   InvestmentCreateWithoutUserInput,
   Regime,
 } from '@/lib/graphql/prisma-client';
+import { AccountService } from '@/account/account.service';
+import { AccountType } from '@prisma/client';
+import { NotFoundException } from '@nestjs/common';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
-  constructor(private readonly investmentService: InvestmentService) {}
+  constructor(
+    private readonly investmentService: InvestmentService,
+    private readonly accountService: AccountService,
+  ) {}
 
   @Auth()
   @Query(() => InvestmentConnection, { name: 'investments' })
@@ -65,6 +71,14 @@ export class InvestmentResolver {
     @Args('data') data: InvestmentCreateWithoutUserInput,
     @CurrentUser() user: UserModel,
   ) {
+    const account = await this.accountService.find({
+      id: data.account.connect.id,
+    });
+
+    if (!account || account.type !== AccountType.INVESTMENT) {
+      throw new NotFoundException('Conta não encontrada');
+    }
+
     const createdInvestment = await this.investmentService.create(
       data,
       user?.id,

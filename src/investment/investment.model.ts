@@ -14,6 +14,7 @@ import {
 export class InvestmentModel extends OmitType(Investment, [
   'user',
   'userId',
+  '_count',
 ] as const) {
   @Field(() => String, { nullable: false })
   currentVariation!: string;
