@@ -30,7 +30,8 @@ export enum TransactionScalarFieldEnum {
   date = 'date',
   status = 'status',
   type = 'type',
-  accountId = 'accountId',
+  sourceAccountId = 'sourceAccountId',
+  destinyAccountId = 'destinyAccountId',
   userId = 'userId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
@@ -340,7 +341,9 @@ export class AccountCountOrderByAggregateInput {
 @ObjectType()
 export class AccountCount {
   @Field(() => Int, { nullable: false })
-  transactions?: number;
+  sourceTransactions?: number;
+  @Field(() => Int, { nullable: false })
+  destinyTransactions?: number;
   @Field(() => Int, { nullable: false })
   investments?: number;
 }
@@ -472,6 +475,23 @@ export class AccountCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class AccountCreateNestedOneWithoutDestinyTransactionsInput {
+  @Field(() => AccountCreateWithoutDestinyTransactionsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutDestinyTransactionsInput)
+  create?: InstanceType<typeof AccountCreateWithoutDestinyTransactionsInput>;
+  @Field(() => AccountCreateOrConnectWithoutDestinyTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutDestinyTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutDestinyTransactionsInput
+  >;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+}
+
+@InputType()
 export class AccountCreateNestedOneWithoutInvestmentsInput {
   @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: true })
   @Type(() => AccountCreateWithoutInvestmentsInput)
@@ -489,20 +509,32 @@ export class AccountCreateNestedOneWithoutInvestmentsInput {
 }
 
 @InputType()
-export class AccountCreateNestedOneWithoutTransactionsInput {
-  @Field(() => AccountCreateWithoutTransactionsInput, { nullable: true })
-  @Type(() => AccountCreateWithoutTransactionsInput)
-  create?: InstanceType<typeof AccountCreateWithoutTransactionsInput>;
-  @Field(() => AccountCreateOrConnectWithoutTransactionsInput, {
+export class AccountCreateNestedOneWithoutSourceTransactionsInput {
+  @Field(() => AccountCreateWithoutSourceTransactionsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutSourceTransactionsInput)
+  create?: InstanceType<typeof AccountCreateWithoutSourceTransactionsInput>;
+  @Field(() => AccountCreateOrConnectWithoutSourceTransactionsInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateOrConnectWithoutTransactionsInput)
+  @Type(() => AccountCreateOrConnectWithoutSourceTransactionsInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutTransactionsInput
+    typeof AccountCreateOrConnectWithoutSourceTransactionsInput
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
   connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+}
+
+@InputType()
+export class AccountCreateOrConnectWithoutDestinyTransactionsInput {
+  @Field(() => AccountWhereUniqueInput, { nullable: false })
+  @Type(() => AccountWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountCreateWithoutDestinyTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateWithoutDestinyTransactionsInput)
+  create!: InstanceType<typeof AccountCreateWithoutDestinyTransactionsInput>;
 }
 
 @InputType()
@@ -526,13 +558,13 @@ export class AccountCreateOrConnectWithoutInvestmentsInput {
 }
 
 @InputType()
-export class AccountCreateOrConnectWithoutTransactionsInput {
+export class AccountCreateOrConnectWithoutSourceTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
   where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
-  @Field(() => AccountCreateWithoutTransactionsInput, { nullable: false })
-  @Type(() => AccountCreateWithoutTransactionsInput)
-  create!: InstanceType<typeof AccountCreateWithoutTransactionsInput>;
+  @Field(() => AccountCreateWithoutSourceTransactionsInput, { nullable: false })
+  @Type(() => AccountCreateWithoutSourceTransactionsInput)
+  create!: InstanceType<typeof AccountCreateWithoutSourceTransactionsInput>;
 }
 
 @InputType()
@@ -543,6 +575,52 @@ export class AccountCreateOrConnectWithoutUserInput {
   @Field(() => AccountCreateWithoutUserInput, { nullable: false })
   @Type(() => AccountCreateWithoutUserInput)
   create!: InstanceType<typeof AccountCreateWithoutUserInput>;
+}
+
+@InputType()
+export class AccountCreateWithoutDestinyTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  balance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutAccountsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutAccountsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutAccountsInput>;
+  @Field(() => InstitutionCreateNestedOneWithoutAccountsInput, {
+    nullable: false,
+  })
+  @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
+  institution!: InstanceType<
+    typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
+  >;
 }
 
 @InputType()
@@ -568,12 +646,19 @@ export class AccountCreateWithoutInstitutionInput {
   @Field(() => UserCreateNestedOneWithoutAccountsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutAccountsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutAccountsInput>;
-  @Field(() => TransactionCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -614,17 +699,24 @@ export class AccountCreateWithoutInvestmentsInput {
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
   >;
-  @Field(() => TransactionCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
   >;
 }
 
 @InputType()
-export class AccountCreateWithoutTransactionsInput {
+export class AccountCreateWithoutSourceTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -652,6 +744,13 @@ export class AccountCreateWithoutTransactionsInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -689,12 +788,19 @@ export class AccountCreateWithoutUserInput {
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
   >;
-  @Field(() => TransactionCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -735,12 +841,19 @@ export class AccountCreateInput {
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
   >;
-  @Field(() => TransactionCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -977,6 +1090,16 @@ export class AccountMinOrderByAggregateInput {
 }
 
 @InputType()
+export class AccountNullableRelationFilter {
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  is?: InstanceType<typeof AccountWhereInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  isNot?: InstanceType<typeof AccountWhereInput>;
+}
+
+@InputType()
 export class AccountOrderByRelationAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   _count?: keyof typeof SortOrder;
@@ -1051,7 +1174,14 @@ export class AccountOrderByWithRelationInput {
   institution?: InstanceType<typeof InstitutionOrderByWithRelationInput>;
   @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
   @Type(() => TransactionOrderByRelationAggregateInput)
-  transactions?: InstanceType<typeof TransactionOrderByRelationAggregateInput>;
+  sourceTransactions?: InstanceType<
+    typeof TransactionOrderByRelationAggregateInput
+  >;
+  @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => TransactionOrderByRelationAggregateInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionOrderByRelationAggregateInput
+  >;
   @Field(() => InvestmentOrderByRelationAggregateInput, { nullable: true })
   @Type(() => InvestmentOrderByRelationAggregateInput)
   investments?: InstanceType<typeof InvestmentOrderByRelationAggregateInput>;
@@ -1188,6 +1318,46 @@ export class AccountUncheckedCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  balance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => String, { nullable: false })
+  institutionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
+  >;
+}
+
+@InputType()
 export class AccountUncheckedCreateWithoutInstitutionInput {
   @Field(() => String, { nullable: true })
   id?: string;
@@ -1209,12 +1379,19 @@ export class AccountUncheckedCreateWithoutInstitutionInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => TransactionUncheckedCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -1249,17 +1426,24 @@ export class AccountUncheckedCreateWithoutInvestmentsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => TransactionUncheckedCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
   >;
 }
 
 @InputType()
-export class AccountUncheckedCreateWithoutTransactionsInput {
+export class AccountUncheckedCreateWithoutSourceTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -1282,6 +1466,13 @@ export class AccountUncheckedCreateWithoutTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
+  >;
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
     nullable: true,
   })
@@ -1313,12 +1504,19 @@ export class AccountUncheckedCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => TransactionUncheckedCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -1353,12 +1551,19 @@ export class AccountUncheckedCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => TransactionUncheckedCreateNestedManyWithoutAccountInput, {
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedCreateNestedManyWithoutAccountInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedCreateNestedManyWithoutAccountInput
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
   >;
   @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
     nullable: true,
@@ -1527,6 +1732,45 @@ export class AccountUncheckedUpdateManyInput {
 }
 
 @InputType()
+export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  institutionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+}
+
+@InputType()
 export class AccountUncheckedUpdateWithoutInstitutionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
@@ -1547,12 +1791,19 @@ export class AccountUncheckedUpdateWithoutInstitutionInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -1586,17 +1837,24 @@ export class AccountUncheckedUpdateWithoutInvestmentsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
   >;
 }
 
 @InputType()
-export class AccountUncheckedUpdateWithoutTransactionsInput {
+export class AccountUncheckedUpdateWithoutSourceTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -1618,6 +1876,13 @@ export class AccountUncheckedUpdateWithoutTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
+  >;
   @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
     nullable: true,
   })
@@ -1648,12 +1913,19 @@ export class AccountUncheckedUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -1687,12 +1959,19 @@ export class AccountUncheckedUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUncheckedUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUncheckedUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -1831,6 +2110,33 @@ export class AccountUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput {
+  @Field(() => AccountCreateWithoutDestinyTransactionsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutDestinyTransactionsInput)
+  create?: InstanceType<typeof AccountCreateWithoutDestinyTransactionsInput>;
+  @Field(() => AccountCreateOrConnectWithoutDestinyTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutDestinyTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutDestinyTransactionsInput
+  >;
+  @Field(() => AccountUpsertWithoutDestinyTransactionsInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutDestinyTransactionsInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutDestinyTransactionsInput>;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput)
+  update?: InstanceType<
+    typeof AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput
+  >;
+}
+
+@InputType()
 export class AccountUpdateOneRequiredWithoutInvestmentsNestedInput {
   @Field(() => AccountCreateWithoutInvestmentsInput, { nullable: true })
   @Type(() => AccountCreateWithoutInvestmentsInput)
@@ -1858,30 +2164,48 @@ export class AccountUpdateOneRequiredWithoutInvestmentsNestedInput {
 }
 
 @InputType()
-export class AccountUpdateOneRequiredWithoutTransactionsNestedInput {
-  @Field(() => AccountCreateWithoutTransactionsInput, { nullable: true })
-  @Type(() => AccountCreateWithoutTransactionsInput)
-  create?: InstanceType<typeof AccountCreateWithoutTransactionsInput>;
-  @Field(() => AccountCreateOrConnectWithoutTransactionsInput, {
+export class AccountUpdateOneWithoutSourceTransactionsNestedInput {
+  @Field(() => AccountCreateWithoutSourceTransactionsInput, { nullable: true })
+  @Type(() => AccountCreateWithoutSourceTransactionsInput)
+  create?: InstanceType<typeof AccountCreateWithoutSourceTransactionsInput>;
+  @Field(() => AccountCreateOrConnectWithoutSourceTransactionsInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateOrConnectWithoutTransactionsInput)
+  @Type(() => AccountCreateOrConnectWithoutSourceTransactionsInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutTransactionsInput
+    typeof AccountCreateOrConnectWithoutSourceTransactionsInput
   >;
-  @Field(() => AccountUpsertWithoutTransactionsInput, { nullable: true })
-  @Type(() => AccountUpsertWithoutTransactionsInput)
-  upsert?: InstanceType<typeof AccountUpsertWithoutTransactionsInput>;
+  @Field(() => AccountUpsertWithoutSourceTransactionsInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutSourceTransactionsInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutSourceTransactionsInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  disconnect?: InstanceType<typeof AccountWhereInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
   connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
-  @Field(() => AccountUpdateToOneWithWhereWithoutTransactionsInput, {
+  @Field(() => AccountUpdateToOneWithWhereWithoutSourceTransactionsInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateToOneWithWhereWithoutTransactionsInput)
+  @Type(() => AccountUpdateToOneWithWhereWithoutSourceTransactionsInput)
   update?: InstanceType<
-    typeof AccountUpdateToOneWithWhereWithoutTransactionsInput
+    typeof AccountUpdateToOneWithWhereWithoutSourceTransactionsInput
   >;
+}
+
+@InputType()
+export class AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput {
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
+  @Field(() => AccountUpdateWithoutDestinyTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountUpdateWithoutDestinyTransactionsInput)
+  data!: InstanceType<typeof AccountUpdateWithoutDestinyTransactionsInput>;
 }
 
 @InputType()
@@ -1895,13 +2219,13 @@ export class AccountUpdateToOneWithWhereWithoutInvestmentsInput {
 }
 
 @InputType()
-export class AccountUpdateToOneWithWhereWithoutTransactionsInput {
+export class AccountUpdateToOneWithWhereWithoutSourceTransactionsInput {
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   where?: InstanceType<typeof AccountWhereInput>;
-  @Field(() => AccountUpdateWithoutTransactionsInput, { nullable: false })
-  @Type(() => AccountUpdateWithoutTransactionsInput)
-  data!: InstanceType<typeof AccountUpdateWithoutTransactionsInput>;
+  @Field(() => AccountUpdateWithoutSourceTransactionsInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutSourceTransactionsInput)
+  data!: InstanceType<typeof AccountUpdateWithoutSourceTransactionsInput>;
 }
 
 @InputType()
@@ -1922,6 +2246,53 @@ export class AccountUpdateWithWhereUniqueWithoutUserInput {
   @Field(() => AccountUpdateWithoutUserInput, { nullable: false })
   @Type(() => AccountUpdateWithoutUserInput)
   data!: InstanceType<typeof AccountUpdateWithoutUserInput>;
+}
+
+@InputType()
+export class AccountUpdateWithoutDestinyTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutAccountsNestedInput)
+  user?: InstanceType<typeof UserUpdateOneRequiredWithoutAccountsNestedInput>;
+  @Field(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
+  institution?: InstanceType<
+    typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
+  >;
 }
 
 @InputType()
@@ -1948,12 +2319,19 @@ export class AccountUpdateWithoutInstitutionInput {
   })
   @Type(() => UserUpdateOneRequiredWithoutAccountsNestedInput)
   user?: InstanceType<typeof UserUpdateOneRequiredWithoutAccountsNestedInput>;
-  @Field(() => TransactionUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -1995,17 +2373,24 @@ export class AccountUpdateWithoutInvestmentsInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
-  @Field(() => TransactionUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
   >;
 }
 
 @InputType()
-export class AccountUpdateWithoutTransactionsInput {
+export class AccountUpdateWithoutSourceTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -2034,6 +2419,13 @@ export class AccountUpdateWithoutTransactionsInput {
   @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -2070,12 +2462,19 @@ export class AccountUpdateWithoutUserInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
-  @Field(() => TransactionUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -2117,12 +2516,19 @@ export class AccountUpdateInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
-  @Field(() => TransactionUpdateManyWithoutAccountNestedInput, {
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithoutAccountNestedInput)
-  transactions?: InstanceType<
-    typeof TransactionUpdateManyWithoutAccountNestedInput
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
   >;
   @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
     nullable: true,
@@ -2160,6 +2566,23 @@ export class AccountUpsertWithWhereUniqueWithoutUserInput {
 }
 
 @InputType()
+export class AccountUpsertWithoutDestinyTransactionsInput {
+  @Field(() => AccountUpdateWithoutDestinyTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountUpdateWithoutDestinyTransactionsInput)
+  update!: InstanceType<typeof AccountUpdateWithoutDestinyTransactionsInput>;
+  @Field(() => AccountCreateWithoutDestinyTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateWithoutDestinyTransactionsInput)
+  create!: InstanceType<typeof AccountCreateWithoutDestinyTransactionsInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
+}
+
+@InputType()
 export class AccountUpsertWithoutInvestmentsInput {
   @Field(() => AccountUpdateWithoutInvestmentsInput, { nullable: false })
   @Type(() => AccountUpdateWithoutInvestmentsInput)
@@ -2173,13 +2596,13 @@ export class AccountUpsertWithoutInvestmentsInput {
 }
 
 @InputType()
-export class AccountUpsertWithoutTransactionsInput {
-  @Field(() => AccountUpdateWithoutTransactionsInput, { nullable: false })
-  @Type(() => AccountUpdateWithoutTransactionsInput)
-  update!: InstanceType<typeof AccountUpdateWithoutTransactionsInput>;
-  @Field(() => AccountCreateWithoutTransactionsInput, { nullable: false })
-  @Type(() => AccountCreateWithoutTransactionsInput)
-  create!: InstanceType<typeof AccountCreateWithoutTransactionsInput>;
+export class AccountUpsertWithoutSourceTransactionsInput {
+  @Field(() => AccountUpdateWithoutSourceTransactionsInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutSourceTransactionsInput)
+  update!: InstanceType<typeof AccountUpdateWithoutSourceTransactionsInput>;
+  @Field(() => AccountCreateWithoutSourceTransactionsInput, { nullable: false })
+  @Type(() => AccountCreateWithoutSourceTransactionsInput)
+  create!: InstanceType<typeof AccountCreateWithoutSourceTransactionsInput>;
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   where?: InstanceType<typeof AccountWhereInput>;
@@ -2225,7 +2648,10 @@ export class AccountWhereUniqueInput {
   institution?: InstanceType<typeof InstitutionRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
-  transactions?: InstanceType<typeof TransactionListRelationFilter>;
+  sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
+  @Field(() => TransactionListRelationFilter, { nullable: true })
+  @Type(() => TransactionListRelationFilter)
+  destinyTransactions?: InstanceType<typeof TransactionListRelationFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
   @Type(() => InvestmentListRelationFilter)
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
@@ -2271,7 +2697,10 @@ export class AccountWhereInput {
   institution?: InstanceType<typeof InstitutionRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
-  transactions?: InstanceType<typeof TransactionListRelationFilter>;
+  sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
+  @Field(() => TransactionListRelationFilter, { nullable: true })
+  @Type(() => TransactionListRelationFilter)
+  destinyTransactions?: InstanceType<typeof TransactionListRelationFilter>;
   @Field(() => InvestmentListRelationFilter, { nullable: true })
   @Type(() => InvestmentListRelationFilter)
   investments?: InstanceType<typeof InvestmentListRelationFilter>;
@@ -2304,7 +2733,9 @@ export class Account {
   @Field(() => Institution, { nullable: false })
   institution?: InstanceType<typeof Institution>;
   @Field(() => [Transaction], { nullable: true })
-  transactions?: Array<Transaction>;
+  sourceTransactions?: Array<Transaction>;
+  @Field(() => [Transaction], { nullable: true })
+  destinyTransactions?: Array<Transaction>;
   @Field(() => [Investment], { nullable: true })
   investments?: Array<Investment>;
   @Field(() => AccountCount, { nullable: false })
@@ -9071,7 +9502,9 @@ export class TransactionCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  accountId?: true;
+  sourceAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  destinyAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -9097,7 +9530,9 @@ export class TransactionCountAggregate {
   @Field(() => Int, { nullable: false })
   type!: number;
   @Field(() => Int, { nullable: false })
-  accountId!: number;
+  sourceAccountId!: number;
+  @Field(() => Int, { nullable: false })
+  destinyAccountId!: number;
   @Field(() => Int, { nullable: false })
   userId!: number;
   @Field(() => Int, { nullable: false })
@@ -9123,7 +9558,9 @@ export class TransactionCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  accountId?: keyof typeof SortOrder;
+  sourceAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  destinyAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -9139,16 +9576,16 @@ export class TransactionCount {
 }
 
 @InputType()
-export class TransactionCreateManyAccountInputEnvelope {
-  @Field(() => [TransactionCreateManyAccountInput], { nullable: false })
-  @Type(() => TransactionCreateManyAccountInput)
-  data!: Array<TransactionCreateManyAccountInput>;
+export class TransactionCreateManyDestinyAccountInputEnvelope {
+  @Field(() => [TransactionCreateManyDestinyAccountInput], { nullable: false })
+  @Type(() => TransactionCreateManyDestinyAccountInput)
+  data!: Array<TransactionCreateManyDestinyAccountInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @InputType()
-export class TransactionCreateManyAccountInput {
+export class TransactionCreateManyDestinyAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -9163,6 +9600,43 @@ export class TransactionCreateManyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class TransactionCreateManySourceAccountInputEnvelope {
+  @Field(() => [TransactionCreateManySourceAccountInput], { nullable: false })
+  @Type(() => TransactionCreateManySourceAccountInput)
+  data!: Array<TransactionCreateManySourceAccountInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class TransactionCreateManySourceAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: false })
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -9196,8 +9670,10 @@ export class TransactionCreateManyUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -9220,8 +9696,10 @@ export class TransactionCreateManyInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -9231,18 +9709,46 @@ export class TransactionCreateManyInput {
 }
 
 @InputType()
-export class TransactionCreateNestedManyWithoutAccountInput {
-  @Field(() => [TransactionCreateWithoutAccountInput], { nullable: true })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create?: Array<TransactionCreateWithoutAccountInput>;
-  @Field(() => [TransactionCreateOrConnectWithoutAccountInput], {
+export class TransactionCreateNestedManyWithoutDestinyAccountInput {
+  @Field(() => [TransactionCreateWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionCreateOrConnectWithoutAccountInput)
-  connectOrCreate?: Array<TransactionCreateOrConnectWithoutAccountInput>;
-  @Field(() => TransactionCreateManyAccountInputEnvelope, { nullable: true })
-  @Type(() => TransactionCreateManyAccountInputEnvelope)
-  createMany?: InstanceType<typeof TransactionCreateManyAccountInputEnvelope>;
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create?: Array<TransactionCreateWithoutDestinyAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutDestinyAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutDestinyAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutDestinyAccountInput>;
+  @Field(() => TransactionCreateManyDestinyAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyDestinyAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyDestinyAccountInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class TransactionCreateNestedManyWithoutSourceAccountInput {
+  @Field(() => [TransactionCreateWithoutSourceAccountInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create?: Array<TransactionCreateWithoutSourceAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutSourceAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutSourceAccountInput>;
+  @Field(() => TransactionCreateManySourceAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManySourceAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManySourceAccountInputEnvelope
+  >;
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
@@ -9282,13 +9788,13 @@ export class TransactionCreateNestedOneWithoutInvestmentLinksInput {
 }
 
 @InputType()
-export class TransactionCreateOrConnectWithoutAccountInput {
+export class TransactionCreateOrConnectWithoutDestinyAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
   where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
-  @Field(() => TransactionCreateWithoutAccountInput, { nullable: false })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create!: InstanceType<typeof TransactionCreateWithoutAccountInput>;
+  @Field(() => TransactionCreateWithoutDestinyAccountInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create!: InstanceType<typeof TransactionCreateWithoutDestinyAccountInput>;
 }
 
 @InputType()
@@ -9304,6 +9810,16 @@ export class TransactionCreateOrConnectWithoutInvestmentLinksInput {
 }
 
 @InputType()
+export class TransactionCreateOrConnectWithoutSourceAccountInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionCreateWithoutSourceAccountInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create!: InstanceType<typeof TransactionCreateWithoutSourceAccountInput>;
+}
+
+@InputType()
 export class TransactionCreateOrConnectWithoutUserInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
@@ -9314,7 +9830,7 @@ export class TransactionCreateOrConnectWithoutUserInput {
 }
 
 @InputType()
-export class TransactionCreateWithoutAccountInput {
+export class TransactionCreateWithoutDestinyAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -9333,6 +9849,13 @@ export class TransactionCreateWithoutAccountInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutSourceTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
+  sourceAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
@@ -9365,14 +9888,62 @@ export class TransactionCreateWithoutInvestmentLinksInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => AccountCreateNestedOneWithoutTransactionsInput, {
+  @Field(() => AccountCreateNestedOneWithoutSourceTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
+  sourceAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
+  @Field(() => AccountCreateNestedOneWithoutDestinyTransactionsInput, {
     nullable: false,
   })
-  @Type(() => AccountCreateNestedOneWithoutTransactionsInput)
-  account!: InstanceType<typeof AccountCreateNestedOneWithoutTransactionsInput>;
+  @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
+  destinyAccount!: InstanceType<
+    typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
+}
+
+@InputType()
+export class TransactionCreateWithoutSourceAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutDestinyTransactionsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
+  destinyAccount!: InstanceType<
+    typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
+  @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutTransactionsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @InputType()
@@ -9395,11 +9966,20 @@ export class TransactionCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => AccountCreateNestedOneWithoutTransactionsInput, {
+  @Field(() => AccountCreateNestedOneWithoutSourceTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
+  sourceAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
+  @Field(() => AccountCreateNestedOneWithoutDestinyTransactionsInput, {
     nullable: false,
   })
-  @Type(() => AccountCreateNestedOneWithoutTransactionsInput)
-  account!: InstanceType<typeof AccountCreateNestedOneWithoutTransactionsInput>;
+  @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
+  destinyAccount!: InstanceType<
+    typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
   @Field(() => InvestmentTransactionCreateNestedManyWithoutTransactionInput, {
     nullable: true,
   })
@@ -9429,11 +10009,20 @@ export class TransactionCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => AccountCreateNestedOneWithoutTransactionsInput, {
+  @Field(() => AccountCreateNestedOneWithoutSourceTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
+  sourceAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
+  @Field(() => AccountCreateNestedOneWithoutDestinyTransactionsInput, {
     nullable: false,
   })
-  @Type(() => AccountCreateNestedOneWithoutTransactionsInput)
-  account!: InstanceType<typeof AccountCreateNestedOneWithoutTransactionsInput>;
+  @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
+  destinyAccount!: InstanceType<
+    typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
@@ -9494,8 +10083,10 @@ export class TransactionGroupBy {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: false })
@@ -9542,7 +10133,9 @@ export class TransactionMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  accountId?: true;
+  sourceAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  destinyAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -9566,7 +10159,9 @@ export class TransactionMaxAggregate {
   @Field(() => TransactionType, { nullable: true })
   type?: keyof typeof TransactionType;
   @Field(() => String, { nullable: true })
-  accountId?: string;
+  sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  destinyAccountId?: string;
   @Field(() => String, { nullable: true })
   userId?: string;
   @Field(() => Date, { nullable: true })
@@ -9590,7 +10185,9 @@ export class TransactionMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  accountId?: keyof typeof SortOrder;
+  sourceAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  destinyAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -9614,7 +10211,9 @@ export class TransactionMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  accountId?: true;
+  sourceAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  destinyAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -9638,7 +10237,9 @@ export class TransactionMinAggregate {
   @Field(() => TransactionType, { nullable: true })
   type?: keyof typeof TransactionType;
   @Field(() => String, { nullable: true })
-  accountId?: string;
+  sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  destinyAccountId?: string;
   @Field(() => String, { nullable: true })
   userId?: string;
   @Field(() => Date, { nullable: true })
@@ -9662,7 +10263,9 @@ export class TransactionMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  accountId?: keyof typeof SortOrder;
+  sourceAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  destinyAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -9691,8 +10294,10 @@ export class TransactionOrderByWithAggregationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  accountId?: keyof typeof SortOrder;
+  destinyAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -9730,8 +10335,10 @@ export class TransactionOrderByWithRelationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  accountId?: keyof typeof SortOrder;
+  destinyAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -9740,7 +10347,10 @@ export class TransactionOrderByWithRelationInput {
   updatedAt?: keyof typeof SortOrder;
   @Field(() => AccountOrderByWithRelationInput, { nullable: true })
   @Type(() => AccountOrderByWithRelationInput)
-  account?: InstanceType<typeof AccountOrderByWithRelationInput>;
+  sourceAccount?: InstanceType<typeof AccountOrderByWithRelationInput>;
+  @Field(() => AccountOrderByWithRelationInput, { nullable: true })
+  @Type(() => AccountOrderByWithRelationInput)
+  destinyAccount?: InstanceType<typeof AccountOrderByWithRelationInput>;
   @Field(() => UserOrderByWithRelationInput, { nullable: true })
   @Type(() => UserOrderByWithRelationInput)
   user?: InstanceType<typeof UserOrderByWithRelationInput>;
@@ -9787,8 +10397,10 @@ export class TransactionScalarWhereWithAggregatesInput {
   status?: InstanceType<typeof EnumTransactionStatusWithAggregatesFilter>;
   @Field(() => EnumTransactionTypeWithAggregatesFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeWithAggregatesFilter>;
+  @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
+  sourceAccountId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
-  accountId?: InstanceType<typeof StringWithAggregatesFilter>;
+  destinyAccountId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   userId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -9821,8 +10433,10 @@ export class TransactionScalarWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  accountId?: InstanceType<typeof StringFilter>;
+  destinyAccountId?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -9850,18 +10464,46 @@ export class TransactionSumOrderByAggregateInput {
 }
 
 @InputType()
-export class TransactionUncheckedCreateNestedManyWithoutAccountInput {
-  @Field(() => [TransactionCreateWithoutAccountInput], { nullable: true })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create?: Array<TransactionCreateWithoutAccountInput>;
-  @Field(() => [TransactionCreateOrConnectWithoutAccountInput], {
+export class TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput {
+  @Field(() => [TransactionCreateWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionCreateOrConnectWithoutAccountInput)
-  connectOrCreate?: Array<TransactionCreateOrConnectWithoutAccountInput>;
-  @Field(() => TransactionCreateManyAccountInputEnvelope, { nullable: true })
-  @Type(() => TransactionCreateManyAccountInputEnvelope)
-  createMany?: InstanceType<typeof TransactionCreateManyAccountInputEnvelope>;
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create?: Array<TransactionCreateWithoutDestinyAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutDestinyAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutDestinyAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutDestinyAccountInput>;
+  @Field(() => TransactionCreateManyDestinyAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyDestinyAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyDestinyAccountInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+}
+
+@InputType()
+export class TransactionUncheckedCreateNestedManyWithoutSourceAccountInput {
+  @Field(() => [TransactionCreateWithoutSourceAccountInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create?: Array<TransactionCreateWithoutSourceAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutSourceAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutSourceAccountInput>;
+  @Field(() => TransactionCreateManySourceAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManySourceAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManySourceAccountInputEnvelope
+  >;
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
@@ -9884,7 +10526,7 @@ export class TransactionUncheckedCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
-export class TransactionUncheckedCreateWithoutAccountInput {
+export class TransactionUncheckedCreateWithoutDestinyAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -9899,6 +10541,8 @@ export class TransactionUncheckedCreateWithoutAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -9933,14 +10577,52 @@ export class TransactionUncheckedCreateWithoutInvestmentLinksInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+}
+
+@InputType()
+export class TransactionUncheckedCreateWithoutSourceAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: false })
+  destinyAccountId!: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutTransactionInput
+  >;
 }
 
 @InputType()
@@ -9959,8 +10641,10 @@ export class TransactionUncheckedCreateWithoutUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -9993,8 +10677,10 @@ export class TransactionUncheckedCreateInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -10014,23 +10700,29 @@ export class TransactionUncheckedCreateInput {
 }
 
 @InputType()
-export class TransactionUncheckedUpdateManyWithoutAccountNestedInput {
-  @Field(() => [TransactionCreateWithoutAccountInput], { nullable: true })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create?: Array<TransactionCreateWithoutAccountInput>;
-  @Field(() => [TransactionCreateOrConnectWithoutAccountInput], {
+export class TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput {
+  @Field(() => [TransactionCreateWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionCreateOrConnectWithoutAccountInput)
-  connectOrCreate?: Array<TransactionCreateOrConnectWithoutAccountInput>;
-  @Field(() => [TransactionUpsertWithWhereUniqueWithoutAccountInput], {
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create?: Array<TransactionCreateWithoutDestinyAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpsertWithWhereUniqueWithoutAccountInput)
-  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutAccountInput>;
-  @Field(() => TransactionCreateManyAccountInputEnvelope, { nullable: true })
-  @Type(() => TransactionCreateManyAccountInputEnvelope)
-  createMany?: InstanceType<typeof TransactionCreateManyAccountInputEnvelope>;
+  @Type(() => TransactionCreateOrConnectWithoutDestinyAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutDestinyAccountInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput>;
+  @Field(() => TransactionCreateManyDestinyAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyDestinyAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyDestinyAccountInputEnvelope
+  >;
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
@@ -10043,23 +10735,23 @@ export class TransactionUncheckedUpdateManyWithoutAccountNestedInput {
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
-  @Field(() => [TransactionUpdateWithWhereUniqueWithoutAccountInput], {
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpdateWithWhereUniqueWithoutAccountInput)
-  update?: Array<TransactionUpdateWithWhereUniqueWithoutAccountInput>;
-  @Field(() => [TransactionUpdateManyWithWhereWithoutAccountInput], {
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithWhereWithoutAccountInput)
-  updateMany?: Array<TransactionUpdateManyWithWhereWithoutAccountInput>;
+  @Type(() => TransactionUpdateManyWithWhereWithoutDestinyAccountInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutDestinyAccountInput>;
   @Field(() => [TransactionScalarWhereInput], { nullable: true })
   @Type(() => TransactionScalarWhereInput)
   deleteMany?: Array<TransactionScalarWhereInput>;
 }
 
 @InputType()
-export class TransactionUncheckedUpdateManyWithoutAccountInput {
+export class TransactionUncheckedUpdateManyWithoutDestinyAccountInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -10077,6 +10769,88 @@ export class TransactionUncheckedUpdateManyWithoutAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput {
+  @Field(() => [TransactionCreateWithoutSourceAccountInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create?: Array<TransactionCreateWithoutSourceAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutSourceAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutSourceAccountInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutSourceAccountInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutSourceAccountInput>;
+  @Field(() => TransactionCreateManySourceAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManySourceAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManySourceAccountInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutSourceAccountInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutSourceAccountInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithWhereWithoutSourceAccountInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutSourceAccountInput>;
+  @Field(() => [TransactionScalarWhereInput], { nullable: true })
+  @Type(() => TransactionScalarWhereInput)
+  deleteMany?: Array<TransactionScalarWhereInput>;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateManyWithoutSourceAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10147,8 +10921,12 @@ export class TransactionUncheckedUpdateManyWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10174,8 +10952,12 @@ export class TransactionUncheckedUpdateManyInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10185,7 +10967,7 @@ export class TransactionUncheckedUpdateManyInput {
 }
 
 @InputType()
-export class TransactionUncheckedUpdateWithoutAccountInput {
+export class TransactionUncheckedUpdateWithoutDestinyAccountInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -10203,6 +10985,10 @@ export class TransactionUncheckedUpdateWithoutAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10240,14 +11026,57 @@ export class TransactionUncheckedUpdateWithoutInvestmentLinksInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateWithoutSourceAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+    { nullable: true },
+  )
+  @Type(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput,
+  )
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutTransactionNestedInput
+  >;
 }
 
 @InputType()
@@ -10269,8 +11098,12 @@ export class TransactionUncheckedUpdateWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10306,8 +11139,12 @@ export class TransactionUncheckedUpdateInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  destinyAccountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -10352,7 +11189,17 @@ export class TransactionUpdateManyMutationInput {
 }
 
 @InputType()
-export class TransactionUpdateManyWithWhereWithoutAccountInput {
+export class TransactionUpdateManyWithWhereWithoutDestinyAccountInput {
+  @Field(() => TransactionScalarWhereInput, { nullable: false })
+  @Type(() => TransactionScalarWhereInput)
+  where!: InstanceType<typeof TransactionScalarWhereInput>;
+  @Field(() => TransactionUpdateManyMutationInput, { nullable: false })
+  @Type(() => TransactionUpdateManyMutationInput)
+  data!: InstanceType<typeof TransactionUpdateManyMutationInput>;
+}
+
+@InputType()
+export class TransactionUpdateManyWithWhereWithoutSourceAccountInput {
   @Field(() => TransactionScalarWhereInput, { nullable: false })
   @Type(() => TransactionScalarWhereInput)
   where!: InstanceType<typeof TransactionScalarWhereInput>;
@@ -10372,23 +11219,29 @@ export class TransactionUpdateManyWithWhereWithoutUserInput {
 }
 
 @InputType()
-export class TransactionUpdateManyWithoutAccountNestedInput {
-  @Field(() => [TransactionCreateWithoutAccountInput], { nullable: true })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create?: Array<TransactionCreateWithoutAccountInput>;
-  @Field(() => [TransactionCreateOrConnectWithoutAccountInput], {
+export class TransactionUpdateManyWithoutDestinyAccountNestedInput {
+  @Field(() => [TransactionCreateWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionCreateOrConnectWithoutAccountInput)
-  connectOrCreate?: Array<TransactionCreateOrConnectWithoutAccountInput>;
-  @Field(() => [TransactionUpsertWithWhereUniqueWithoutAccountInput], {
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create?: Array<TransactionCreateWithoutDestinyAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpsertWithWhereUniqueWithoutAccountInput)
-  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutAccountInput>;
-  @Field(() => TransactionCreateManyAccountInputEnvelope, { nullable: true })
-  @Type(() => TransactionCreateManyAccountInputEnvelope)
-  createMany?: InstanceType<typeof TransactionCreateManyAccountInputEnvelope>;
+  @Type(() => TransactionCreateOrConnectWithoutDestinyAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutDestinyAccountInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput>;
+  @Field(() => TransactionCreateManyDestinyAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyDestinyAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyDestinyAccountInputEnvelope
+  >;
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
@@ -10401,16 +11254,65 @@ export class TransactionUpdateManyWithoutAccountNestedInput {
   @Field(() => [TransactionWhereUniqueInput], { nullable: true })
   @Type(() => TransactionWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
-  @Field(() => [TransactionUpdateWithWhereUniqueWithoutAccountInput], {
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpdateWithWhereUniqueWithoutAccountInput)
-  update?: Array<TransactionUpdateWithWhereUniqueWithoutAccountInput>;
-  @Field(() => [TransactionUpdateManyWithWhereWithoutAccountInput], {
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutDestinyAccountInput], {
     nullable: true,
   })
-  @Type(() => TransactionUpdateManyWithWhereWithoutAccountInput)
-  updateMany?: Array<TransactionUpdateManyWithWhereWithoutAccountInput>;
+  @Type(() => TransactionUpdateManyWithWhereWithoutDestinyAccountInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutDestinyAccountInput>;
+  @Field(() => [TransactionScalarWhereInput], { nullable: true })
+  @Type(() => TransactionScalarWhereInput)
+  deleteMany?: Array<TransactionScalarWhereInput>;
+}
+
+@InputType()
+export class TransactionUpdateManyWithoutSourceAccountNestedInput {
+  @Field(() => [TransactionCreateWithoutSourceAccountInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create?: Array<TransactionCreateWithoutSourceAccountInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutSourceAccountInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutSourceAccountInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutSourceAccountInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutSourceAccountInput>;
+  @Field(() => TransactionCreateManySourceAccountInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManySourceAccountInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManySourceAccountInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutSourceAccountInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutSourceAccountInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutSourceAccountInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithWhereWithoutSourceAccountInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutSourceAccountInput>;
   @Field(() => [TransactionScalarWhereInput], { nullable: true })
   @Type(() => TransactionScalarWhereInput)
   deleteMany?: Array<TransactionScalarWhereInput>;
@@ -10499,13 +11401,23 @@ export class TransactionUpdateToOneWithWhereWithoutInvestmentLinksInput {
 }
 
 @InputType()
-export class TransactionUpdateWithWhereUniqueWithoutAccountInput {
+export class TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
   where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
-  @Field(() => TransactionUpdateWithoutAccountInput, { nullable: false })
-  @Type(() => TransactionUpdateWithoutAccountInput)
-  data!: InstanceType<typeof TransactionUpdateWithoutAccountInput>;
+  @Field(() => TransactionUpdateWithoutDestinyAccountInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutDestinyAccountInput)
+  data!: InstanceType<typeof TransactionUpdateWithoutDestinyAccountInput>;
+}
+
+@InputType()
+export class TransactionUpdateWithWhereUniqueWithoutSourceAccountInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionUpdateWithoutSourceAccountInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutSourceAccountInput)
+  data!: InstanceType<typeof TransactionUpdateWithoutSourceAccountInput>;
 }
 
 @InputType()
@@ -10519,7 +11431,7 @@ export class TransactionUpdateWithWhereUniqueWithoutUserInput {
 }
 
 @InputType()
-export class TransactionUpdateWithoutAccountInput {
+export class TransactionUpdateWithoutDestinyAccountInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -10541,6 +11453,13 @@ export class TransactionUpdateWithoutAccountInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneWithoutSourceTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
+  sourceAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
   })
@@ -10580,12 +11499,19 @@ export class TransactionUpdateWithoutInvestmentLinksInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput, {
+  @Field(() => AccountUpdateOneWithoutSourceTransactionsNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput)
-  account?: InstanceType<
-    typeof AccountUpdateOneRequiredWithoutTransactionsNestedInput
+  @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
+  sourceAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
+  @Field(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput)
+  destinyAccount?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput
   >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
@@ -10593,6 +11519,52 @@ export class TransactionUpdateWithoutInvestmentLinksInput {
   @Type(() => UserUpdateOneRequiredWithoutTransactionsNestedInput)
   user?: InstanceType<
     typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+}
+
+@InputType()
+export class TransactionUpdateWithoutSourceAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput)
+  destinyAccount?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput
+  >;
+  @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutTransactionsNestedInput)
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput)
+  investmentLinks?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutTransactionNestedInput
   >;
 }
 
@@ -10619,12 +11591,19 @@ export class TransactionUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput, {
+  @Field(() => AccountUpdateOneWithoutSourceTransactionsNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput)
-  account?: InstanceType<
-    typeof AccountUpdateOneRequiredWithoutTransactionsNestedInput
+  @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
+  sourceAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
+  @Field(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput)
+  destinyAccount?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput
   >;
   @Field(() => InvestmentTransactionUpdateManyWithoutTransactionNestedInput, {
     nullable: true,
@@ -10658,12 +11637,19 @@ export class TransactionUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput, {
+  @Field(() => AccountUpdateOneWithoutSourceTransactionsNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneRequiredWithoutTransactionsNestedInput)
-  account?: InstanceType<
-    typeof AccountUpdateOneRequiredWithoutTransactionsNestedInput
+  @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
+  sourceAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
+  @Field(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput)
+  destinyAccount?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutDestinyTransactionsNestedInput
   >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
@@ -10682,16 +11668,29 @@ export class TransactionUpdateInput {
 }
 
 @InputType()
-export class TransactionUpsertWithWhereUniqueWithoutAccountInput {
+export class TransactionUpsertWithWhereUniqueWithoutDestinyAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
   where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
-  @Field(() => TransactionUpdateWithoutAccountInput, { nullable: false })
-  @Type(() => TransactionUpdateWithoutAccountInput)
-  update!: InstanceType<typeof TransactionUpdateWithoutAccountInput>;
-  @Field(() => TransactionCreateWithoutAccountInput, { nullable: false })
-  @Type(() => TransactionCreateWithoutAccountInput)
-  create!: InstanceType<typeof TransactionCreateWithoutAccountInput>;
+  @Field(() => TransactionUpdateWithoutDestinyAccountInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutDestinyAccountInput)
+  update!: InstanceType<typeof TransactionUpdateWithoutDestinyAccountInput>;
+  @Field(() => TransactionCreateWithoutDestinyAccountInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutDestinyAccountInput)
+  create!: InstanceType<typeof TransactionCreateWithoutDestinyAccountInput>;
+}
+
+@InputType()
+export class TransactionUpsertWithWhereUniqueWithoutSourceAccountInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionUpdateWithoutSourceAccountInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutSourceAccountInput)
+  update!: InstanceType<typeof TransactionUpdateWithoutSourceAccountInput>;
+  @Field(() => TransactionCreateWithoutSourceAccountInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutSourceAccountInput)
+  create!: InstanceType<typeof TransactionCreateWithoutSourceAccountInput>;
 }
 
 @InputType()
@@ -10748,17 +11747,22 @@ export class TransactionWhereUniqueInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  accountId?: InstanceType<typeof StringFilter>;
+  destinyAccountId?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountNullableRelationFilter, { nullable: true })
+  @Type(() => AccountNullableRelationFilter)
+  sourceAccount?: InstanceType<typeof AccountNullableRelationFilter>;
   @Field(() => AccountRelationFilter, { nullable: true })
   @Type(() => AccountRelationFilter)
-  account?: InstanceType<typeof AccountRelationFilter>;
+  destinyAccount?: InstanceType<typeof AccountRelationFilter>;
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
@@ -10793,17 +11797,22 @@ export class TransactionWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  accountId?: InstanceType<typeof StringFilter>;
+  destinyAccountId?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountNullableRelationFilter, { nullable: true })
+  @Type(() => AccountNullableRelationFilter)
+  sourceAccount?: InstanceType<typeof AccountNullableRelationFilter>;
   @Field(() => AccountRelationFilter, { nullable: true })
   @Type(() => AccountRelationFilter)
-  account?: InstanceType<typeof AccountRelationFilter>;
+  destinyAccount?: InstanceType<typeof AccountRelationFilter>;
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
@@ -10828,16 +11837,20 @@ export class Transaction {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => String, { nullable: true })
+  sourceAccountId!: string | null;
   @Field(() => String, { nullable: false })
-  accountId!: string;
+  destinyAccountId!: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
+  @Field(() => Account, { nullable: true })
+  sourceAccount?: InstanceType<typeof Account> | null;
   @Field(() => Account, { nullable: false })
-  account?: InstanceType<typeof Account>;
+  destinyAccount?: InstanceType<typeof Account>;
   @Field(() => User, { nullable: false })
   user?: InstanceType<typeof User>;
   @Field(() => [InvestmentTransaction], { nullable: true })

@@ -58,8 +58,9 @@ model Account {
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
   institutionId String
 
-  transactions Transaction[]
-  investments  Investment[]
+  sourceTransactions  Transaction[] @relation("SourceAccount")
+  destinyTransactions Transaction[] @relation("DestinyAccount")
+  investments         Investment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,8 +119,11 @@ model Transaction {
   status      TransactionStatus
   type        TransactionType
 
-  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  accountId String
+  sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "SourceAccount")
+  sourceAccountId String?
+
+  destinyAccount   Account @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "DestinyAccount")
+  destinyAccountId String
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
