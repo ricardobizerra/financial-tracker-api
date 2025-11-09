@@ -47,7 +47,16 @@ export class TransactionService {
       ? await this.prismaService.transaction.count({
           where: {
             userId,
-            accountId: filterArgs.accountId ?? undefined,
+            ...(filterArgs.accountId && {
+              OR: [
+                {
+                  sourceAccountId: filterArgs.accountId,
+                },
+                {
+                  destinyAccountId: filterArgs.accountId,
+                },
+              ],
+            }),
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
                 [field]: {
@@ -95,7 +104,16 @@ export class TransactionService {
       select: selectObject<Transaction, TransactionModel>(queriedFields),
       where: {
         userId,
-        accountId: filterArgs.accountId ?? undefined,
+        ...(filterArgs.accountId && {
+          OR: [
+            {
+              sourceAccountId: filterArgs.accountId,
+            },
+            {
+              destinyAccountId: filterArgs.accountId,
+            },
+          ],
+        }),
         ...(!!searchArgs.search && {
           OR: ['name', 'description'].map((field) => ({
             [field]: {
@@ -184,7 +202,16 @@ export class TransactionService {
           },
           where: {
             userId,
-            accountId: filterArgs.accountId ?? undefined,
+            ...(filterArgs.accountId && {
+              OR: [
+                {
+                  sourceAccountId: filterArgs.accountId,
+                },
+                {
+                  destinyAccountId: filterArgs.accountId,
+                },
+              ],
+            }),
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
                 [field]: {
