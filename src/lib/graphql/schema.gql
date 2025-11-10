@@ -700,7 +700,7 @@ enum OrdenationTransactionModel {
 type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
-  createInvestment(data: InvestmentCreateWithoutUserInput!): Investment!
+  createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
   createAccount(data: AccountCreateWithoutUserInput!): AccountModel!
   createTransaction(data: TransactionCreateWithoutUserInput!): TransactionModel!
@@ -1873,6 +1873,24 @@ input AccountCreateManyUserInput {
 input AuthSignInInput {
   username: String!
   password: String!
+}
+
+input CreateInvestmentInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccountId: ID
+  destinyAccountId: ID!
 }
 
 type Subscription {

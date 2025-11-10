@@ -33,6 +33,7 @@ import {
 import { AccountService } from '@/account/account.service';
 import { AccountType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
+import { CreateInvestmentInput } from './input/create-investment.input';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
@@ -68,19 +69,20 @@ export class InvestmentResolver {
   @Auth()
   @Mutation(() => Investment, { name: 'createInvestment' })
   async create(
-    @Args('data') data: InvestmentCreateWithoutUserInput,
+    @Args('data') data: CreateInvestmentInput,
     @CurrentUser() user: UserModel,
   ) {
     const account = await this.accountService.find({
-      id: data.account.connect.id,
+      id: data.destinyAccountId,
     });
 
-    if (!account || account.type !== AccountType.INVESTMENT) {
+    if (!account) {
       throw new NotFoundException('Conta não encontrada');
     }
 
     const createdInvestment = await this.investmentService.create(
       data,
+      account.type,
       user?.id,
     );
 

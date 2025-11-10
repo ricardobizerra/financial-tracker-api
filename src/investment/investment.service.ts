@@ -3,6 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import {
+  AccountType,
   Investment,
   InvestmentTransactionRole,
   Regime as RegimePrisma,
@@ -20,16 +21,14 @@ import {
 } from './investment.model';
 import { differenceInDays } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
-import {
-  InvestmentCreateWithoutUserInput,
-  Regime,
-} from '@/lib/graphql/prisma-client';
+import { Regime, Transaction } from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
 import { Cron } from '@nestjs/schedule';
 import { BacenService } from '@/external/bacen/bacen.service';
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
+import { CreateInvestmentInput } from './input/create-investment.input';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -368,25 +367,28 @@ export class InvestmentService {
     };
   }
 
-  async create(data: InvestmentCreateWithoutUserInput, userId: string) {
-    const [investment, transaction] = await this.prismaService.$transaction([
-      this.prismaService.investment.create({
-        data: {
-          ...data,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-        },
-      }),
-      this.prismaService.transaction.create({
+  async create(
+    data: CreateInvestmentInput,
+    accountType: AccountType,
+    userId: string,
+  ) {
+    let transaction: Transaction | null = null;
+
+    if (accountType !== AccountType.INVESTMENT) {
+      transaction = await this.prismaService.transaction.create({
         data: {
           amount: data.amount,
-          type: TransactionType.EXPENSE,
-          account: {
+          type: TransactionType.BETWEEN_ACCOUNTS,
+          sourceAccount: data.sourceAccountId
+            ? {
+                connect: {
+                  id: data.sourceAccountId,
+                },
+              }
+            : undefined,
+          destinyAccount: {
             connect: {
-              id: data.account.connect.id,
+              id: data.destinyAccountId,
             },
           },
           user: {
@@ -401,13 +403,39 @@ export class InvestmentService {
               ? TransactionStatus.PLANNED
               : TransactionStatus.COMPLETED,
         },
-      }),
-    ]);
+      });
 
-    if (!investment || !transaction) {
-      throw new NotFoundException(
-        'Failed to create investment and its transaction',
-      );
+      if (!transaction) {
+        throw new NotFoundException('Failed to create transaction');
+      }
+    }
+
+    const investment = await this.prismaService.investment.create({
+      data: {
+        ...data,
+        account: {
+          connect: {
+            id: data.destinyAccountId,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    if (!investment) {
+      if (transaction) {
+        await this.prismaService.transaction.delete({
+          where: {
+            id: transaction.id,
+          },
+        });
+      }
+
+      throw new NotFoundException('Failed to create investment ');
     }
 
     const investmentTransaction =
@@ -427,6 +455,24 @@ export class InvestmentService {
           },
         },
       });
+
+    if (!investmentTransaction) {
+      if (transaction) {
+        await this.prismaService.transaction.delete({
+          where: {
+            id: transaction.id,
+          },
+        });
+      }
+
+      await this.prismaService.investment.delete({
+        where: {
+          id: investment.id,
+        },
+      });
+
+      throw new NotFoundException('Failed to create investment transaction');
+    }
 
     return investment;
   }
