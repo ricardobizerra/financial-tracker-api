@@ -11,6 +11,7 @@ import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { TransactionFilterArgs } from './transaction.model';
 import { TransactionCreateWithoutUserInput } from '@/lib/graphql/prisma-client';
+import { TransactionType } from '@prisma/client';
 
 @Resolver()
 export class TransactionResolver {
@@ -22,6 +23,24 @@ export class TransactionResolver {
     @Args('data') data: TransactionCreateWithoutUserInput,
     @CurrentUser() user: UserModel,
   ) {
+    if (data.type === TransactionType.INCOME && !data.destinyAccount) {
+      throw new Error('Destiny account is mandatory for income transactions');
+    }
+
+    if (data.type === TransactionType.EXPENSE && !data.sourceAccount) {
+      throw new Error('Source account is mandatory for expense transactions');
+    }
+
+    if (
+      data.type === TransactionType.BETWEEN_ACCOUNTS &&
+      !data.sourceAccount &&
+      !data.destinyAccount
+    ) {
+      throw new Error(
+        'Source and destiny accounts are mandatory for transactions between accounts',
+      );
+    }
+
     return this.transactionService.create({
       ...data,
       user: {
