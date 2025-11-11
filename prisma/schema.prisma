@@ -58,9 +58,10 @@ model Account {
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
   institutionId String
 
-  sourceTransactions  Transaction[] @relation("SourceAccount")
-  destinyTransactions Transaction[] @relation("DestinyAccount")
-  investments         Investment[]
+  sourceTransactions     Transaction[]           @relation("SourceAccount")
+  destinyTransactions    Transaction[]           @relation("DestinyAccount")
+  investments            Investment[]
+  investmentTransactions InvestmentTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -101,14 +102,14 @@ model InvestmentTransaction {
   investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
   investmentId String
 
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  transactionId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([investmentId])
-  @@index([transactionId])
+  @@index([accountId])
 }
 
 model Transaction {
@@ -127,8 +128,6 @@ model Transaction {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
-
-  investmentLinks InvestmentTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

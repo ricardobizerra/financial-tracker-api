@@ -26,20 +26,27 @@ import {
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
 import {
+  Account,
   Investment,
   InvestmentCreateWithoutUserInput,
   Regime,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
 } from '@/lib/graphql/prisma-client';
 import { AccountService } from '@/account/account.service';
 import { AccountType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
+import { TransactionService } from '@/transaction/transaction.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
   constructor(
     private readonly investmentService: InvestmentService,
     private readonly accountService: AccountService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   @Auth()
@@ -74,19 +81,75 @@ export class InvestmentResolver {
   ) {
     const account = await this.accountService.find({
       id: data.destinyAccountId,
+      user: {
+        id: user?.id,
+      },
     });
 
     if (!account) {
       throw new NotFoundException('Conta não encontrada');
     }
 
+    let sourceAccount: Account | null = null;
+    let transaction: Transaction | null = null;
+
+    if (account.type !== AccountType.INVESTMENT) {
+      sourceAccount = await this.accountService.find({
+        id: data.sourceAccountId,
+        user: {
+          id: user?.id,
+        },
+      });
+
+      if (!sourceAccount) {
+        throw new NotFoundException('Conta de origem não encontrada');
+      }
+
+      transaction = await this.transactionService.create({
+        amount: new Decimal(data.amount),
+        type: TransactionType.BETWEEN_ACCOUNTS,
+        sourceAccount: {
+          connect: {
+            id: data.sourceAccountId,
+          },
+        },
+        destinyAccount: {
+          connect: {
+            id: data.destinyAccountId,
+          },
+        },
+        user: {
+          connect: {
+            id: user?.id,
+          },
+        },
+        date: data.startDate,
+        description: `Investimento ${data.regimeName}`,
+        status:
+          data.startDate <= new Date()
+            ? TransactionStatus.PLANNED
+            : TransactionStatus.COMPLETED,
+      });
+
+      if (!transaction) {
+        await this.transactionService.delete(transaction.id);
+        throw new NotFoundException('Failed to create transaction');
+      }
+    }
+
     const createdInvestment = await this.investmentService.create(
       data,
-      account.type,
       user?.id,
     );
 
-    return createdInvestment;
+    if (!createdInvestment) {
+      if (transaction) {
+        await this.transactionService.delete(transaction.id);
+      }
+      throw new NotFoundException('Failed to create investment');
+    }
+
+    return createdInvestment.investment;
   }
 
   @Auth()

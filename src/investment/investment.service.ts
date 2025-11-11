@@ -367,52 +367,14 @@ export class InvestmentService {
     };
   }
 
-  async create(
-    data: CreateInvestmentInput,
-    accountType: AccountType,
-    userId: string,
-  ) {
-    let transaction: Transaction | null = null;
-
-    if (accountType !== AccountType.INVESTMENT) {
-      transaction = await this.prismaService.transaction.create({
-        data: {
-          amount: data.amount,
-          type: TransactionType.BETWEEN_ACCOUNTS,
-          sourceAccount: data.sourceAccountId
-            ? {
-                connect: {
-                  id: data.sourceAccountId,
-                },
-              }
-            : undefined,
-          destinyAccount: {
-            connect: {
-              id: data.destinyAccountId,
-            },
-          },
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          date: data.startDate,
-          description: `Investimento ${data.regimeName}`,
-          status:
-            data.startDate <= new Date()
-              ? TransactionStatus.PLANNED
-              : TransactionStatus.COMPLETED,
-        },
-      });
-
-      if (!transaction) {
-        throw new NotFoundException('Failed to create transaction');
-      }
-    }
-
+  async create(data: CreateInvestmentInput, userId: string) {
     const investment = await this.prismaService.investment.create({
       data: {
-        ...data,
+        amount: data.amount,
+        startDate: data.startDate,
+        duration: data.duration,
+        regimeName: data.regimeName,
+        regimePercentage: data.regimePercentage,
         account: {
           connect: {
             id: data.destinyAccountId,
@@ -427,15 +389,7 @@ export class InvestmentService {
     });
 
     if (!investment) {
-      if (transaction) {
-        await this.prismaService.transaction.delete({
-          where: {
-            id: transaction.id,
-          },
-        });
-      }
-
-      throw new NotFoundException('Failed to create investment ');
+      return null;
     }
 
     const investmentTransaction =
@@ -448,33 +402,20 @@ export class InvestmentService {
               id: investment.id,
             },
           },
-          transaction: {
+          account: {
             connect: {
-              id: transaction.id,
+              id: data.destinyAccountId,
             },
           },
         },
       });
 
     if (!investmentTransaction) {
-      if (transaction) {
-        await this.prismaService.transaction.delete({
-          where: {
-            id: transaction.id,
-          },
-        });
-      }
-
-      await this.prismaService.investment.delete({
-        where: {
-          id: investment.id,
-        },
-      });
-
-      throw new NotFoundException('Failed to create investment transaction');
+      await this.delete(investment.id, userId);
+      return null;
     }
 
-    return investment;
+    return { investment, investmentTransaction };
   }
 
   async delete(id: string, userId: string) {
