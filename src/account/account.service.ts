@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import {
   AccountFilterArgs,
   AccountModel,
@@ -89,7 +90,15 @@ export class AccountService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      select: selectObject<Account, AccountModel>(queriedFields),
+      select: {
+        ...selectObject<Account, AccountModel>(queriedFields, {
+          balance: [
+            'initialBalance',
+            'sourceTransactions',
+            'destinyTransactions',
+          ],
+        }),
+      },
       where: {
         type: filterArgs.type ?? undefined,
         userId,
@@ -136,7 +145,14 @@ export class AccountService {
 
       return {
         cursor: bufferedCursor,
-        node: account,
+        node: {
+          ...account,
+          balance: this.calculateBalance(
+            account.sourceTransactions,
+            account.destinyTransactions,
+            account.initialBalance,
+          ),
+        },
       };
     });
 
@@ -227,5 +243,23 @@ export class AccountService {
 
   async delete(id: string) {
     return this.prismaService.account.delete({ where: { id } });
+  }
+
+  private calculateBalance(
+    sourceTransactions: { amount: Decimal }[],
+    destinyTransactions: { amount: Decimal }[],
+    initialBalance: Decimal,
+  ): Decimal {
+    const incomingAmount = destinyTransactions.reduce(
+      (total, transaction) => total.plus(transaction.amount),
+      new Decimal(0),
+    );
+
+    const outgoingAmount = sourceTransactions.reduce(
+      (total, transaction) => total.plus(transaction.amount),
+      new Decimal(0),
+    );
+
+    return initialBalance.plus(incomingAmount).minus(outgoingAmount);
   }
 }

@@ -149,7 +149,7 @@ export enum AccountScalarFieldEnum {
   id = 'id',
   name = 'name',
   type = 'type',
-  balance = 'balance',
+  initialBalance = 'initialBalance',
   description = 'description',
   isActive = 'isActive',
   userId = 'userId',
@@ -248,19 +248,19 @@ export class AccountAggregateArgs {
 @InputType()
 export class AccountAvgAggregateInput {
   @Field(() => Boolean, { nullable: true })
-  balance?: true;
+  initialBalance?: true;
 }
 
 @ObjectType()
 export class AccountAvgAggregate {
   @Field(() => GraphQLDecimal, { nullable: true })
-  balance?: Decimal;
+  initialBalance?: Decimal;
 }
 
 @InputType()
 export class AccountAvgOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
 }
 
 @InputType()
@@ -272,7 +272,7 @@ export class AccountCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  balance?: true;
+  initialBalance?: true;
   @Field(() => Boolean, { nullable: true })
   description?: true;
   @Field(() => Boolean, { nullable: true })
@@ -298,7 +298,7 @@ export class AccountCountAggregate {
   @Field(() => Int, { nullable: false })
   type!: number;
   @Field(() => Int, { nullable: false })
-  balance!: number;
+  initialBalance!: number;
   @Field(() => Int, { nullable: false })
   description!: number;
   @Field(() => Int, { nullable: false })
@@ -324,7 +324,7 @@ export class AccountCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   description?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -369,7 +369,7 @@ export class AccountCreateManyInstitutionInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -402,7 +402,7 @@ export class AccountCreateManyUserInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -426,7 +426,7 @@ export class AccountCreateManyInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -589,7 +589,7 @@ export class AccountCreateWithoutDestinyTransactionsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -635,7 +635,7 @@ export class AccountCreateWithoutInstitutionInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -681,7 +681,7 @@ export class AccountCreateWithoutInvestmentsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -727,7 +727,7 @@ export class AccountCreateWithoutSourceTransactionsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -773,7 +773,7 @@ export class AccountCreateWithoutUserInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -823,7 +823,7 @@ export class AccountCreateInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -908,7 +908,7 @@ export class AccountGroupBy {
   @Field(() => AccountType, { nullable: false })
   type!: keyof typeof AccountType;
   @Field(() => GraphQLDecimal, { nullable: false })
-  balance!: Decimal;
+  initialBalance!: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: false })
@@ -955,7 +955,7 @@ export class AccountMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  balance?: true;
+  initialBalance?: true;
   @Field(() => Boolean, { nullable: true })
   description?: true;
   @Field(() => Boolean, { nullable: true })
@@ -979,7 +979,7 @@ export class AccountMaxAggregate {
   @Field(() => AccountType, { nullable: true })
   type?: keyof typeof AccountType;
   @Field(() => GraphQLDecimal, { nullable: true })
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1003,7 +1003,7 @@ export class AccountMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   description?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -1027,7 +1027,7 @@ export class AccountMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
-  balance?: true;
+  initialBalance?: true;
   @Field(() => Boolean, { nullable: true })
   description?: true;
   @Field(() => Boolean, { nullable: true })
@@ -1051,7 +1051,7 @@ export class AccountMinAggregate {
   @Field(() => AccountType, { nullable: true })
   type?: keyof typeof AccountType;
   @Field(() => GraphQLDecimal, { nullable: true })
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1075,7 +1075,7 @@ export class AccountMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   description?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -1115,7 +1115,7 @@ export class AccountOrderByWithAggregationInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   description?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -1154,7 +1154,7 @@ export class AccountOrderByWithRelationInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   description?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -1217,7 +1217,7 @@ export class AccountScalarWhereWithAggregatesInput {
   type?: InstanceType<typeof EnumAccountTypeWithAggregatesFilter>;
   @Field(() => DecimalWithAggregatesFilter, { nullable: true })
   @Type(() => DecimalWithAggregatesFilter)
-  balance?: InstanceType<typeof DecimalWithAggregatesFilter>;
+  initialBalance?: InstanceType<typeof DecimalWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => BoolWithAggregatesFilter, { nullable: true })
@@ -1251,7 +1251,7 @@ export class AccountScalarWhereInput {
   type?: InstanceType<typeof EnumAccountTypeFilter>;
   @Field(() => DecimalFilter, { nullable: true })
   @Type(() => DecimalFilter)
-  balance?: InstanceType<typeof DecimalFilter>;
+  initialBalance?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableFilter>;
   @Field(() => BoolFilter, { nullable: true })
@@ -1269,19 +1269,19 @@ export class AccountScalarWhereInput {
 @InputType()
 export class AccountSumAggregateInput {
   @Field(() => Boolean, { nullable: true })
-  balance?: true;
+  initialBalance?: true;
 }
 
 @ObjectType()
 export class AccountSumAggregate {
   @Field(() => GraphQLDecimal, { nullable: true })
-  balance?: Decimal;
+  initialBalance?: Decimal;
 }
 
 @InputType()
 export class AccountSumOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
-  balance?: keyof typeof SortOrder;
+  initialBalance?: keyof typeof SortOrder;
 }
 
 @InputType()
@@ -1329,7 +1329,7 @@ export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1369,7 +1369,7 @@ export class AccountUncheckedCreateWithoutInstitutionInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1414,7 +1414,7 @@ export class AccountUncheckedCreateWithoutInvestmentsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1454,7 +1454,7 @@ export class AccountUncheckedCreateWithoutSourceTransactionsInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1494,7 +1494,7 @@ export class AccountUncheckedCreateWithoutUserInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1539,7 +1539,7 @@ export class AccountUncheckedCreateInput {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
   @Transform(transformToDecimal)
-  balance?: Decimal;
+  initialBalance?: Decimal;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1630,7 +1630,7 @@ export class AccountUncheckedUpdateManyWithoutInstitutionInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1694,7 +1694,7 @@ export class AccountUncheckedUpdateManyWithoutUserInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1717,7 +1717,7 @@ export class AccountUncheckedUpdateManyInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1742,7 +1742,7 @@ export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1781,7 +1781,7 @@ export class AccountUncheckedUpdateWithoutInstitutionInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1825,7 +1825,7 @@ export class AccountUncheckedUpdateWithoutInvestmentsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1864,7 +1864,7 @@ export class AccountUncheckedUpdateWithoutSourceTransactionsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1903,7 +1903,7 @@ export class AccountUncheckedUpdateWithoutUserInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1947,7 +1947,7 @@ export class AccountUncheckedUpdateInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1993,7 +1993,7 @@ export class AccountUpdateManyMutationInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2265,7 +2265,7 @@ export class AccountUpdateWithoutDestinyTransactionsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2312,7 +2312,7 @@ export class AccountUpdateWithoutInstitutionInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2359,7 +2359,7 @@ export class AccountUpdateWithoutInvestmentsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2406,7 +2406,7 @@ export class AccountUpdateWithoutSourceTransactionsInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2453,7 +2453,7 @@ export class AccountUpdateWithoutUserInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2502,7 +2502,7 @@ export class AccountUpdateInput {
   type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
-  balance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2634,7 +2634,7 @@ export class AccountWhereUniqueInput {
   type?: InstanceType<typeof EnumAccountTypeFilter>;
   @Field(() => DecimalFilter, { nullable: true })
   @Type(() => DecimalFilter)
-  balance?: InstanceType<typeof DecimalFilter>;
+  initialBalance?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableFilter>;
   @Field(() => BoolFilter, { nullable: true })
@@ -2683,7 +2683,7 @@ export class AccountWhereInput {
   type?: InstanceType<typeof EnumAccountTypeFilter>;
   @Field(() => DecimalFilter, { nullable: true })
   @Type(() => DecimalFilter)
-  balance?: InstanceType<typeof DecimalFilter>;
+  initialBalance?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableFilter>;
   @Field(() => BoolFilter, { nullable: true })
@@ -2722,7 +2722,7 @@ export class Account {
   @Field(() => AccountType, { nullable: false })
   type!: keyof typeof AccountType;
   @Field(() => GraphQLDecimal, { nullable: false, defaultValue: 0 })
-  balance!: Decimal;
+  initialBalance!: Decimal;
   @Field(() => String, { nullable: true })
   description!: string | null;
   @Field(() => Boolean, { nullable: false, defaultValue: true })

@@ -45,12 +45,12 @@ model Institution {
 }
 
 model Account {
-  id          String      @id @default(uuid())
-  name        String
-  type        AccountType
-  balance     Decimal     @default(0)
-  description String?
-  isActive    Boolean     @default(true)
+  id             String      @id @default(uuid())
+  name           String
+  type           AccountType
+  initialBalance Decimal     @default(0)
+  description    String?
+  isActive       Boolean     @default(true)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String

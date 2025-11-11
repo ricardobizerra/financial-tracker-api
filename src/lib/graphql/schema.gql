@@ -3,7 +3,7 @@
 # ------------------------------------------------------
 
 type AccountAvgAggregate {
-  balance: Decimal
+  initialBalance: Decimal
 }
 
 """An arbitrary-precision Decimal type"""
@@ -13,7 +13,7 @@ type AccountCountAggregate {
   id: Int!
   name: Int!
   type: Int!
-  balance: Int!
+  initialBalance: Int!
   description: Int!
   isActive: Int!
   userId: Int!
@@ -33,7 +33,7 @@ type AccountMaxAggregate {
   id: String
   name: String
   type: AccountType
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   userId: String
@@ -60,7 +60,7 @@ type AccountMinAggregate {
   id: String
   name: String
   type: AccountType
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   userId: String
@@ -70,14 +70,14 @@ type AccountMinAggregate {
 }
 
 type AccountSumAggregate {
-  balance: Decimal
+  initialBalance: Decimal
 }
 
 type Account {
   id: ID!
   name: String!
   type: AccountType!
-  balance: Decimal!
+  initialBalance: Decimal!
   description: String
   isActive: Boolean!
   userId: String!
@@ -539,7 +539,7 @@ type AccountModel {
   id: ID!
   name: String!
   type: AccountType!
-  balance: Decimal!
+  initialBalance: Decimal!
   description: String
   isActive: Boolean!
   institutionId: String!
@@ -550,6 +550,7 @@ type AccountModel {
   destinyTransactions: [Transaction!]
   investments: [Investment!]
   _count: AccountCount!
+  balance: Decimal
 }
 
 type AccountConnection {
@@ -658,7 +659,7 @@ enum OrdenationInvestmentModel {
 enum OrdenationAccountModel {
   name
   type
-  balance
+  initialBalance
   isActive
   institutionId
   createdAt
@@ -668,6 +669,7 @@ enum OrdenationAccountModel {
   destinyTransactions
   investments
   _count
+  balance
 }
 
 enum OrdenationInstitutionModel {
@@ -730,7 +732,7 @@ input AccountCreateWithoutUserInput {
   id: String
   name: String!
   type: AccountType!
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -888,7 +890,7 @@ input AccountWhereInput {
   id: StringFilter
   name: StringFilter
   type: EnumAccountTypeFilter
-  balance: DecimalFilter
+  initialBalance: DecimalFilter
   description: StringNullableFilter
   isActive: BoolFilter
   userId: StringFilter
@@ -1275,7 +1277,7 @@ input AccountCreateWithoutDestinyTransactionsInput {
   id: String
   name: String!
   type: AccountType!
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -1339,7 +1341,7 @@ input AccountCreateWithoutInvestmentsInput {
   id: String
   name: String!
   type: AccountType!
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -1381,7 +1383,7 @@ input AccountCreateWithoutSourceTransactionsInput {
   id: String
   name: String!
   type: AccountType!
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -1746,7 +1748,7 @@ input AccountWhereUniqueInput {
   NOT: [AccountWhereInput!]
   name: StringFilter
   type: EnumAccountTypeFilter
-  balance: DecimalFilter
+  initialBalance: DecimalFilter
   description: StringNullableFilter
   isActive: BoolFilter
   userId: StringFilter
@@ -1862,7 +1864,7 @@ input AccountCreateManyUserInput {
   id: String
   name: String!
   type: AccountType!
-  balance: Decimal
+  initialBalance: Decimal
   description: String
   isActive: Boolean
   institutionId: String!
