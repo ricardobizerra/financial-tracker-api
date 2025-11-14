@@ -80,9 +80,12 @@ export class InvestmentResolver {
     @CurrentUser() user: UserModel,
   ) {
     const account = await this.accountService.find({
-      id: data.destinyAccountId,
+      id: data.accountId,
+      type: {
+        in: [AccountType.SAVINGS, AccountType.INVESTMENT],
+      },
       user: {
-        id: user?.id,
+        id: user.id,
       },
     });
 
@@ -90,62 +93,30 @@ export class InvestmentResolver {
       throw new NotFoundException('Conta não encontrada');
     }
 
-    let sourceAccount: Account | null = null;
-    let transaction: Transaction | null = null;
+    if (
+      account.type === AccountType.SAVINGS &&
+      data.regimeName !== Regime.POUPANCA
+    ) {
+      throw new NotFoundException(
+        'Investimento em poupança deve ser criado a partir de uma conta-poupança',
+      );
+    }
 
-    if (account.type !== AccountType.INVESTMENT) {
-      sourceAccount = await this.accountService.find({
-        id: data.sourceAccountId,
-        user: {
-          id: user?.id,
-        },
-      });
-
-      if (!sourceAccount) {
-        throw new NotFoundException('Conta de origem não encontrada');
-      }
-
-      transaction = await this.transactionService.create({
-        amount: new Decimal(data.amount),
-        type: TransactionType.BETWEEN_ACCOUNTS,
-        sourceAccount: {
-          connect: {
-            id: data.sourceAccountId,
-          },
-        },
-        destinyAccount: {
-          connect: {
-            id: data.destinyAccountId,
-          },
-        },
-        user: {
-          connect: {
-            id: user?.id,
-          },
-        },
-        date: data.startDate,
-        description: `Investimento ${data.regimeName}`,
-        status:
-          data.startDate <= new Date()
-            ? TransactionStatus.PLANNED
-            : TransactionStatus.COMPLETED,
-      });
-
-      if (!transaction) {
-        await this.transactionService.delete(transaction.id);
-        throw new NotFoundException('Failed to create transaction');
-      }
+    if (
+      account.type === AccountType.INVESTMENT &&
+      data.regimeName === Regime.POUPANCA
+    ) {
+      throw new NotFoundException(
+        'Investimento que não seja em poupança deve ser criado a partir de uma conta de investimento',
+      );
     }
 
     const createdInvestment = await this.investmentService.create(
       data,
-      user?.id,
+      user.id,
     );
 
     if (!createdInvestment) {
-      if (transaction) {
-        await this.transactionService.delete(transaction.id);
-      }
       throw new NotFoundException('Failed to create investment');
     }
 

@@ -42,9 +42,6 @@ export class CreateInvestmentInput {
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
 
-  @Field(() => ID, { nullable: true })
-  sourceAccountId?: string;
-
   @Field(() => ID, { nullable: false })
-  destinyAccountId!: string;
+  accountId!: string;
 }

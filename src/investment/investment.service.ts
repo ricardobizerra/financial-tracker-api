@@ -377,7 +377,7 @@ export class InvestmentService {
         regimePercentage: data.regimePercentage,
         account: {
           connect: {
-            id: data.destinyAccountId,
+            id: data.accountId,
           },
         },
         user: {
@@ -404,7 +404,7 @@ export class InvestmentService {
           },
           account: {
             connect: {
-              id: data.destinyAccountId,
+              id: data.accountId,
             },
           },
         },

@@ -1883,8 +1883,7 @@ input CreateInvestmentInput {
   regimePercentage: Float
   createdAt: DateTime
   updatedAt: DateTime
-  sourceAccountId: ID
-  destinyAccountId: ID!
+  accountId: ID!
 }
 
 type Subscription {
