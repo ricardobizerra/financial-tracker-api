@@ -368,13 +368,15 @@ export class InvestmentService {
   }
 
   async create(data: CreateInvestmentInput, userId: string) {
+    const isPoupanca = data.regimeName === Regime.POUPANCA;
+
     const investment = await this.prismaService.investment.create({
       data: {
         amount: data.amount,
         startDate: data.startDate,
-        duration: data.duration,
+        duration: isPoupanca ? data.duration : undefined,
         regimeName: data.regimeName,
-        regimePercentage: data.regimePercentage,
+        regimePercentage: isPoupanca ? data.regimePercentage : 100,
         account: {
           connect: {
             id: data.accountId,
