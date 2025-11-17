@@ -100,6 +100,7 @@ type InstitutionCountAggregate {
   name: Int!
   logoUrl: Int!
   color: Int!
+  types: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
@@ -135,6 +136,7 @@ type Institution {
   name: String!
   logoUrl: String
   color: String
+  types: [AccountType!]
   createdAt: DateTime!
   updatedAt: DateTime!
   accounts: [Account!]
@@ -591,6 +593,7 @@ type InstitutionModel {
   name: String!
   logoUrl: String
   color: String
+  types: [AccountType!]
   createdAt: DateTime!
   updatedAt: DateTime!
   accounts: [Account!]
@@ -688,6 +691,7 @@ enum OrdenationInstitutionModel {
   name
   logoUrl
   color
+  types
   createdAt
   updatedAt
   accounts
@@ -750,8 +754,13 @@ input InstitutionCreateWithoutAccountsInput {
   name: String!
   logoUrl: String
   color: String
+  types: InstitutionCreatetypesInput
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input InstitutionCreatetypesInput {
+  set: [AccountType!]!
 }
 
 input InstitutionCreateOrConnectWithoutAccountsInput {
@@ -761,13 +770,14 @@ input InstitutionCreateOrConnectWithoutAccountsInput {
 
 input InstitutionWhereUniqueInput {
   id: String
-  code: String
   AND: [InstitutionWhereInput!]
   OR: [InstitutionWhereInput!]
   NOT: [InstitutionWhereInput!]
+  code: StringFilter
   name: StringFilter
   logoUrl: StringNullableFilter
   color: StringNullableFilter
+  types: EnumAccountTypeNullableListFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   accounts: AccountListRelationFilter
@@ -782,6 +792,7 @@ input InstitutionWhereInput {
   name: StringFilter
   logoUrl: StringNullableFilter
   color: StringNullableFilter
+  types: EnumAccountTypeNullableListFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   accounts: AccountListRelationFilter
@@ -848,6 +859,14 @@ input NestedStringNullableFilter {
   startsWith: String
   endsWith: String
   not: NestedStringNullableFilter
+}
+
+input EnumAccountTypeNullableListFilter {
+  equals: [AccountType!]
+  has: AccountType
+  hasEvery: [AccountType!]
+  hasSome: [AccountType!]
+  isEmpty: Boolean
 }
 
 input DateTimeFilter {

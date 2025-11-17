@@ -141,6 +141,7 @@ export enum InstitutionScalarFieldEnum {
   name = 'name',
   logoUrl = 'logoUrl',
   color = 'color',
+  types = 'types',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
 }
@@ -3446,7 +3447,7 @@ export class DeleteManyInstitutionArgs {
 export class DeleteOneInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3459,7 +3460,7 @@ export class FindFirstInstitutionOrThrowArgs {
   @Field(() => [InstitutionOrderByWithRelationInput], { nullable: true })
   orderBy?: Array<InstitutionOrderByWithRelationInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
-  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3478,7 +3479,7 @@ export class FindFirstInstitutionArgs {
   @Field(() => [InstitutionOrderByWithRelationInput], { nullable: true })
   orderBy?: Array<InstitutionOrderByWithRelationInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
-  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3497,7 +3498,7 @@ export class FindManyInstitutionArgs {
   @Field(() => [InstitutionOrderByWithRelationInput], { nullable: true })
   orderBy?: Array<InstitutionOrderByWithRelationInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
-  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3512,7 +3513,7 @@ export class FindManyInstitutionArgs {
 export class FindUniqueInstitutionOrThrowArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3521,7 +3522,7 @@ export class FindUniqueInstitutionOrThrowArgs {
 export class FindUniqueInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3534,7 +3535,7 @@ export class InstitutionAggregateArgs {
   @Field(() => [InstitutionOrderByWithRelationInput], { nullable: true })
   orderBy?: Array<InstitutionOrderByWithRelationInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
-  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  cursor?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3560,6 +3561,8 @@ export class InstitutionCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   color?: true;
   @Field(() => Boolean, { nullable: true })
+  types?: true;
+  @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
   updatedAt?: true;
@@ -3580,6 +3583,8 @@ export class InstitutionCountAggregate {
   @Field(() => Int, { nullable: false })
   color!: number;
   @Field(() => Int, { nullable: false })
+  types!: number;
+  @Field(() => Int, { nullable: false })
   createdAt!: number;
   @Field(() => Int, { nullable: false })
   updatedAt!: number;
@@ -3599,6 +3604,8 @@ export class InstitutionCountOrderByAggregateInput {
   logoUrl?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   color?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  types?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3623,6 +3630,8 @@ export class InstitutionCreateManyInput {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => InstitutionCreatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionCreatetypesInput>;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3643,14 +3652,14 @@ export class InstitutionCreateNestedOneWithoutAccountsInput {
   >;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
   @Type(() => InstitutionWhereUniqueInput)
-  connect?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  connect?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
 }
 
 @InputType()
 export class InstitutionCreateOrConnectWithoutAccountsInput {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => InstitutionCreateWithoutAccountsInput, { nullable: false })
   @Type(() => InstitutionCreateWithoutAccountsInput)
   create!: InstanceType<typeof InstitutionCreateWithoutAccountsInput>;
@@ -3668,6 +3677,8 @@ export class InstitutionCreateWithoutAccountsInput {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => InstitutionCreatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionCreatetypesInput>;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3686,6 +3697,8 @@ export class InstitutionCreateInput {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => InstitutionCreatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionCreatetypesInput>;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3697,6 +3710,12 @@ export class InstitutionCreateInput {
   accounts?: InstanceType<
     typeof AccountCreateNestedManyWithoutInstitutionInput
   >;
+}
+
+@InputType()
+export class InstitutionCreatetypesInput {
+  @Field(() => [AccountType], { nullable: false })
+  set!: Array<keyof typeof AccountType>;
 }
 
 @ArgsType()
@@ -3734,6 +3753,8 @@ export class InstitutionGroupBy {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => [AccountType], { nullable: true })
+  types?: Array<keyof typeof AccountType>;
   @Field(() => Date, { nullable: false })
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
@@ -3867,6 +3888,8 @@ export class InstitutionOrderByWithAggregationInput {
   @Field(() => SortOrderInput, { nullable: true })
   color?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
+  types?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
@@ -3890,6 +3913,8 @@ export class InstitutionOrderByWithRelationInput {
   logoUrl?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   color?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  types?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -3925,6 +3950,8 @@ export class InstitutionScalarWhereWithAggregatesInput {
   logoUrl?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   color?: InstanceType<typeof StringNullableWithAggregatesFilter>;
+  @Field(() => EnumAccountTypeNullableListFilter, { nullable: true })
+  types?: InstanceType<typeof EnumAccountTypeNullableListFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -3943,6 +3970,8 @@ export class InstitutionUncheckedCreateWithoutAccountsInput {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => InstitutionCreatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionCreatetypesInput>;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3961,6 +3990,8 @@ export class InstitutionUncheckedCreateInput {
   logoUrl?: string;
   @Field(() => String, { nullable: true })
   color?: string;
+  @Field(() => InstitutionCreatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionCreatetypesInput>;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -3986,6 +4017,8 @@ export class InstitutionUncheckedUpdateManyInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4004,6 +4037,8 @@ export class InstitutionUncheckedUpdateWithoutAccountsInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4022,6 +4057,8 @@ export class InstitutionUncheckedUpdateInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4047,6 +4084,8 @@ export class InstitutionUpdateManyMutationInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4070,7 +4109,7 @@ export class InstitutionUpdateOneRequiredWithoutAccountsNestedInput {
   upsert?: InstanceType<typeof InstitutionUpsertWithoutAccountsInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
   @Type(() => InstitutionWhereUniqueInput)
-  connect?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  connect?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => InstitutionUpdateToOneWithWhereWithoutAccountsInput, {
     nullable: true,
   })
@@ -4102,6 +4141,8 @@ export class InstitutionUpdateWithoutAccountsInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4120,6 +4161,8 @@ export class InstitutionUpdateInput {
   logoUrl?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   color?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => InstitutionUpdatetypesInput, { nullable: true })
+  types?: InstanceType<typeof InstitutionUpdatetypesInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -4131,6 +4174,14 @@ export class InstitutionUpdateInput {
   accounts?: InstanceType<
     typeof AccountUpdateManyWithoutInstitutionNestedInput
   >;
+}
+
+@InputType()
+export class InstitutionUpdatetypesInput {
+  @Field(() => [AccountType], { nullable: true })
+  set?: Array<keyof typeof AccountType>;
+  @Field(() => [AccountType], { nullable: true })
+  push?: Array<keyof typeof AccountType>;
 }
 
 @InputType()
@@ -4150,8 +4201,6 @@ export class InstitutionUpsertWithoutAccountsInput {
 export class InstitutionWhereUniqueInput {
   @Field(() => String, { nullable: true })
   id?: string;
-  @Field(() => String, { nullable: true })
-  code?: string;
   @Field(() => [InstitutionWhereInput], { nullable: true })
   AND?: Array<InstitutionWhereInput>;
   @Field(() => [InstitutionWhereInput], { nullable: true })
@@ -4159,11 +4208,15 @@ export class InstitutionWhereUniqueInput {
   @Field(() => [InstitutionWhereInput], { nullable: true })
   NOT?: Array<InstitutionWhereInput>;
   @Field(() => StringFilter, { nullable: true })
+  code?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
   name?: InstanceType<typeof StringFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   logoUrl?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   color?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => EnumAccountTypeNullableListFilter, { nullable: true })
+  types?: InstanceType<typeof EnumAccountTypeNullableListFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -4191,6 +4244,8 @@ export class InstitutionWhereInput {
   logoUrl?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   color?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => EnumAccountTypeNullableListFilter, { nullable: true })
+  types?: InstanceType<typeof EnumAccountTypeNullableListFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -4212,6 +4267,8 @@ export class Institution {
   logoUrl!: string | null;
   @Field(() => String, { nullable: true })
   color!: string | null;
+  @Field(() => [AccountType], { nullable: true })
+  types!: Array<keyof typeof AccountType>;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
@@ -4239,7 +4296,7 @@ export class UpdateOneInstitutionArgs {
   data!: InstanceType<typeof InstitutionUpdateInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -4248,7 +4305,7 @@ export class UpdateOneInstitutionArgs {
 export class UpsertOneInstitutionArgs {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
-  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id' | 'code'>;
+  where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
   @Field(() => InstitutionCreateInput, { nullable: false })
   @Type(() => InstitutionCreateInput)
   create!: InstanceType<typeof InstitutionCreateInput>;
@@ -8513,6 +8570,20 @@ export class EnumAccountTypeFilter {
   notIn?: Array<keyof typeof AccountType>;
   @Field(() => NestedEnumAccountTypeFilter, { nullable: true })
   not?: InstanceType<typeof NestedEnumAccountTypeFilter>;
+}
+
+@InputType()
+export class EnumAccountTypeNullableListFilter {
+  @Field(() => [AccountType], { nullable: true })
+  equals?: Array<keyof typeof AccountType>;
+  @Field(() => AccountType, { nullable: true })
+  has?: keyof typeof AccountType;
+  @Field(() => [AccountType], { nullable: true })
+  hasEvery?: Array<keyof typeof AccountType>;
+  @Field(() => [AccountType], { nullable: true })
+  hasSome?: Array<keyof typeof AccountType>;
+  @Field(() => Boolean, { nullable: true })
+  isEmpty?: boolean;
 }
 
 @InputType()

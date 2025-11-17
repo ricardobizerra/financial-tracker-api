@@ -32,11 +32,12 @@ model User {
 }
 
 model Institution {
-  id      String  @id @default(uuid())
-  code    String  @unique
+  id      String        @id @default(uuid())
+  code    String
   name    String
   logoUrl String?
   color   String?
+  types   AccountType[]
 
   accounts Account[]
 
