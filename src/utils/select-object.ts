@@ -29,7 +29,7 @@ type SelectObjectParams<TDatabase, TModel> =
 
 type ScalarFields<T> = {
   [K in keyof T]: T[K] extends object | undefined | null
-    ? T[K] extends Date | Decimal
+    ? T[K] extends Date | Decimal | Array<string>
       ? K
       : never
     : K;
