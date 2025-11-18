@@ -554,7 +554,8 @@ async function seedInstitutions() {
             logoUrl: institution.logoUrl,
             types: institution.types,
             color:
-              (await fetchAndExtractColor(institution.logoUrl)) ?? '#000000',
+              (await fetchAndExtractColor(institution.logoUrl)) ??
+              existingInstitution.color,
           },
         });
       } else {
