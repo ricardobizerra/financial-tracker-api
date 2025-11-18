@@ -6,6 +6,7 @@ import {
 } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
 import {
+  InstitutionFilterArgs,
   InstitutionModel,
   OrdenationInstitutionArgs,
 } from './institution.model';
@@ -23,11 +24,13 @@ export class InstitutionService {
     paginationArgs,
     searchArgs,
     ordenationArgs,
+    filterArgs,
   }: {
     queriedFields: (keyof InstitutionModel)[];
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationInstitutionArgs;
+    filterArgs: InstitutionFilterArgs;
   }) {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -48,6 +51,11 @@ export class InstitutionService {
                   mode: 'insensitive',
                 },
               })),
+            }),
+            ...(!!filterArgs.types?.length && {
+              types: {
+                hasSome: filterArgs.types,
+              },
             }),
           },
         })
@@ -94,6 +102,11 @@ export class InstitutionService {
               mode: 'insensitive',
             },
           })),
+        }),
+        ...(!!filterArgs.types?.length && {
+          types: {
+            hasSome: filterArgs.types,
+          },
         }),
       },
     });
@@ -181,6 +194,11 @@ export class InstitutionService {
                   mode: 'insensitive',
                 },
               })),
+            }),
+            ...(!!filterArgs.types?.length && {
+              types: {
+                hasSome: filterArgs.types,
+              },
             }),
           },
         })

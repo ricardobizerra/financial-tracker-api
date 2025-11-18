@@ -1,6 +1,9 @@
 import { Info, Query, Resolver } from '@nestjs/graphql';
 import { InstitutionService } from './institution.service';
-import { InstitutionConnection } from './institution.model';
+import {
+  InstitutionConnection,
+  InstitutionFilterArgs,
+} from './institution.model';
 import { Args } from '@nestjs/graphql';
 import { Auth } from '@/auth/auth.decorator';
 import { GraphQLResolveInfo } from 'graphql';
@@ -22,6 +25,7 @@ export class InstitutionResolver {
     @Args() paginationArgs: PaginationArgs,
     @Args() searchArgs: SearchArgs,
     @Args() ordenationArgs: OrdenationInstitutionArgs,
+    @Args() filterArgs: InstitutionFilterArgs,
     @Info() info: GraphQLResolveInfo,
   ) {
     const queriedFields = getQueriedFields<InstitutionModel>(
@@ -34,6 +38,7 @@ export class InstitutionResolver {
       paginationArgs,
       searchArgs,
       ordenationArgs,
+      filterArgs,
     });
   }
 
