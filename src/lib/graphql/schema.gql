@@ -779,6 +779,29 @@ type InstitutionModelEdge {
   node: InstitutionModel!
 }
 
+type CardBillingModel {
+  id: ID!
+  periodStart: DateTime!
+  periodEnd: DateTime
+  dueDate: DateTime
+  closingDate: DateTime
+  totalAmount: Decimal!
+  paidAmount: Decimal!
+  minimumPayment: Decimal
+  status: CardBillingStatus!
+  accountCardId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accountCard: AccountCard
+  transactions: [Transaction!]
+}
+
+type CardBillingOnDate {
+  billing: CardBillingModel
+  nextBillingId: String
+  previousBillingId: String
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
@@ -791,6 +814,8 @@ type Query {
   transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID): TransactionConnection!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
   institution(id: String!): InstitutionModel!
+  accountCard(id: String!): AccountCard
+  billing(accountId: String!, id: String): CardBillingOnDate!
 }
 
 enum OrdenationUserModel {

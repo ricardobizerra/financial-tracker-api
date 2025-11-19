@@ -21,6 +21,7 @@ import { BacenModule } from './external/bacen/bacen.module';
 import { AccountModule } from './account/account.module';
 import { InstitutionModule } from './institution/institution.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { CardModule } from './card/card.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { TransactionModule } from './transaction/transaction.module';
     AccountModule,
     InstitutionModule,
     TransactionModule,
+    CardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
