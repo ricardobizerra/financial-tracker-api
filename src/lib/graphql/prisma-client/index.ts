@@ -30,8 +30,10 @@ export enum TransactionScalarFieldEnum {
   date = 'date',
   status = 'status',
   type = 'type',
+  paymentMethod = 'paymentMethod',
   sourceAccountId = 'sourceAccountId',
   destinyAccountId = 'destinyAccountId',
+  cardBillingId = 'cardBillingId',
   userId = 'userId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
@@ -81,6 +83,14 @@ export enum QueryMode {
   insensitive = 'insensitive',
 }
 
+export enum PaymentMethod {
+  CASH = 'CASH',
+  PIX = 'PIX',
+  CREDIT_CARD = 'CREDIT_CARD',
+  DEBIT_CARD = 'DEBIT_CARD',
+  BOLETO = 'BOLETO',
+}
+
 export enum NullsOrder {
   first = 'first',
   last = 'last',
@@ -96,6 +106,18 @@ export enum InvestmentTransactionRole {
 export enum InvestmentStatus {
   OPEN = 'OPEN',
   CLOSED = 'CLOSED',
+}
+
+export enum CardType {
+  CREDIT = 'CREDIT',
+  DEBIT = 'DEBIT',
+}
+
+export enum CardBillingStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+  COMPLETED = 'COMPLETED',
 }
 
 export enum AccountType {
@@ -146,6 +168,31 @@ export enum InstitutionScalarFieldEnum {
   updatedAt = 'updatedAt',
 }
 
+export enum CardBillingScalarFieldEnum {
+  id = 'id',
+  periodStart = 'periodStart',
+  periodEnd = 'periodEnd',
+  dueDate = 'dueDate',
+  closingDate = 'closingDate',
+  totalAmount = 'totalAmount',
+  paidAmount = 'paidAmount',
+  minimumPayment = 'minimumPayment',
+  status = 'status',
+  accountCardId = 'accountCardId',
+  createdAt = 'createdAt',
+  updatedAt = 'updatedAt',
+}
+
+export enum AccountCardScalarFieldEnum {
+  id = 'id',
+  lastFourDigits = 'lastFourDigits',
+  billingCycleDay = 'billingCycleDay',
+  type = 'type',
+  accountId = 'accountId',
+  createdAt = 'createdAt',
+  updatedAt = 'updatedAt',
+}
+
 export enum AccountScalarFieldEnum {
   id = 'id',
   name = 'name',
@@ -163,6 +210,14 @@ registerEnumType(AccountScalarFieldEnum, {
   name: 'AccountScalarFieldEnum',
   description: undefined,
 });
+registerEnumType(AccountCardScalarFieldEnum, {
+  name: 'AccountCardScalarFieldEnum',
+  description: undefined,
+});
+registerEnumType(CardBillingScalarFieldEnum, {
+  name: 'CardBillingScalarFieldEnum',
+  description: undefined,
+});
 registerEnumType(InstitutionScalarFieldEnum, {
   name: 'InstitutionScalarFieldEnum',
   description: undefined,
@@ -176,6 +231,11 @@ registerEnumType(InvestmentTransactionScalarFieldEnum, {
   description: undefined,
 });
 registerEnumType(AccountType, { name: 'AccountType', description: undefined });
+registerEnumType(CardBillingStatus, {
+  name: 'CardBillingStatus',
+  description: undefined,
+});
+registerEnumType(CardType, { name: 'CardType', description: undefined });
 registerEnumType(InvestmentStatus, {
   name: 'InvestmentStatus',
   description: undefined,
@@ -185,6 +245,10 @@ registerEnumType(InvestmentTransactionRole, {
   description: undefined,
 });
 registerEnumType(NullsOrder, { name: 'NullsOrder', description: undefined });
+registerEnumType(PaymentMethod, {
+  name: 'PaymentMethod',
+  description: undefined,
+});
 registerEnumType(QueryMode, { name: 'QueryMode', description: undefined });
 registerEnumType(Regime, { name: 'Regime', description: undefined });
 registerEnumType(RelationLoadStrategy, {
@@ -479,6 +543,23 @@ export class AccountCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class AccountCreateNestedOneWithoutAccountCardInput {
+  @Field(() => AccountCreateWithoutAccountCardInput, { nullable: true })
+  @Type(() => AccountCreateWithoutAccountCardInput)
+  create?: InstanceType<typeof AccountCreateWithoutAccountCardInput>;
+  @Field(() => AccountCreateOrConnectWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutAccountCardInput
+  >;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+}
+
+@InputType()
 export class AccountCreateNestedOneWithoutDestinyTransactionsInput {
   @Field(() => AccountCreateWithoutDestinyTransactionsInput, { nullable: true })
   @Type(() => AccountCreateWithoutDestinyTransactionsInput)
@@ -549,6 +630,16 @@ export class AccountCreateNestedOneWithoutSourceTransactionsInput {
 }
 
 @InputType()
+export class AccountCreateOrConnectWithoutAccountCardInput {
+  @Field(() => AccountWhereUniqueInput, { nullable: false })
+  @Type(() => AccountWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountCreateWithoutAccountCardInput, { nullable: false })
+  @Type(() => AccountCreateWithoutAccountCardInput)
+  create!: InstanceType<typeof AccountCreateWithoutAccountCardInput>;
+}
+
+@InputType()
 export class AccountCreateOrConnectWithoutDestinyTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
@@ -613,6 +704,66 @@ export class AccountCreateOrConnectWithoutUserInput {
 }
 
 @InputType()
+export class AccountCreateWithoutAccountCardInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  initialBalance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => UserCreateNestedOneWithoutAccountsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutAccountsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutAccountsInput>;
+  @Field(() => InstitutionCreateNestedOneWithoutAccountsInput, {
+    nullable: false,
+  })
+  @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
+  institution!: InstanceType<
+    typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutDestinyAccountInput
+  >;
+  @Field(() => InvestmentCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentCreateNestedManyWithoutAccountInput
+  >;
+  @Field(() => InvestmentTransactionCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionCreateNestedManyWithoutAccountInput)
+  investmentTransactions?: InstanceType<
+    typeof InvestmentTransactionCreateNestedManyWithoutAccountInput
+  >;
+}
+
+@InputType()
 export class AccountCreateWithoutDestinyTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
@@ -641,6 +792,13 @@ export class AccountCreateWithoutDestinyTransactionsInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -688,6 +846,13 @@ export class AccountCreateWithoutInstitutionInput {
   @Field(() => UserCreateNestedOneWithoutAccountsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutAccountsInput)
   user!: InstanceType<typeof UserCreateNestedOneWithoutAccountsInput>;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -748,6 +913,13 @@ export class AccountCreateWithoutInvestmentTransactionsInput {
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
   >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -800,6 +972,13 @@ export class AccountCreateWithoutInvestmentsInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -854,6 +1033,13 @@ export class AccountCreateWithoutSourceTransactionsInput {
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
   >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
     nullable: true,
   })
@@ -903,6 +1089,13 @@ export class AccountCreateWithoutUserInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -963,6 +1156,13 @@ export class AccountCreateInput {
   @Type(() => InstitutionCreateNestedOneWithoutAccountsInput)
   institution!: InstanceType<
     typeof InstitutionCreateNestedOneWithoutAccountsInput
+  >;
+  @Field(() => AccountCardCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -1302,6 +1502,9 @@ export class AccountOrderByWithRelationInput {
   @Field(() => InstitutionOrderByWithRelationInput, { nullable: true })
   @Type(() => InstitutionOrderByWithRelationInput)
   institution?: InstanceType<typeof InstitutionOrderByWithRelationInput>;
+  @Field(() => AccountCardOrderByWithRelationInput, { nullable: true })
+  @Type(() => AccountCardOrderByWithRelationInput)
+  accountCard?: InstanceType<typeof AccountCardOrderByWithRelationInput>;
   @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
   @Type(() => TransactionOrderByRelationAggregateInput)
   sourceTransactions?: InstanceType<
@@ -1455,6 +1658,61 @@ export class AccountUncheckedCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class AccountUncheckedCreateWithoutAccountCardInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
+  @Field(() => AccountType, { nullable: false })
+  type!: keyof typeof AccountType;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  initialBalance?: Decimal;
+  @Field(() => String, { nullable: true })
+  description?: string;
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => String, { nullable: false })
+  institutionId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutSourceAccountInput
+  >;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutAccountInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedCreateNestedManyWithoutAccountInput
+  >;
+  @Field(
+    () => InvestmentTransactionUncheckedCreateNestedManyWithoutAccountInput,
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUncheckedCreateNestedManyWithoutAccountInput)
+  investmentTransactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedCreateNestedManyWithoutAccountInput
+  >;
+}
+
+@InputType()
 export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
@@ -1478,6 +1736,13 @@ export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1524,6 +1789,13 @@ export class AccountUncheckedCreateWithoutInstitutionInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1579,6 +1851,13 @@ export class AccountUncheckedCreateWithoutInvestmentTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1626,6 +1905,13 @@ export class AccountUncheckedCreateWithoutInvestmentsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1674,6 +1960,13 @@ export class AccountUncheckedCreateWithoutSourceTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutDestinyAccountInput, {
     nullable: true,
   })
@@ -1720,6 +2013,13 @@ export class AccountUncheckedCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1775,6 +2075,13 @@ export class AccountUncheckedCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+  @Field(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedCreateNestedOneWithoutAccountInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedCreateNestedOneWithoutAccountInput
+  >;
   @Field(() => TransactionUncheckedCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
   })
@@ -1964,6 +2271,60 @@ export class AccountUncheckedUpdateManyInput {
 }
 
 @InputType()
+export class AccountUncheckedUpdateWithoutAccountCardInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  institutionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+  @Field(
+    () => InvestmentTransactionUncheckedUpdateManyWithoutAccountNestedInput,
+    { nullable: true },
+  )
+  @Type(() => InvestmentTransactionUncheckedUpdateManyWithoutAccountNestedInput)
+  investmentTransactions?: InstanceType<
+    typeof InvestmentTransactionUncheckedUpdateManyWithoutAccountNestedInput
+  >;
+}
+
+@InputType()
 export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
@@ -1986,6 +2347,13 @@ export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2031,6 +2399,13 @@ export class AccountUncheckedUpdateWithoutInstitutionInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2085,6 +2460,13 @@ export class AccountUncheckedUpdateWithoutInvestmentTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2131,6 +2513,13 @@ export class AccountUncheckedUpdateWithoutInvestmentsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2178,6 +2567,13 @@ export class AccountUncheckedUpdateWithoutSourceTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutDestinyAccountNestedInput, {
     nullable: true,
   })
@@ -2223,6 +2619,13 @@ export class AccountUncheckedUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2277,6 +2680,13 @@ export class AccountUncheckedUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUncheckedUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUncheckedUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUncheckedUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2436,6 +2846,33 @@ export class AccountUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class AccountUpdateOneRequiredWithoutAccountCardNestedInput {
+  @Field(() => AccountCreateWithoutAccountCardInput, { nullable: true })
+  @Type(() => AccountCreateWithoutAccountCardInput)
+  create?: InstanceType<typeof AccountCreateWithoutAccountCardInput>;
+  @Field(() => AccountCreateOrConnectWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCreateOrConnectWithoutAccountCardInput
+  >;
+  @Field(() => AccountUpsertWithoutAccountCardInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutAccountCardInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutAccountCardInput>;
+  @Field(() => AccountWhereUniqueInput, { nullable: true })
+  @Type(() => AccountWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id'>;
+  @Field(() => AccountUpdateToOneWithWhereWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateToOneWithWhereWithoutAccountCardInput)
+  update?: InstanceType<
+    typeof AccountUpdateToOneWithWhereWithoutAccountCardInput
+  >;
+}
+
+@InputType()
 export class AccountUpdateOneRequiredWithoutInvestmentTransactionsNestedInput {
   @Field(() => AccountCreateWithoutInvestmentTransactionsInput, {
     nullable: true,
@@ -2560,6 +2997,16 @@ export class AccountUpdateOneWithoutSourceTransactionsNestedInput {
 }
 
 @InputType()
+export class AccountUpdateToOneWithWhereWithoutAccountCardInput {
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
+  @Field(() => AccountUpdateWithoutAccountCardInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutAccountCardInput)
+  data!: InstanceType<typeof AccountUpdateWithoutAccountCardInput>;
+}
+
+@InputType()
 export class AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput {
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
@@ -2624,6 +3071,67 @@ export class AccountUpdateWithWhereUniqueWithoutUserInput {
 }
 
 @InputType()
+export class AccountUpdateWithoutAccountCardInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => EnumAccountTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumAccountTypeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => UserUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutAccountsNestedInput)
+  user?: InstanceType<typeof UserUpdateOneRequiredWithoutAccountsNestedInput>;
+  @Field(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
+  institution?: InstanceType<
+    typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutSourceAccountNestedInput)
+  sourceTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutSourceAccountNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutDestinyAccountNestedInput)
+  destinyTransactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutDestinyAccountNestedInput
+  >;
+  @Field(() => InvestmentUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithoutAccountNestedInput)
+  investments?: InstanceType<
+    typeof InvestmentUpdateManyWithoutAccountNestedInput
+  >;
+  @Field(() => InvestmentTransactionUpdateManyWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentTransactionUpdateManyWithoutAccountNestedInput)
+  investmentTransactions?: InstanceType<
+    typeof InvestmentTransactionUpdateManyWithoutAccountNestedInput
+  >;
+}
+
+@InputType()
 export class AccountUpdateWithoutDestinyTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
@@ -2653,6 +3161,13 @@ export class AccountUpdateWithoutDestinyTransactionsInput {
   @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2701,6 +3216,13 @@ export class AccountUpdateWithoutInstitutionInput {
   })
   @Type(() => UserUpdateOneRequiredWithoutAccountsNestedInput)
   user?: InstanceType<typeof UserUpdateOneRequiredWithoutAccountsNestedInput>;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2762,6 +3284,13 @@ export class AccountUpdateWithoutInvestmentTransactionsInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -2815,6 +3344,13 @@ export class AccountUpdateWithoutInvestmentsInput {
   @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2870,6 +3406,13 @@ export class AccountUpdateWithoutSourceTransactionsInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
     nullable: true,
   })
@@ -2918,6 +3461,13 @@ export class AccountUpdateWithoutUserInput {
   @Type(() => InstitutionUpdateOneRequiredWithoutAccountsNestedInput)
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
+  >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2980,6 +3530,13 @@ export class AccountUpdateInput {
   institution?: InstanceType<
     typeof InstitutionUpdateOneRequiredWithoutAccountsNestedInput
   >;
+  @Field(() => AccountCardUpdateOneWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneWithoutAccountNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneWithoutAccountNestedInput
+  >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
   })
@@ -3034,6 +3591,19 @@ export class AccountUpsertWithWhereUniqueWithoutUserInput {
   @Field(() => AccountCreateWithoutUserInput, { nullable: false })
   @Type(() => AccountCreateWithoutUserInput)
   create!: InstanceType<typeof AccountCreateWithoutUserInput>;
+}
+
+@InputType()
+export class AccountUpsertWithoutAccountCardInput {
+  @Field(() => AccountUpdateWithoutAccountCardInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutAccountCardInput)
+  update!: InstanceType<typeof AccountUpdateWithoutAccountCardInput>;
+  @Field(() => AccountCreateWithoutAccountCardInput, { nullable: false })
+  @Type(() => AccountCreateWithoutAccountCardInput)
+  create!: InstanceType<typeof AccountCreateWithoutAccountCardInput>;
+  @Field(() => AccountWhereInput, { nullable: true })
+  @Type(() => AccountWhereInput)
+  where?: InstanceType<typeof AccountWhereInput>;
 }
 
 @InputType()
@@ -3134,6 +3704,9 @@ export class AccountWhereUniqueInput {
   @Field(() => InstitutionRelationFilter, { nullable: true })
   @Type(() => InstitutionRelationFilter)
   institution?: InstanceType<typeof InstitutionRelationFilter>;
+  @Field(() => AccountCardNullableRelationFilter, { nullable: true })
+  @Type(() => AccountCardNullableRelationFilter)
+  accountCard?: InstanceType<typeof AccountCardNullableRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
@@ -3188,6 +3761,9 @@ export class AccountWhereInput {
   @Field(() => InstitutionRelationFilter, { nullable: true })
   @Type(() => InstitutionRelationFilter)
   institution?: InstanceType<typeof InstitutionRelationFilter>;
+  @Field(() => AccountCardNullableRelationFilter, { nullable: true })
+  @Type(() => AccountCardNullableRelationFilter)
+  accountCard?: InstanceType<typeof AccountCardNullableRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
@@ -3230,6 +3806,8 @@ export class Account {
   user?: InstanceType<typeof User>;
   @Field(() => Institution, { nullable: false })
   institution?: InstanceType<typeof Institution>;
+  @Field(() => AccountCard, { nullable: true })
+  accountCard?: InstanceType<typeof AccountCard> | null;
   @Field(() => [Transaction], { nullable: true })
   sourceTransactions?: Array<Transaction>;
   @Field(() => [Transaction], { nullable: true })
@@ -3404,6 +3982,3130 @@ export class UpsertOneAccountArgs {
   @Field(() => AccountUpdateInput, { nullable: false })
   @Type(() => AccountUpdateInput)
   update!: InstanceType<typeof AccountUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class AccountCardAggregateArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => [AccountCardOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AccountCardOrderByWithRelationInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => AccountCardCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AccountCardCountAggregateInput>;
+  @Field(() => AccountCardAvgAggregateInput, { nullable: true })
+  _avg?: InstanceType<typeof AccountCardAvgAggregateInput>;
+  @Field(() => AccountCardSumAggregateInput, { nullable: true })
+  _sum?: InstanceType<typeof AccountCardSumAggregateInput>;
+  @Field(() => AccountCardMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AccountCardMinAggregateInput>;
+  @Field(() => AccountCardMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AccountCardMaxAggregateInput>;
+}
+
+@InputType()
+export class AccountCardAvgAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  billingCycleDay?: true;
+}
+
+@ObjectType()
+export class AccountCardAvgAggregate {
+  @Field(() => Float, { nullable: true })
+  billingCycleDay?: number;
+}
+
+@InputType()
+export class AccountCardAvgOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  billingCycleDay?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AccountCardCountAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastFourDigits?: true;
+  @Field(() => Boolean, { nullable: true })
+  billingCycleDay?: true;
+  @Field(() => Boolean, { nullable: true })
+  type?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  _all?: true;
+}
+
+@ObjectType()
+export class AccountCardCountAggregate {
+  @Field(() => Int, { nullable: false })
+  id!: number;
+  @Field(() => Int, { nullable: false })
+  lastFourDigits!: number;
+  @Field(() => Int, { nullable: false })
+  billingCycleDay!: number;
+  @Field(() => Int, { nullable: false })
+  type!: number;
+  @Field(() => Int, { nullable: false })
+  accountId!: number;
+  @Field(() => Int, { nullable: false })
+  createdAt!: number;
+  @Field(() => Int, { nullable: false })
+  updatedAt!: number;
+  @Field(() => Int, { nullable: false })
+  _all!: number;
+}
+
+@InputType()
+export class AccountCardCountOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastFourDigits?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  billingCycleDay?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@ObjectType()
+export class AccountCardCount {
+  @Field(() => Int, { nullable: false })
+  billings?: number;
+}
+
+@InputType()
+export class AccountCardCreateManyInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AccountCardCreateNestedOneWithoutAccountInput {
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutAccountInput
+  >;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+}
+
+@InputType()
+export class AccountCardCreateNestedOneWithoutBillingsInput {
+  @Field(() => AccountCardCreateWithoutBillingsInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutBillingsInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutBillingsInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutBillingsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutBillingsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutBillingsInput
+  >;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+}
+
+@InputType()
+export class AccountCardCreateOrConnectWithoutAccountInput {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: false })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create!: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+}
+
+@InputType()
+export class AccountCardCreateOrConnectWithoutBillingsInput {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardCreateWithoutBillingsInput, { nullable: false })
+  @Type(() => AccountCardCreateWithoutBillingsInput)
+  create!: InstanceType<typeof AccountCardCreateWithoutBillingsInput>;
+}
+
+@InputType()
+export class AccountCardCreateWithoutAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => CardBillingCreateNestedManyWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedManyWithoutAccountCardInput)
+  billings?: InstanceType<
+    typeof CardBillingCreateNestedManyWithoutAccountCardInput
+  >;
+}
+
+@InputType()
+export class AccountCardCreateWithoutBillingsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutAccountCardInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutAccountCardInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutAccountCardInput>;
+}
+
+@InputType()
+export class AccountCardCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutAccountCardInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCreateNestedOneWithoutAccountCardInput)
+  account!: InstanceType<typeof AccountCreateNestedOneWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateNestedManyWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedManyWithoutAccountCardInput)
+  billings?: InstanceType<
+    typeof CardBillingCreateNestedManyWithoutAccountCardInput
+  >;
+}
+
+@ArgsType()
+export class AccountCardGroupByArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => [AccountCardOrderByWithAggregationInput], { nullable: true })
+  orderBy?: Array<AccountCardOrderByWithAggregationInput>;
+  @Field(() => [AccountCardScalarFieldEnum], { nullable: false })
+  by!: Array<keyof typeof AccountCardScalarFieldEnum>;
+  @Field(() => AccountCardScalarWhereWithAggregatesInput, { nullable: true })
+  having?: InstanceType<typeof AccountCardScalarWhereWithAggregatesInput>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => AccountCardCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AccountCardCountAggregateInput>;
+  @Field(() => AccountCardAvgAggregateInput, { nullable: true })
+  _avg?: InstanceType<typeof AccountCardAvgAggregateInput>;
+  @Field(() => AccountCardSumAggregateInput, { nullable: true })
+  _sum?: InstanceType<typeof AccountCardSumAggregateInput>;
+  @Field(() => AccountCardMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AccountCardMinAggregateInput>;
+  @Field(() => AccountCardMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AccountCardMaxAggregateInput>;
+}
+
+@ObjectType()
+export class AccountCardGroupBy {
+  @Field(() => String, { nullable: false })
+  id!: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date | string;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date | string;
+  @Field(() => AccountCardCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof AccountCardCountAggregate>;
+  @Field(() => AccountCardAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof AccountCardAvgAggregate>;
+  @Field(() => AccountCardSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof AccountCardSumAggregate>;
+  @Field(() => AccountCardMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof AccountCardMinAggregate>;
+  @Field(() => AccountCardMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof AccountCardMaxAggregate>;
+}
+
+@InputType()
+export class AccountCardMaxAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastFourDigits?: true;
+  @Field(() => Boolean, { nullable: true })
+  billingCycleDay?: true;
+  @Field(() => Boolean, { nullable: true })
+  type?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class AccountCardMaxAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: true })
+  type?: keyof typeof CardType;
+  @Field(() => String, { nullable: true })
+  accountId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AccountCardMaxOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastFourDigits?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  billingCycleDay?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AccountCardMinAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  lastFourDigits?: true;
+  @Field(() => Boolean, { nullable: true })
+  billingCycleDay?: true;
+  @Field(() => Boolean, { nullable: true })
+  type?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class AccountCardMinAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: true })
+  type?: keyof typeof CardType;
+  @Field(() => String, { nullable: true })
+  accountId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AccountCardMinOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  lastFourDigits?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  billingCycleDay?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AccountCardNullableRelationFilter {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  is?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  isNot?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@InputType()
+export class AccountCardOrderByWithAggregationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  lastFourDigits?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => AccountCardCountOrderByAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof AccountCardCountOrderByAggregateInput>;
+  @Field(() => AccountCardAvgOrderByAggregateInput, { nullable: true })
+  _avg?: InstanceType<typeof AccountCardAvgOrderByAggregateInput>;
+  @Field(() => AccountCardMaxOrderByAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof AccountCardMaxOrderByAggregateInput>;
+  @Field(() => AccountCardMinOrderByAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof AccountCardMinOrderByAggregateInput>;
+  @Field(() => AccountCardSumOrderByAggregateInput, { nullable: true })
+  _sum?: InstanceType<typeof AccountCardSumOrderByAggregateInput>;
+}
+
+@InputType()
+export class AccountCardOrderByWithRelationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  lastFourDigits?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => AccountOrderByWithRelationInput, { nullable: true })
+  @Type(() => AccountOrderByWithRelationInput)
+  account?: InstanceType<typeof AccountOrderByWithRelationInput>;
+  @Field(() => CardBillingOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => CardBillingOrderByRelationAggregateInput)
+  billings?: InstanceType<typeof CardBillingOrderByRelationAggregateInput>;
+}
+
+@InputType()
+export class AccountCardRelationFilter {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  is?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  isNot?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@InputType()
+export class AccountCardScalarWhereWithAggregatesInput {
+  @Field(() => [AccountCardScalarWhereWithAggregatesInput], { nullable: true })
+  AND?: Array<AccountCardScalarWhereWithAggregatesInput>;
+  @Field(() => [AccountCardScalarWhereWithAggregatesInput], { nullable: true })
+  OR?: Array<AccountCardScalarWhereWithAggregatesInput>;
+  @Field(() => [AccountCardScalarWhereWithAggregatesInput], { nullable: true })
+  NOT?: Array<AccountCardScalarWhereWithAggregatesInput>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  id?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
+  lastFourDigits?: InstanceType<typeof StringNullableWithAggregatesFilter>;
+  @Field(() => IntNullableWithAggregatesFilter, { nullable: true })
+  billingCycleDay?: InstanceType<typeof IntNullableWithAggregatesFilter>;
+  @Field(() => EnumCardTypeWithAggregatesFilter, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+}
+
+@InputType()
+export class AccountCardSumAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  billingCycleDay?: true;
+}
+
+@ObjectType()
+export class AccountCardSumAggregate {
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+}
+
+@InputType()
+export class AccountCardSumOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  billingCycleDay?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class AccountCardUncheckedCreateNestedOneWithoutAccountInput {
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutAccountInput
+  >;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+}
+
+@InputType()
+export class AccountCardUncheckedCreateWithoutAccountInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => CardBillingUncheckedCreateNestedManyWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUncheckedCreateNestedManyWithoutAccountCardInput)
+  billings?: InstanceType<
+    typeof CardBillingUncheckedCreateNestedManyWithoutAccountCardInput
+  >;
+}
+
+@InputType()
+export class AccountCardUncheckedCreateWithoutBillingsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class AccountCardUncheckedCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits?: string;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay?: number;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => CardBillingUncheckedCreateNestedManyWithoutAccountCardInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUncheckedCreateNestedManyWithoutAccountCardInput)
+  billings?: InstanceType<
+    typeof CardBillingUncheckedCreateNestedManyWithoutAccountCardInput
+  >;
+}
+
+@InputType()
+export class AccountCardUncheckedUpdateManyInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AccountCardUncheckedUpdateOneWithoutAccountNestedInput {
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutAccountInput
+  >;
+  @Field(() => AccountCardUpsertWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardUpsertWithoutAccountInput)
+  upsert?: InstanceType<typeof AccountCardUpsertWithoutAccountInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  disconnect?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  delete?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardUpdateToOneWithWhereWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateToOneWithWhereWithoutAccountInput)
+  update?: InstanceType<
+    typeof AccountCardUpdateToOneWithWhereWithoutAccountInput
+  >;
+}
+
+@InputType()
+export class AccountCardUncheckedUpdateWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput)
+  billings?: InstanceType<
+    typeof CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput
+  >;
+}
+
+@InputType()
+export class AccountCardUncheckedUpdateWithoutBillingsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AccountCardUncheckedUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput)
+  billings?: InstanceType<
+    typeof CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpdateManyMutationInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class AccountCardUpdateOneRequiredWithoutBillingsNestedInput {
+  @Field(() => AccountCardCreateWithoutBillingsInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutBillingsInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutBillingsInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutBillingsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutBillingsInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutBillingsInput
+  >;
+  @Field(() => AccountCardUpsertWithoutBillingsInput, { nullable: true })
+  @Type(() => AccountCardUpsertWithoutBillingsInput)
+  upsert?: InstanceType<typeof AccountCardUpsertWithoutBillingsInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardUpdateToOneWithWhereWithoutBillingsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateToOneWithWhereWithoutBillingsInput)
+  update?: InstanceType<
+    typeof AccountCardUpdateToOneWithWhereWithoutBillingsInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpdateOneWithoutAccountNestedInput {
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create?: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+  @Field(() => AccountCardCreateOrConnectWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardCreateOrConnectWithoutAccountInput)
+  connectOrCreate?: InstanceType<
+    typeof AccountCardCreateOrConnectWithoutAccountInput
+  >;
+  @Field(() => AccountCardUpsertWithoutAccountInput, { nullable: true })
+  @Type(() => AccountCardUpsertWithoutAccountInput)
+  upsert?: InstanceType<typeof AccountCardUpsertWithoutAccountInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  disconnect?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  delete?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  @Type(() => AccountCardWhereUniqueInput)
+  connect?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardUpdateToOneWithWhereWithoutAccountInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateToOneWithWhereWithoutAccountInput)
+  update?: InstanceType<
+    typeof AccountCardUpdateToOneWithWhereWithoutAccountInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpdateToOneWithWhereWithoutAccountInput {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => AccountCardUpdateWithoutAccountInput)
+  data!: InstanceType<typeof AccountCardUpdateWithoutAccountInput>;
+}
+
+@InputType()
+export class AccountCardUpdateToOneWithWhereWithoutBillingsInput {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => AccountCardUpdateWithoutBillingsInput, { nullable: false })
+  @Type(() => AccountCardUpdateWithoutBillingsInput)
+  data!: InstanceType<typeof AccountCardUpdateWithoutBillingsInput>;
+}
+
+@InputType()
+export class AccountCardUpdateWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => CardBillingUpdateManyWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateManyWithoutAccountCardNestedInput)
+  billings?: InstanceType<
+    typeof CardBillingUpdateManyWithoutAccountCardNestedInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpdateWithoutBillingsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneRequiredWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutAccountCardNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutAccountCardNestedInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  lastFourDigits?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  billingCycleDay?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
+  @Field(() => EnumCardTypeFieldUpdateOperationsInput, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneRequiredWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneRequiredWithoutAccountCardNestedInput)
+  account?: InstanceType<
+    typeof AccountUpdateOneRequiredWithoutAccountCardNestedInput
+  >;
+  @Field(() => CardBillingUpdateManyWithoutAccountCardNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateManyWithoutAccountCardNestedInput)
+  billings?: InstanceType<
+    typeof CardBillingUpdateManyWithoutAccountCardNestedInput
+  >;
+}
+
+@InputType()
+export class AccountCardUpsertWithoutAccountInput {
+  @Field(() => AccountCardUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => AccountCardUpdateWithoutAccountInput)
+  update!: InstanceType<typeof AccountCardUpdateWithoutAccountInput>;
+  @Field(() => AccountCardCreateWithoutAccountInput, { nullable: false })
+  @Type(() => AccountCardCreateWithoutAccountInput)
+  create!: InstanceType<typeof AccountCardCreateWithoutAccountInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@InputType()
+export class AccountCardUpsertWithoutBillingsInput {
+  @Field(() => AccountCardUpdateWithoutBillingsInput, { nullable: false })
+  @Type(() => AccountCardUpdateWithoutBillingsInput)
+  update!: InstanceType<typeof AccountCardUpdateWithoutBillingsInput>;
+  @Field(() => AccountCardCreateWithoutBillingsInput, { nullable: false })
+  @Type(() => AccountCardCreateWithoutBillingsInput)
+  create!: InstanceType<typeof AccountCardCreateWithoutBillingsInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@InputType()
+export class AccountCardWhereUniqueInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: true })
+  accountId?: string;
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  AND?: Array<AccountCardWhereInput>;
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  OR?: Array<AccountCardWhereInput>;
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  NOT?: Array<AccountCardWhereInput>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  lastFourDigits?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  billingCycleDay?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => EnumCardTypeFilter, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountRelationFilter, { nullable: true })
+  @Type(() => AccountRelationFilter)
+  account?: InstanceType<typeof AccountRelationFilter>;
+  @Field(() => CardBillingListRelationFilter, { nullable: true })
+  @Type(() => CardBillingListRelationFilter)
+  billings?: InstanceType<typeof CardBillingListRelationFilter>;
+}
+
+@InputType()
+export class AccountCardWhereInput {
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  AND?: Array<AccountCardWhereInput>;
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  OR?: Array<AccountCardWhereInput>;
+  @Field(() => [AccountCardWhereInput], { nullable: true })
+  NOT?: Array<AccountCardWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  lastFourDigits?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  billingCycleDay?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => EnumCardTypeFilter, { nullable: true })
+  type?: InstanceType<typeof EnumCardTypeFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountRelationFilter, { nullable: true })
+  @Type(() => AccountRelationFilter)
+  account?: InstanceType<typeof AccountRelationFilter>;
+  @Field(() => CardBillingListRelationFilter, { nullable: true })
+  @Type(() => CardBillingListRelationFilter)
+  billings?: InstanceType<typeof CardBillingListRelationFilter>;
+}
+
+@ObjectType()
+export class AccountCard {
+  @Field(() => ID, { nullable: false })
+  id!: string;
+  @Field(() => String, { nullable: true })
+  lastFourDigits!: string | null;
+  @Field(() => Int, { nullable: true })
+  billingCycleDay!: number | null;
+  @Field(() => CardType, { nullable: false })
+  type!: keyof typeof CardType;
+  @Field(() => String, { nullable: false })
+  accountId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date;
+  @Field(() => Account, { nullable: false })
+  account?: InstanceType<typeof Account>;
+  @Field(() => [CardBilling], { nullable: true })
+  billings?: Array<CardBilling>;
+  @Field(() => AccountCardCount, { nullable: false })
+  _count?: InstanceType<typeof AccountCardCount>;
+}
+
+@ObjectType()
+export class AggregateAccountCard {
+  @Field(() => AccountCardCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof AccountCardCountAggregate>;
+  @Field(() => AccountCardAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof AccountCardAvgAggregate>;
+  @Field(() => AccountCardSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof AccountCardSumAggregate>;
+  @Field(() => AccountCardMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof AccountCardMinAggregate>;
+  @Field(() => AccountCardMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof AccountCardMaxAggregate>;
+}
+
+@ArgsType()
+export class CreateManyAccountCardArgs {
+  @Field(() => [AccountCardCreateManyInput], { nullable: false })
+  @Type(() => AccountCardCreateManyInput)
+  data!: Array<AccountCardCreateManyInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@ArgsType()
+export class CreateOneAccountCardArgs {
+  @Field(() => AccountCardCreateInput, { nullable: false })
+  @Type(() => AccountCardCreateInput)
+  data!: InstanceType<typeof AccountCardCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class DeleteManyAccountCardArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@ArgsType()
+export class DeleteOneAccountCardArgs {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstAccountCardOrThrowArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => [AccountCardOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AccountCardOrderByWithRelationInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AccountCardScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AccountCardScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstAccountCardArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => [AccountCardOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AccountCardOrderByWithRelationInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AccountCardScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AccountCardScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindManyAccountCardArgs {
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+  @Field(() => [AccountCardOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<AccountCardOrderByWithRelationInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: true })
+  cursor?: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [AccountCardScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof AccountCardScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueAccountCardOrThrowArgs {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueAccountCardArgs {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class UpdateManyAccountCardArgs {
+  @Field(() => AccountCardUpdateManyMutationInput, { nullable: false })
+  @Type(() => AccountCardUpdateManyMutationInput)
+  data!: InstanceType<typeof AccountCardUpdateManyMutationInput>;
+  @Field(() => AccountCardWhereInput, { nullable: true })
+  @Type(() => AccountCardWhereInput)
+  where?: InstanceType<typeof AccountCardWhereInput>;
+}
+
+@ArgsType()
+export class UpdateOneAccountCardArgs {
+  @Field(() => AccountCardUpdateInput, { nullable: false })
+  @Type(() => AccountCardUpdateInput)
+  data!: InstanceType<typeof AccountCardUpdateInput>;
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class UpsertOneAccountCardArgs {
+  @Field(() => AccountCardWhereUniqueInput, { nullable: false })
+  @Type(() => AccountCardWhereUniqueInput)
+  where!: Prisma.AtLeast<AccountCardWhereUniqueInput, 'id' | 'accountId'>;
+  @Field(() => AccountCardCreateInput, { nullable: false })
+  @Type(() => AccountCardCreateInput)
+  create!: InstanceType<typeof AccountCardCreateInput>;
+  @Field(() => AccountCardUpdateInput, { nullable: false })
+  @Type(() => AccountCardUpdateInput)
+  update!: InstanceType<typeof AccountCardUpdateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ObjectType()
+export class AggregateCardBilling {
+  @Field(() => CardBillingCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof CardBillingCountAggregate>;
+  @Field(() => CardBillingAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof CardBillingAvgAggregate>;
+  @Field(() => CardBillingSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof CardBillingSumAggregate>;
+  @Field(() => CardBillingMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof CardBillingMinAggregate>;
+  @Field(() => CardBillingMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof CardBillingMaxAggregate>;
+}
+
+@InputType()
+export class CardBillingAccountCardIdPeriodStartCompoundUniqueInput {
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+}
+
+@ArgsType()
+export class CardBillingAggregateArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => [CardBillingOrderByWithRelationInput], { nullable: true })
+  @Type(() => CardBillingOrderByWithRelationInput)
+  orderBy?: Array<CardBillingOrderByWithRelationInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  cursor?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => CardBillingCountAggregateInput, { nullable: true })
+  @Type(() => CardBillingCountAggregateInput)
+  _count?: InstanceType<typeof CardBillingCountAggregateInput>;
+  @Field(() => CardBillingAvgAggregateInput, { nullable: true })
+  @Type(() => CardBillingAvgAggregateInput)
+  _avg?: InstanceType<typeof CardBillingAvgAggregateInput>;
+  @Field(() => CardBillingSumAggregateInput, { nullable: true })
+  @Type(() => CardBillingSumAggregateInput)
+  _sum?: InstanceType<typeof CardBillingSumAggregateInput>;
+  @Field(() => CardBillingMinAggregateInput, { nullable: true })
+  @Type(() => CardBillingMinAggregateInput)
+  _min?: InstanceType<typeof CardBillingMinAggregateInput>;
+  @Field(() => CardBillingMaxAggregateInput, { nullable: true })
+  @Type(() => CardBillingMaxAggregateInput)
+  _max?: InstanceType<typeof CardBillingMaxAggregateInput>;
+}
+
+@InputType()
+export class CardBillingAvgAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  totalAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  paidAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  minimumPayment?: true;
+}
+
+@ObjectType()
+export class CardBillingAvgAggregate {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment?: Decimal;
+}
+
+@InputType()
+export class CardBillingAvgOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  minimumPayment?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class CardBillingCountAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodStart?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodEnd?: true;
+  @Field(() => Boolean, { nullable: true })
+  dueDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  closingDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  totalAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  paidAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  minimumPayment?: true;
+  @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountCardId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  _all?: true;
+}
+
+@ObjectType()
+export class CardBillingCountAggregate {
+  @Field(() => Int, { nullable: false })
+  id!: number;
+  @Field(() => Int, { nullable: false })
+  periodStart!: number;
+  @Field(() => Int, { nullable: false })
+  periodEnd!: number;
+  @Field(() => Int, { nullable: false })
+  dueDate!: number;
+  @Field(() => Int, { nullable: false })
+  closingDate!: number;
+  @Field(() => Int, { nullable: false })
+  totalAmount!: number;
+  @Field(() => Int, { nullable: false })
+  paidAmount!: number;
+  @Field(() => Int, { nullable: false })
+  minimumPayment!: number;
+  @Field(() => Int, { nullable: false })
+  status!: number;
+  @Field(() => Int, { nullable: false })
+  accountCardId!: number;
+  @Field(() => Int, { nullable: false })
+  createdAt!: number;
+  @Field(() => Int, { nullable: false })
+  updatedAt!: number;
+  @Field(() => Int, { nullable: false })
+  _all!: number;
+}
+
+@InputType()
+export class CardBillingCountOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodStart?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodEnd?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  dueDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  closingDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  minimumPayment?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountCardId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@ObjectType()
+export class CardBillingCount {
+  @Field(() => Int, { nullable: false })
+  transactions?: number;
+}
+
+@InputType()
+export class CardBillingCreateManyAccountCardInputEnvelope {
+  @Field(() => [CardBillingCreateManyAccountCardInput], { nullable: false })
+  @Type(() => CardBillingCreateManyAccountCardInput)
+  data!: Array<CardBillingCreateManyAccountCardInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class CardBillingCreateManyAccountCardInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class CardBillingCreateManyInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class CardBillingCreateNestedManyWithoutAccountCardInput {
+  @Field(() => [CardBillingCreateWithoutAccountCardInput], { nullable: true })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create?: Array<CardBillingCreateWithoutAccountCardInput>;
+  @Field(() => [CardBillingCreateOrConnectWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: Array<CardBillingCreateOrConnectWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateManyAccountCardInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateManyAccountCardInputEnvelope)
+  createMany?: InstanceType<
+    typeof CardBillingCreateManyAccountCardInputEnvelope
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+}
+
+@InputType()
+export class CardBillingCreateNestedOneWithoutTransactionsInput {
+  @Field(() => CardBillingCreateWithoutTransactionsInput, { nullable: true })
+  @Type(() => CardBillingCreateWithoutTransactionsInput)
+  create?: InstanceType<typeof CardBillingCreateWithoutTransactionsInput>;
+  @Field(() => CardBillingCreateOrConnectWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof CardBillingCreateOrConnectWithoutTransactionsInput
+  >;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+}
+
+@InputType()
+export class CardBillingCreateOrConnectWithoutAccountCardInput {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingCreateWithoutAccountCardInput, { nullable: false })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create!: InstanceType<typeof CardBillingCreateWithoutAccountCardInput>;
+}
+
+@InputType()
+export class CardBillingCreateOrConnectWithoutTransactionsInput {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingCreateWithoutTransactionsInput, { nullable: false })
+  @Type(() => CardBillingCreateWithoutTransactionsInput)
+  create!: InstanceType<typeof CardBillingCreateWithoutTransactionsInput>;
+}
+
+@InputType()
+export class CardBillingCreateWithoutAccountCardInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionCreateNestedManyWithoutCardBillingInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutCardBillingInput)
+  transactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutCardBillingInput
+  >;
+}
+
+@InputType()
+export class CardBillingCreateWithoutTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCardCreateNestedOneWithoutBillingsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutBillingsInput)
+  accountCard!: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutBillingsInput
+  >;
+}
+
+@InputType()
+export class CardBillingCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCardCreateNestedOneWithoutBillingsInput, {
+    nullable: false,
+  })
+  @Type(() => AccountCardCreateNestedOneWithoutBillingsInput)
+  accountCard!: InstanceType<
+    typeof AccountCardCreateNestedOneWithoutBillingsInput
+  >;
+  @Field(() => TransactionCreateNestedManyWithoutCardBillingInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateNestedManyWithoutCardBillingInput)
+  transactions?: InstanceType<
+    typeof TransactionCreateNestedManyWithoutCardBillingInput
+  >;
+}
+
+@ArgsType()
+export class CardBillingGroupByArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => [CardBillingOrderByWithAggregationInput], { nullable: true })
+  @Type(() => CardBillingOrderByWithAggregationInput)
+  orderBy?: Array<CardBillingOrderByWithAggregationInput>;
+  @Field(() => [CardBillingScalarFieldEnum], { nullable: false })
+  by!: Array<keyof typeof CardBillingScalarFieldEnum>;
+  @Field(() => CardBillingScalarWhereWithAggregatesInput, { nullable: true })
+  @Type(() => CardBillingScalarWhereWithAggregatesInput)
+  having?: InstanceType<typeof CardBillingScalarWhereWithAggregatesInput>;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => CardBillingCountAggregateInput, { nullable: true })
+  @Type(() => CardBillingCountAggregateInput)
+  _count?: InstanceType<typeof CardBillingCountAggregateInput>;
+  @Field(() => CardBillingAvgAggregateInput, { nullable: true })
+  @Type(() => CardBillingAvgAggregateInput)
+  _avg?: InstanceType<typeof CardBillingAvgAggregateInput>;
+  @Field(() => CardBillingSumAggregateInput, { nullable: true })
+  @Type(() => CardBillingSumAggregateInput)
+  _sum?: InstanceType<typeof CardBillingSumAggregateInput>;
+  @Field(() => CardBillingMinAggregateInput, { nullable: true })
+  @Type(() => CardBillingMinAggregateInput)
+  _min?: InstanceType<typeof CardBillingMinAggregateInput>;
+  @Field(() => CardBillingMaxAggregateInput, { nullable: true })
+  @Type(() => CardBillingMaxAggregateInput)
+  _max?: InstanceType<typeof CardBillingMaxAggregateInput>;
+}
+
+@ObjectType()
+export class CardBillingGroupBy {
+  @Field(() => String, { nullable: false })
+  id!: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  totalAmount!: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  paidAmount!: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date | string;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date | string;
+  @Field(() => CardBillingCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof CardBillingCountAggregate>;
+  @Field(() => CardBillingAvgAggregate, { nullable: true })
+  _avg?: InstanceType<typeof CardBillingAvgAggregate>;
+  @Field(() => CardBillingSumAggregate, { nullable: true })
+  _sum?: InstanceType<typeof CardBillingSumAggregate>;
+  @Field(() => CardBillingMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof CardBillingMinAggregate>;
+  @Field(() => CardBillingMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof CardBillingMaxAggregate>;
+}
+
+@InputType()
+export class CardBillingListRelationFilter {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  every?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  some?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  none?: InstanceType<typeof CardBillingWhereInput>;
+}
+
+@InputType()
+export class CardBillingMaxAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodStart?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodEnd?: true;
+  @Field(() => Boolean, { nullable: true })
+  dueDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  closingDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  totalAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  paidAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  minimumPayment?: true;
+  @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountCardId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class CardBillingMaxAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: true })
+  periodStart?: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: true })
+  status?: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: true })
+  accountCardId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class CardBillingMaxOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodStart?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodEnd?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  dueDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  closingDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  minimumPayment?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountCardId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class CardBillingMinAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  id?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodStart?: true;
+  @Field(() => Boolean, { nullable: true })
+  periodEnd?: true;
+  @Field(() => Boolean, { nullable: true })
+  dueDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  closingDate?: true;
+  @Field(() => Boolean, { nullable: true })
+  totalAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  paidAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  minimumPayment?: true;
+  @Field(() => Boolean, { nullable: true })
+  status?: true;
+  @Field(() => Boolean, { nullable: true })
+  accountCardId?: true;
+  @Field(() => Boolean, { nullable: true })
+  createdAt?: true;
+  @Field(() => Boolean, { nullable: true })
+  updatedAt?: true;
+}
+
+@ObjectType()
+export class CardBillingMinAggregate {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: true })
+  periodStart?: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: true })
+  status?: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: true })
+  accountCardId?: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class CardBillingMinOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodStart?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodEnd?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  dueDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  closingDate?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  minimumPayment?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountCardId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class CardBillingNullableRelationFilter {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  is?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  isNot?: InstanceType<typeof CardBillingWhereInput>;
+}
+
+@InputType()
+export class CardBillingOrderByRelationAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  _count?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class CardBillingOrderByWithAggregationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodStart?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  periodEnd?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  dueDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  closingDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  @Type(() => SortOrderInput)
+  minimumPayment?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountCardId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => CardBillingCountOrderByAggregateInput, { nullable: true })
+  @Type(() => CardBillingCountOrderByAggregateInput)
+  _count?: InstanceType<typeof CardBillingCountOrderByAggregateInput>;
+  @Field(() => CardBillingAvgOrderByAggregateInput, { nullable: true })
+  @Type(() => CardBillingAvgOrderByAggregateInput)
+  _avg?: InstanceType<typeof CardBillingAvgOrderByAggregateInput>;
+  @Field(() => CardBillingMaxOrderByAggregateInput, { nullable: true })
+  @Type(() => CardBillingMaxOrderByAggregateInput)
+  _max?: InstanceType<typeof CardBillingMaxOrderByAggregateInput>;
+  @Field(() => CardBillingMinOrderByAggregateInput, { nullable: true })
+  @Type(() => CardBillingMinOrderByAggregateInput)
+  _min?: InstanceType<typeof CardBillingMinOrderByAggregateInput>;
+  @Field(() => CardBillingSumOrderByAggregateInput, { nullable: true })
+  @Type(() => CardBillingSumOrderByAggregateInput)
+  _sum?: InstanceType<typeof CardBillingSumOrderByAggregateInput>;
+}
+
+@InputType()
+export class CardBillingOrderByWithRelationInput {
+  @Field(() => SortOrder, { nullable: true })
+  id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  periodStart?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  periodEnd?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  dueDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  closingDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  @Type(() => SortOrderInput)
+  minimumPayment?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  status?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  accountCardId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  createdAt?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  updatedAt?: keyof typeof SortOrder;
+  @Field(() => AccountCardOrderByWithRelationInput, { nullable: true })
+  @Type(() => AccountCardOrderByWithRelationInput)
+  accountCard?: InstanceType<typeof AccountCardOrderByWithRelationInput>;
+  @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => TransactionOrderByRelationAggregateInput)
+  transactions?: InstanceType<typeof TransactionOrderByRelationAggregateInput>;
+}
+
+@InputType()
+export class CardBillingScalarWhereWithAggregatesInput {
+  @Field(() => [CardBillingScalarWhereWithAggregatesInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereWithAggregatesInput)
+  AND?: Array<CardBillingScalarWhereWithAggregatesInput>;
+  @Field(() => [CardBillingScalarWhereWithAggregatesInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereWithAggregatesInput)
+  OR?: Array<CardBillingScalarWhereWithAggregatesInput>;
+  @Field(() => [CardBillingScalarWhereWithAggregatesInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereWithAggregatesInput)
+  NOT?: Array<CardBillingScalarWhereWithAggregatesInput>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  id?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  periodEnd?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  dueDate?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  closingDate?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => DecimalWithAggregatesFilter, { nullable: true })
+  @Type(() => DecimalWithAggregatesFilter)
+  totalAmount?: InstanceType<typeof DecimalWithAggregatesFilter>;
+  @Field(() => DecimalWithAggregatesFilter, { nullable: true })
+  @Type(() => DecimalWithAggregatesFilter)
+  paidAmount?: InstanceType<typeof DecimalWithAggregatesFilter>;
+  @Field(() => DecimalNullableWithAggregatesFilter, { nullable: true })
+  @Type(() => DecimalNullableWithAggregatesFilter)
+  minimumPayment?: InstanceType<typeof DecimalNullableWithAggregatesFilter>;
+  @Field(() => EnumCardBillingStatusWithAggregatesFilter, { nullable: true })
+  status?: InstanceType<typeof EnumCardBillingStatusWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  accountCardId?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
+}
+
+@InputType()
+export class CardBillingScalarWhereInput {
+  @Field(() => [CardBillingScalarWhereInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereInput)
+  AND?: Array<CardBillingScalarWhereInput>;
+  @Field(() => [CardBillingScalarWhereInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereInput)
+  OR?: Array<CardBillingScalarWhereInput>;
+  @Field(() => [CardBillingScalarWhereInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereInput)
+  NOT?: Array<CardBillingScalarWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  periodEnd?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  dueDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  closingDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  totalAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  paidAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalNullableFilter, { nullable: true })
+  @Type(() => DecimalNullableFilter)
+  minimumPayment?: InstanceType<typeof DecimalNullableFilter>;
+  @Field(() => EnumCardBillingStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumCardBillingStatusFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+}
+
+@InputType()
+export class CardBillingSumAggregateInput {
+  @Field(() => Boolean, { nullable: true })
+  totalAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  paidAmount?: true;
+  @Field(() => Boolean, { nullable: true })
+  minimumPayment?: true;
+}
+
+@ObjectType()
+export class CardBillingSumAggregate {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment?: Decimal;
+}
+
+@InputType()
+export class CardBillingSumOrderByAggregateInput {
+  @Field(() => SortOrder, { nullable: true })
+  totalAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paidAmount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  minimumPayment?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class CardBillingUncheckedCreateNestedManyWithoutAccountCardInput {
+  @Field(() => [CardBillingCreateWithoutAccountCardInput], { nullable: true })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create?: Array<CardBillingCreateWithoutAccountCardInput>;
+  @Field(() => [CardBillingCreateOrConnectWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: Array<CardBillingCreateOrConnectWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateManyAccountCardInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateManyAccountCardInputEnvelope)
+  createMany?: InstanceType<
+    typeof CardBillingCreateManyAccountCardInputEnvelope
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+}
+
+@InputType()
+export class CardBillingUncheckedCreateWithoutAccountCardInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutCardBillingInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutCardBillingInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutCardBillingInput
+  >;
+}
+
+@InputType()
+export class CardBillingUncheckedCreateWithoutTransactionsInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
+export class CardBillingUncheckedCreateInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date | string;
+  @Field(() => Date, { nullable: true })
+  periodEnd?: Date | string;
+  @Field(() => Date, { nullable: true })
+  dueDate?: Date | string;
+  @Field(() => Date, { nullable: true })
+  closingDate?: Date | string;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  paidAmount?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  minimumPayment?: Decimal;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => TransactionUncheckedCreateNestedManyWithoutCardBillingInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedCreateNestedManyWithoutCardBillingInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedCreateNestedManyWithoutCardBillingInput
+  >;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateManyWithoutAccountCardNestedInput {
+  @Field(() => [CardBillingCreateWithoutAccountCardInput], { nullable: true })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create?: Array<CardBillingCreateWithoutAccountCardInput>;
+  @Field(() => [CardBillingCreateOrConnectWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: Array<CardBillingCreateOrConnectWithoutAccountCardInput>;
+  @Field(() => [CardBillingUpsertWithWhereUniqueWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpsertWithWhereUniqueWithoutAccountCardInput)
+  upsert?: Array<CardBillingUpsertWithWhereUniqueWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateManyAccountCardInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateManyAccountCardInputEnvelope)
+  createMany?: InstanceType<
+    typeof CardBillingCreateManyAccountCardInputEnvelope
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  set?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  delete?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingUpdateWithWhereUniqueWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateWithWhereUniqueWithoutAccountCardInput)
+  update?: Array<CardBillingUpdateWithWhereUniqueWithoutAccountCardInput>;
+  @Field(() => [CardBillingUpdateManyWithWhereWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateManyWithWhereWithoutAccountCardInput)
+  updateMany?: Array<CardBillingUpdateManyWithWhereWithoutAccountCardInput>;
+  @Field(() => [CardBillingScalarWhereInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereInput)
+  deleteMany?: Array<CardBillingScalarWhereInput>;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateManyWithoutAccountCardInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateManyInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateWithoutAccountCardInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutCardBillingNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutCardBillingNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutCardBillingNestedInput
+  >;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateWithoutTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class CardBillingUncheckedUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUncheckedUpdateManyWithoutCardBillingNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUncheckedUpdateManyWithoutCardBillingNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUncheckedUpdateManyWithoutCardBillingNestedInput
+  >;
+}
+
+@InputType()
+export class CardBillingUpdateManyMutationInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class CardBillingUpdateManyWithWhereWithoutAccountCardInput {
+  @Field(() => CardBillingScalarWhereInput, { nullable: false })
+  @Type(() => CardBillingScalarWhereInput)
+  where!: InstanceType<typeof CardBillingScalarWhereInput>;
+  @Field(() => CardBillingUpdateManyMutationInput, { nullable: false })
+  @Type(() => CardBillingUpdateManyMutationInput)
+  data!: InstanceType<typeof CardBillingUpdateManyMutationInput>;
+}
+
+@InputType()
+export class CardBillingUpdateManyWithoutAccountCardNestedInput {
+  @Field(() => [CardBillingCreateWithoutAccountCardInput], { nullable: true })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create?: Array<CardBillingCreateWithoutAccountCardInput>;
+  @Field(() => [CardBillingCreateOrConnectWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutAccountCardInput)
+  connectOrCreate?: Array<CardBillingCreateOrConnectWithoutAccountCardInput>;
+  @Field(() => [CardBillingUpsertWithWhereUniqueWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpsertWithWhereUniqueWithoutAccountCardInput)
+  upsert?: Array<CardBillingUpsertWithWhereUniqueWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateManyAccountCardInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateManyAccountCardInputEnvelope)
+  createMany?: InstanceType<
+    typeof CardBillingCreateManyAccountCardInputEnvelope
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  set?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  disconnect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  delete?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingWhereUniqueInput], { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Array<
+    Prisma.AtLeast<
+      CardBillingWhereUniqueInput,
+      'id' | 'accountCardId_periodStart'
+    >
+  >;
+  @Field(() => [CardBillingUpdateWithWhereUniqueWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateWithWhereUniqueWithoutAccountCardInput)
+  update?: Array<CardBillingUpdateWithWhereUniqueWithoutAccountCardInput>;
+  @Field(() => [CardBillingUpdateManyWithWhereWithoutAccountCardInput], {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateManyWithWhereWithoutAccountCardInput)
+  updateMany?: Array<CardBillingUpdateManyWithWhereWithoutAccountCardInput>;
+  @Field(() => [CardBillingScalarWhereInput], { nullable: true })
+  @Type(() => CardBillingScalarWhereInput)
+  deleteMany?: Array<CardBillingScalarWhereInput>;
+}
+
+@InputType()
+export class CardBillingUpdateOneWithoutTransactionsNestedInput {
+  @Field(() => CardBillingCreateWithoutTransactionsInput, { nullable: true })
+  @Type(() => CardBillingCreateWithoutTransactionsInput)
+  create?: InstanceType<typeof CardBillingCreateWithoutTransactionsInput>;
+  @Field(() => CardBillingCreateOrConnectWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateOrConnectWithoutTransactionsInput)
+  connectOrCreate?: InstanceType<
+    typeof CardBillingCreateOrConnectWithoutTransactionsInput
+  >;
+  @Field(() => CardBillingUpsertWithoutTransactionsInput, { nullable: true })
+  @Type(() => CardBillingUpsertWithoutTransactionsInput)
+  upsert?: InstanceType<typeof CardBillingUpsertWithoutTransactionsInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  disconnect?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  delete?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  connect?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingUpdateToOneWithWhereWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateToOneWithWhereWithoutTransactionsInput)
+  update?: InstanceType<
+    typeof CardBillingUpdateToOneWithWhereWithoutTransactionsInput
+  >;
+}
+
+@InputType()
+export class CardBillingUpdateToOneWithWhereWithoutTransactionsInput {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => CardBillingUpdateWithoutTransactionsInput, { nullable: false })
+  @Type(() => CardBillingUpdateWithoutTransactionsInput)
+  data!: InstanceType<typeof CardBillingUpdateWithoutTransactionsInput>;
+}
+
+@InputType()
+export class CardBillingUpdateWithWhereUniqueWithoutAccountCardInput {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingUpdateWithoutAccountCardInput, { nullable: false })
+  @Type(() => CardBillingUpdateWithoutAccountCardInput)
+  data!: InstanceType<typeof CardBillingUpdateWithoutAccountCardInput>;
+}
+
+@InputType()
+export class CardBillingUpdateWithoutAccountCardInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => TransactionUpdateManyWithoutCardBillingNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutCardBillingNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutCardBillingNestedInput
+  >;
+}
+
+@InputType()
+export class CardBillingUpdateWithoutTransactionsInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUpdateOneRequiredWithoutBillingsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneRequiredWithoutBillingsNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneRequiredWithoutBillingsNestedInput
+  >;
+}
+
+@InputType()
+export class CardBillingUpdateInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  periodEnd?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  dueDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  closingDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  totalAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  paidAmount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => NullableDecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => NullableDecimalFieldUpdateOperationsInput)
+  minimumPayment?: InstanceType<
+    typeof NullableDecimalFieldUpdateOperationsInput
+  >;
+  @Field(() => EnumCardBillingStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumCardBillingStatusFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountCardUpdateOneRequiredWithoutBillingsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCardUpdateOneRequiredWithoutBillingsNestedInput)
+  accountCard?: InstanceType<
+    typeof AccountCardUpdateOneRequiredWithoutBillingsNestedInput
+  >;
+  @Field(() => TransactionUpdateManyWithoutCardBillingNestedInput, {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithoutCardBillingNestedInput)
+  transactions?: InstanceType<
+    typeof TransactionUpdateManyWithoutCardBillingNestedInput
+  >;
+}
+
+@InputType()
+export class CardBillingUpsertWithWhereUniqueWithoutAccountCardInput {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingUpdateWithoutAccountCardInput, { nullable: false })
+  @Type(() => CardBillingUpdateWithoutAccountCardInput)
+  update!: InstanceType<typeof CardBillingUpdateWithoutAccountCardInput>;
+  @Field(() => CardBillingCreateWithoutAccountCardInput, { nullable: false })
+  @Type(() => CardBillingCreateWithoutAccountCardInput)
+  create!: InstanceType<typeof CardBillingCreateWithoutAccountCardInput>;
+}
+
+@InputType()
+export class CardBillingUpsertWithoutTransactionsInput {
+  @Field(() => CardBillingUpdateWithoutTransactionsInput, { nullable: false })
+  @Type(() => CardBillingUpdateWithoutTransactionsInput)
+  update!: InstanceType<typeof CardBillingUpdateWithoutTransactionsInput>;
+  @Field(() => CardBillingCreateWithoutTransactionsInput, { nullable: false })
+  @Type(() => CardBillingCreateWithoutTransactionsInput)
+  create!: InstanceType<typeof CardBillingCreateWithoutTransactionsInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+}
+
+@InputType()
+export class CardBillingWhereUniqueInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => CardBillingAccountCardIdPeriodStartCompoundUniqueInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingAccountCardIdPeriodStartCompoundUniqueInput)
+  accountCardId_periodStart?: InstanceType<
+    typeof CardBillingAccountCardIdPeriodStartCompoundUniqueInput
+  >;
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  AND?: Array<CardBillingWhereInput>;
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  OR?: Array<CardBillingWhereInput>;
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  NOT?: Array<CardBillingWhereInput>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  periodEnd?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  dueDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  closingDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  totalAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  paidAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalNullableFilter, { nullable: true })
+  @Type(() => DecimalNullableFilter)
+  minimumPayment?: InstanceType<typeof DecimalNullableFilter>;
+  @Field(() => EnumCardBillingStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumCardBillingStatusFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountCardRelationFilter, { nullable: true })
+  @Type(() => AccountCardRelationFilter)
+  accountCard?: InstanceType<typeof AccountCardRelationFilter>;
+  @Field(() => TransactionListRelationFilter, { nullable: true })
+  @Type(() => TransactionListRelationFilter)
+  transactions?: InstanceType<typeof TransactionListRelationFilter>;
+}
+
+@InputType()
+export class CardBillingWhereInput {
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  AND?: Array<CardBillingWhereInput>;
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  OR?: Array<CardBillingWhereInput>;
+  @Field(() => [CardBillingWhereInput], { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  NOT?: Array<CardBillingWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  id?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  periodStart?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  periodEnd?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  dueDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  closingDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  totalAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalFilter, { nullable: true })
+  @Type(() => DecimalFilter)
+  paidAmount?: InstanceType<typeof DecimalFilter>;
+  @Field(() => DecimalNullableFilter, { nullable: true })
+  @Type(() => DecimalNullableFilter)
+  minimumPayment?: InstanceType<typeof DecimalNullableFilter>;
+  @Field(() => EnumCardBillingStatusFilter, { nullable: true })
+  status?: InstanceType<typeof EnumCardBillingStatusFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  accountCardId?: InstanceType<typeof StringFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFilter>;
+  @Field(() => AccountCardRelationFilter, { nullable: true })
+  @Type(() => AccountCardRelationFilter)
+  accountCard?: InstanceType<typeof AccountCardRelationFilter>;
+  @Field(() => TransactionListRelationFilter, { nullable: true })
+  @Type(() => TransactionListRelationFilter)
+  transactions?: InstanceType<typeof TransactionListRelationFilter>;
+}
+
+@ObjectType()
+export class CardBilling {
+  @Field(() => ID, { nullable: false })
+  id!: string;
+  @Field(() => Date, { nullable: false })
+  periodStart!: Date;
+  @Field(() => Date, { nullable: true })
+  periodEnd!: Date | null;
+  @Field(() => Date, { nullable: true })
+  dueDate!: Date | null;
+  @Field(() => Date, { nullable: true })
+  closingDate!: Date | null;
+  @Field(() => GraphQLDecimal, { nullable: false, defaultValue: 0 })
+  totalAmount!: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: false, defaultValue: 0 })
+  paidAmount!: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  minimumPayment!: Decimal | null;
+  @Field(() => CardBillingStatus, { nullable: false })
+  status!: keyof typeof CardBillingStatus;
+  @Field(() => String, { nullable: false })
+  accountCardId!: string;
+  @Field(() => Date, { nullable: false })
+  createdAt!: Date;
+  @Field(() => Date, { nullable: false })
+  updatedAt!: Date;
+  @Field(() => AccountCard, { nullable: false })
+  accountCard?: InstanceType<typeof AccountCard>;
+  @Field(() => [Transaction], { nullable: true })
+  transactions?: Array<Transaction>;
+  @Field(() => CardBillingCount, { nullable: false })
+  _count?: InstanceType<typeof CardBillingCount>;
+}
+
+@ArgsType()
+export class CreateManyCardBillingArgs {
+  @Field(() => [CardBillingCreateManyInput], { nullable: false })
+  @Type(() => CardBillingCreateManyInput)
+  data!: Array<CardBillingCreateManyInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@ArgsType()
+export class CreateOneCardBillingArgs {
+  @Field(() => CardBillingCreateInput, { nullable: false })
+  @Type(() => CardBillingCreateInput)
+  data!: InstanceType<typeof CardBillingCreateInput>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class DeleteManyCardBillingArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+}
+
+@ArgsType()
+export class DeleteOneCardBillingArgs {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstCardBillingOrThrowArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => [CardBillingOrderByWithRelationInput], { nullable: true })
+  @Type(() => CardBillingOrderByWithRelationInput)
+  orderBy?: Array<CardBillingOrderByWithRelationInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  cursor?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [CardBillingScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof CardBillingScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindFirstCardBillingArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => [CardBillingOrderByWithRelationInput], { nullable: true })
+  @Type(() => CardBillingOrderByWithRelationInput)
+  orderBy?: Array<CardBillingOrderByWithRelationInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  cursor?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [CardBillingScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof CardBillingScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindManyCardBillingArgs {
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+  @Field(() => [CardBillingOrderByWithRelationInput], { nullable: true })
+  @Type(() => CardBillingOrderByWithRelationInput)
+  orderBy?: Array<CardBillingOrderByWithRelationInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: true })
+  @Type(() => CardBillingWhereUniqueInput)
+  cursor?: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => Int, { nullable: true })
+  take?: number;
+  @Field(() => Int, { nullable: true })
+  skip?: number;
+  @Field(() => [CardBillingScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof CardBillingScalarFieldEnum>;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueCardBillingOrThrowArgs {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class FindUniqueCardBillingArgs {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class UpdateManyCardBillingArgs {
+  @Field(() => CardBillingUpdateManyMutationInput, { nullable: false })
+  @Type(() => CardBillingUpdateManyMutationInput)
+  data!: InstanceType<typeof CardBillingUpdateManyMutationInput>;
+  @Field(() => CardBillingWhereInput, { nullable: true })
+  @Type(() => CardBillingWhereInput)
+  where?: InstanceType<typeof CardBillingWhereInput>;
+}
+
+@ArgsType()
+export class UpdateOneCardBillingArgs {
+  @Field(() => CardBillingUpdateInput, { nullable: false })
+  @Type(() => CardBillingUpdateInput)
+  data!: InstanceType<typeof CardBillingUpdateInput>;
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => RelationLoadStrategy, { nullable: true })
+  relationLoadStrategy?: keyof typeof RelationLoadStrategy;
+}
+
+@ArgsType()
+export class UpsertOneCardBillingArgs {
+  @Field(() => CardBillingWhereUniqueInput, { nullable: false })
+  @Type(() => CardBillingWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    CardBillingWhereUniqueInput,
+    'id' | 'accountCardId_periodStart'
+  >;
+  @Field(() => CardBillingCreateInput, { nullable: false })
+  @Type(() => CardBillingCreateInput)
+  create!: InstanceType<typeof CardBillingCreateInput>;
+  @Field(() => CardBillingUpdateInput, { nullable: false })
+  @Type(() => CardBillingUpdateInput)
+  update!: InstanceType<typeof CardBillingUpdateInput>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -8511,6 +12213,84 @@ export class DecimalFilter {
 }
 
 @InputType()
+export class DecimalNullableFilter {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  equals?: Decimal;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  in?: Array<Decimal>;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  notIn?: Array<Decimal>;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lte?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gte?: Decimal;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDecimalNullableFilter>;
+}
+
+@InputType()
+export class DecimalNullableWithAggregatesFilter {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  equals?: Decimal;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  in?: Array<Decimal>;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  notIn?: Array<Decimal>;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lte?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gte?: Decimal;
+  @Field(() => NestedDecimalNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDecimalNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _avg?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _sum?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedDecimalNullableFilter>;
+}
+
+@InputType()
 export class DecimalWithAggregatesFilter {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
@@ -8605,6 +12385,80 @@ export class EnumAccountTypeWithAggregatesFilter {
 }
 
 @InputType()
+export class EnumCardBillingStatusFieldUpdateOperationsInput {
+  @Field(() => CardBillingStatus, { nullable: true })
+  set?: keyof typeof CardBillingStatus;
+}
+
+@InputType()
+export class EnumCardBillingStatusFilter {
+  @Field(() => CardBillingStatus, { nullable: true })
+  equals?: keyof typeof CardBillingStatus;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  in?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  notIn?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+}
+
+@InputType()
+export class EnumCardBillingStatusWithAggregatesFilter {
+  @Field(() => CardBillingStatus, { nullable: true })
+  equals?: keyof typeof CardBillingStatus;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  in?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  notIn?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => NestedEnumCardBillingStatusWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumCardBillingStatusWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+}
+
+@InputType()
+export class EnumCardTypeFieldUpdateOperationsInput {
+  @Field(() => CardType, { nullable: true })
+  set?: keyof typeof CardType;
+}
+
+@InputType()
+export class EnumCardTypeFilter {
+  @Field(() => CardType, { nullable: true })
+  equals?: keyof typeof CardType;
+  @Field(() => [CardType], { nullable: true })
+  in?: Array<keyof typeof CardType>;
+  @Field(() => [CardType], { nullable: true })
+  notIn?: Array<keyof typeof CardType>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardTypeFilter>;
+}
+
+@InputType()
+export class EnumCardTypeWithAggregatesFilter {
+  @Field(() => CardType, { nullable: true })
+  equals?: keyof typeof CardType;
+  @Field(() => [CardType], { nullable: true })
+  in?: Array<keyof typeof CardType>;
+  @Field(() => [CardType], { nullable: true })
+  notIn?: Array<keyof typeof CardType>;
+  @Field(() => NestedEnumCardTypeWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardTypeWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumCardTypeFilter>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumCardTypeFilter>;
+}
+
+@InputType()
 export class EnumInvestmentStatusFieldUpdateOperationsInput {
   @Field(() => InvestmentStatus, { nullable: true })
   set?: keyof typeof InvestmentStatus;
@@ -8680,6 +12534,42 @@ export class EnumInvestmentTransactionRoleWithAggregatesFilter {
   _min?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
   @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
   _max?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+}
+
+@InputType()
+export class EnumPaymentMethodFieldUpdateOperationsInput {
+  @Field(() => PaymentMethod, { nullable: true })
+  set?: keyof typeof PaymentMethod;
+}
+
+@InputType()
+export class EnumPaymentMethodFilter {
+  @Field(() => PaymentMethod, { nullable: true })
+  equals?: keyof typeof PaymentMethod;
+  @Field(() => [PaymentMethod], { nullable: true })
+  in?: Array<keyof typeof PaymentMethod>;
+  @Field(() => [PaymentMethod], { nullable: true })
+  notIn?: Array<keyof typeof PaymentMethod>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+}
+
+@InputType()
+export class EnumPaymentMethodWithAggregatesFilter {
+  @Field(() => PaymentMethod, { nullable: true })
+  equals?: keyof typeof PaymentMethod;
+  @Field(() => [PaymentMethod], { nullable: true })
+  in?: Array<keyof typeof PaymentMethod>;
+  @Field(() => [PaymentMethod], { nullable: true })
+  notIn?: Array<keyof typeof PaymentMethod>;
+  @Field(() => NestedEnumPaymentMethodWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
 }
 
 @InputType()
@@ -9143,6 +13033,84 @@ export class NestedDecimalFilter {
 }
 
 @InputType()
+export class NestedDecimalNullableFilter {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  equals?: Decimal;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  in?: Array<Decimal>;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  notIn?: Array<Decimal>;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lte?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gte?: Decimal;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDecimalNullableFilter>;
+}
+
+@InputType()
+export class NestedDecimalNullableWithAggregatesFilter {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  equals?: Decimal;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  in?: Array<Decimal>;
+  @Field(() => [GraphQLDecimal], { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  notIn?: Array<Decimal>;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  lte?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gt?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  gte?: Decimal;
+  @Field(() => NestedDecimalNullableWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedDecimalNullableWithAggregatesFilter>;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _avg?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _sum?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedDecimalNullableFilter>;
+  @Field(() => NestedDecimalNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedDecimalNullableFilter>;
+}
+
+@InputType()
 export class NestedDecimalWithAggregatesFilter {
   @Field(() => GraphQLDecimal, { nullable: true })
   @Type(() => Object)
@@ -9217,6 +13185,68 @@ export class NestedEnumAccountTypeWithAggregatesFilter {
 }
 
 @InputType()
+export class NestedEnumCardBillingStatusFilter {
+  @Field(() => CardBillingStatus, { nullable: true })
+  equals?: keyof typeof CardBillingStatus;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  in?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  notIn?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+}
+
+@InputType()
+export class NestedEnumCardBillingStatusWithAggregatesFilter {
+  @Field(() => CardBillingStatus, { nullable: true })
+  equals?: keyof typeof CardBillingStatus;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  in?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => [CardBillingStatus], { nullable: true })
+  notIn?: Array<keyof typeof CardBillingStatus>;
+  @Field(() => NestedEnumCardBillingStatusWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<typeof NestedEnumCardBillingStatusWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+  @Field(() => NestedEnumCardBillingStatusFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumCardBillingStatusFilter>;
+}
+
+@InputType()
+export class NestedEnumCardTypeFilter {
+  @Field(() => CardType, { nullable: true })
+  equals?: keyof typeof CardType;
+  @Field(() => [CardType], { nullable: true })
+  in?: Array<keyof typeof CardType>;
+  @Field(() => [CardType], { nullable: true })
+  notIn?: Array<keyof typeof CardType>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardTypeFilter>;
+}
+
+@InputType()
+export class NestedEnumCardTypeWithAggregatesFilter {
+  @Field(() => CardType, { nullable: true })
+  equals?: keyof typeof CardType;
+  @Field(() => [CardType], { nullable: true })
+  in?: Array<keyof typeof CardType>;
+  @Field(() => [CardType], { nullable: true })
+  notIn?: Array<keyof typeof CardType>;
+  @Field(() => NestedEnumCardTypeWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumCardTypeWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumCardTypeFilter>;
+  @Field(() => NestedEnumCardTypeFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumCardTypeFilter>;
+}
+
+@InputType()
 export class NestedEnumInvestmentStatusFilter {
   @Field(() => InvestmentStatus, { nullable: true })
   equals?: keyof typeof InvestmentStatus;
@@ -9280,6 +13310,36 @@ export class NestedEnumInvestmentTransactionRoleWithAggregatesFilter {
   _min?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
   @Field(() => NestedEnumInvestmentTransactionRoleFilter, { nullable: true })
   _max?: InstanceType<typeof NestedEnumInvestmentTransactionRoleFilter>;
+}
+
+@InputType()
+export class NestedEnumPaymentMethodFilter {
+  @Field(() => PaymentMethod, { nullable: true })
+  equals?: keyof typeof PaymentMethod;
+  @Field(() => [PaymentMethod], { nullable: true })
+  in?: Array<keyof typeof PaymentMethod>;
+  @Field(() => [PaymentMethod], { nullable: true })
+  notIn?: Array<keyof typeof PaymentMethod>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+}
+
+@InputType()
+export class NestedEnumPaymentMethodWithAggregatesFilter {
+  @Field(() => PaymentMethod, { nullable: true })
+  equals?: keyof typeof PaymentMethod;
+  @Field(() => [PaymentMethod], { nullable: true })
+  in?: Array<keyof typeof PaymentMethod>;
+  @Field(() => [PaymentMethod], { nullable: true })
+  notIn?: Array<keyof typeof PaymentMethod>;
+  @Field(() => NestedEnumPaymentMethodWithAggregatesFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodWithAggregatesFilter>;
+  @Field(() => NestedIntFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntFilter>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
 }
 
 @InputType()
@@ -9699,6 +13759,30 @@ export class NullableDateTimeFieldUpdateOperationsInput {
 }
 
 @InputType()
+export class NullableDecimalFieldUpdateOperationsInput {
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  set?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  increment?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  decrement?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  multiply?: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  divide?: Decimal;
+}
+
+@InputType()
 export class NullableFloatFieldUpdateOperationsInput {
   @Field(() => Float, { nullable: true })
   set?: number;
@@ -10064,9 +14148,13 @@ export class TransactionCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentMethod?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  cardBillingId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -10092,9 +14180,13 @@ export class TransactionCountAggregate {
   @Field(() => Int, { nullable: false })
   type!: number;
   @Field(() => Int, { nullable: false })
+  paymentMethod!: number;
+  @Field(() => Int, { nullable: false })
   sourceAccountId!: number;
   @Field(() => Int, { nullable: false })
   destinyAccountId!: number;
+  @Field(() => Int, { nullable: false })
+  cardBillingId!: number;
   @Field(() => Int, { nullable: false })
   userId!: number;
   @Field(() => Int, { nullable: false })
@@ -10120,15 +14212,58 @@ export class TransactionCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  paymentMethod?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   destinyAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  cardBillingId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class TransactionCreateManyCardBillingInputEnvelope {
+  @Field(() => [TransactionCreateManyCardBillingInput], { nullable: false })
+  @Type(() => TransactionCreateManyCardBillingInput)
+  data!: Array<TransactionCreateManyCardBillingInput>;
+  @Field(() => Boolean, { nullable: true })
+  skipDuplicates?: boolean;
+}
+
+@InputType()
+export class TransactionCreateManyCardBillingInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  destinyAccountId?: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
 }
 
 @InputType()
@@ -10156,8 +14291,12 @@ export class TransactionCreateManyDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -10191,8 +14330,12 @@ export class TransactionCreateManySourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -10226,10 +14369,14 @@ export class TransactionCreateManyUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -10252,16 +14399,42 @@ export class TransactionCreateManyInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+}
+
+@InputType()
+export class TransactionCreateNestedManyWithoutCardBillingInput {
+  @Field(() => [TransactionCreateWithoutCardBillingInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create?: Array<TransactionCreateWithoutCardBillingInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutCardBillingInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutCardBillingInput>;
+  @Field(() => TransactionCreateManyCardBillingInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyCardBillingInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyCardBillingInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
 }
 
 @InputType()
@@ -10327,6 +14500,16 @@ export class TransactionCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class TransactionCreateOrConnectWithoutCardBillingInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionCreateWithoutCardBillingInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create!: InstanceType<typeof TransactionCreateWithoutCardBillingInput>;
+}
+
+@InputType()
 export class TransactionCreateOrConnectWithoutDestinyAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
@@ -10357,6 +14540,47 @@ export class TransactionCreateOrConnectWithoutUserInput {
 }
 
 @InputType()
+export class TransactionCreateWithoutCardBillingInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+  @Field(() => AccountCreateNestedOneWithoutSourceTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
+  sourceAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
+  @Field(() => AccountCreateNestedOneWithoutDestinyTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
+  destinyAccount?: InstanceType<
+    typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
+  @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
+  @Type(() => UserCreateNestedOneWithoutTransactionsInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutTransactionsInput>;
+}
+
+@InputType()
 export class TransactionCreateWithoutDestinyAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
@@ -10372,6 +14596,8 @@ export class TransactionCreateWithoutDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -10382,6 +14608,13 @@ export class TransactionCreateWithoutDestinyAccountInput {
   @Type(() => AccountCreateNestedOneWithoutSourceTransactionsInput)
   sourceAccount?: InstanceType<
     typeof AccountCreateNestedOneWithoutSourceTransactionsInput
+  >;
+  @Field(() => CardBillingCreateNestedOneWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedOneWithoutTransactionsInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingCreateNestedOneWithoutTransactionsInput
   >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
@@ -10404,6 +14637,8 @@ export class TransactionCreateWithoutSourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -10414,6 +14649,13 @@ export class TransactionCreateWithoutSourceAccountInput {
   @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
   destinyAccount?: InstanceType<
     typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
+  @Field(() => CardBillingCreateNestedOneWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedOneWithoutTransactionsInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingCreateNestedOneWithoutTransactionsInput
   >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
@@ -10436,6 +14678,8 @@ export class TransactionCreateWithoutUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -10453,6 +14697,13 @@ export class TransactionCreateWithoutUserInput {
   @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
   destinyAccount?: InstanceType<
     typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
+  @Field(() => CardBillingCreateNestedOneWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedOneWithoutTransactionsInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingCreateNestedOneWithoutTransactionsInput
   >;
 }
 
@@ -10472,6 +14723,8 @@ export class TransactionCreateInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -10489,6 +14742,13 @@ export class TransactionCreateInput {
   @Type(() => AccountCreateNestedOneWithoutDestinyTransactionsInput)
   destinyAccount?: InstanceType<
     typeof AccountCreateNestedOneWithoutDestinyTransactionsInput
+  >;
+  @Field(() => CardBillingCreateNestedOneWithoutTransactionsInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingCreateNestedOneWithoutTransactionsInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingCreateNestedOneWithoutTransactionsInput
   >;
   @Field(() => UserCreateNestedOneWithoutTransactionsInput, { nullable: false })
   @Type(() => UserCreateNestedOneWithoutTransactionsInput)
@@ -10543,10 +14803,14 @@ export class TransactionGroupBy {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: false })
@@ -10593,9 +14857,13 @@ export class TransactionMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentMethod?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  cardBillingId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -10618,10 +14886,14 @@ export class TransactionMaxAggregate {
   status?: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: true })
   type?: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: true })
   userId?: string;
   @Field(() => Date, { nullable: true })
@@ -10645,9 +14917,13 @@ export class TransactionMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  paymentMethod?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   destinyAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  cardBillingId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -10671,9 +14947,13 @@ export class TransactionMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   type?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentMethod?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
+  @Field(() => Boolean, { nullable: true })
+  cardBillingId?: true;
   @Field(() => Boolean, { nullable: true })
   userId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -10696,10 +14976,14 @@ export class TransactionMinAggregate {
   status?: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: true })
   type?: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: true })
   userId?: string;
   @Field(() => Date, { nullable: true })
@@ -10723,9 +15007,13 @@ export class TransactionMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  paymentMethod?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   destinyAccountId?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  cardBillingId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -10754,10 +15042,14 @@ export class TransactionOrderByWithAggregationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentMethod?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   destinyAccountId?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -10795,10 +15087,14 @@ export class TransactionOrderByWithRelationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentMethod?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   destinyAccountId?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
   userId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -10811,6 +15107,9 @@ export class TransactionOrderByWithRelationInput {
   @Field(() => AccountOrderByWithRelationInput, { nullable: true })
   @Type(() => AccountOrderByWithRelationInput)
   destinyAccount?: InstanceType<typeof AccountOrderByWithRelationInput>;
+  @Field(() => CardBillingOrderByWithRelationInput, { nullable: true })
+  @Type(() => CardBillingOrderByWithRelationInput)
+  cardBilling?: InstanceType<typeof CardBillingOrderByWithRelationInput>;
   @Field(() => UserOrderByWithRelationInput, { nullable: true })
   @Type(() => UserOrderByWithRelationInput)
   user?: InstanceType<typeof UserOrderByWithRelationInput>;
@@ -10840,10 +15139,14 @@ export class TransactionScalarWhereWithAggregatesInput {
   status?: InstanceType<typeof EnumTransactionStatusWithAggregatesFilter>;
   @Field(() => EnumTransactionTypeWithAggregatesFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeWithAggregatesFilter>;
+  @Field(() => EnumPaymentMethodWithAggregatesFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   destinyAccountId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
+  @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
+  cardBillingId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   userId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -10876,10 +15179,14 @@ export class TransactionScalarWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => EnumPaymentMethodFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   destinyAccountId?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  cardBillingId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -10904,6 +15211,28 @@ export class TransactionSumAggregate {
 export class TransactionSumOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   amount?: keyof typeof SortOrder;
+}
+
+@InputType()
+export class TransactionUncheckedCreateNestedManyWithoutCardBillingInput {
+  @Field(() => [TransactionCreateWithoutCardBillingInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create?: Array<TransactionCreateWithoutCardBillingInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutCardBillingInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutCardBillingInput>;
+  @Field(() => TransactionCreateManyCardBillingInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyCardBillingInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyCardBillingInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
 }
 
 @InputType()
@@ -10969,6 +15298,36 @@ export class TransactionUncheckedCreateNestedManyWithoutUserInput {
 }
 
 @InputType()
+export class TransactionUncheckedCreateWithoutCardBillingInput {
+  @Field(() => String, { nullable: true })
+  id?: string;
+  @Field(() => String, { nullable: false })
+  description!: string;
+  @Field(() => GraphQLDecimal, { nullable: false })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  amount!: Decimal;
+  @Field(() => Date, { nullable: false })
+  date!: Date | string;
+  @Field(() => TransactionStatus, { nullable: false })
+  status!: keyof typeof TransactionStatus;
+  @Field(() => TransactionType, { nullable: false })
+  type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => String, { nullable: true })
+  sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  destinyAccountId?: string;
+  @Field(() => String, { nullable: false })
+  userId!: string;
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date | string;
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date | string;
+}
+
+@InputType()
 export class TransactionUncheckedCreateWithoutDestinyAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
@@ -10984,8 +15343,12 @@ export class TransactionUncheckedCreateWithoutDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -11010,8 +15373,12 @@ export class TransactionUncheckedCreateWithoutSourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
@@ -11036,10 +15403,14 @@ export class TransactionUncheckedCreateWithoutUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -11062,16 +15433,108 @@ export class TransactionUncheckedCreateInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
+  @Field(() => String, { nullable: true })
+  cardBillingId?: string;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateManyWithoutCardBillingNestedInput {
+  @Field(() => [TransactionCreateWithoutCardBillingInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create?: Array<TransactionCreateWithoutCardBillingInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutCardBillingInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutCardBillingInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutCardBillingInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutCardBillingInput>;
+  @Field(() => TransactionCreateManyCardBillingInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyCardBillingInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyCardBillingInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutCardBillingInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutCardBillingInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithWhereWithoutCardBillingInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutCardBillingInput>;
+  @Field(() => [TransactionScalarWhereInput], { nullable: true })
+  @Type(() => TransactionScalarWhereInput)
+  deleteMany?: Array<TransactionScalarWhereInput>;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateManyWithoutCardBillingInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  destinyAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
 }
 
 @InputType()
@@ -11144,10 +15607,16 @@ export class TransactionUncheckedUpdateManyWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11224,10 +15693,16 @@ export class TransactionUncheckedUpdateManyWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11298,6 +15773,10 @@ export class TransactionUncheckedUpdateManyWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -11306,6 +15785,8 @@ export class TransactionUncheckedUpdateManyWithoutUserInput {
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11331,6 +15812,51 @@ export class TransactionUncheckedUpdateManyInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  sourceAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  destinyAccountId?: InstanceType<
+    typeof NullableStringFieldUpdateOperationsInput
+  >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class TransactionUncheckedUpdateWithoutCardBillingInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -11366,10 +15892,16 @@ export class TransactionUncheckedUpdateWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11397,10 +15929,16 @@ export class TransactionUncheckedUpdateWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11428,6 +15966,10 @@ export class TransactionUncheckedUpdateWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -11436,6 +15978,8 @@ export class TransactionUncheckedUpdateWithoutUserInput {
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11461,6 +16005,10 @@ export class TransactionUncheckedUpdateInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -11469,6 +16017,8 @@ export class TransactionUncheckedUpdateInput {
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
   >;
+  @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
+  cardBillingId?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11496,10 +16046,24 @@ export class TransactionUpdateManyMutationInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+}
+
+@InputType()
+export class TransactionUpdateManyWithWhereWithoutCardBillingInput {
+  @Field(() => TransactionScalarWhereInput, { nullable: false })
+  @Type(() => TransactionScalarWhereInput)
+  where!: InstanceType<typeof TransactionScalarWhereInput>;
+  @Field(() => TransactionUpdateManyMutationInput, { nullable: false })
+  @Type(() => TransactionUpdateManyMutationInput)
+  data!: InstanceType<typeof TransactionUpdateManyMutationInput>;
 }
 
 @InputType()
@@ -11530,6 +16094,55 @@ export class TransactionUpdateManyWithWhereWithoutUserInput {
   @Field(() => TransactionUpdateManyMutationInput, { nullable: false })
   @Type(() => TransactionUpdateManyMutationInput)
   data!: InstanceType<typeof TransactionUpdateManyMutationInput>;
+}
+
+@InputType()
+export class TransactionUpdateManyWithoutCardBillingNestedInput {
+  @Field(() => [TransactionCreateWithoutCardBillingInput], { nullable: true })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create?: Array<TransactionCreateWithoutCardBillingInput>;
+  @Field(() => [TransactionCreateOrConnectWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateOrConnectWithoutCardBillingInput)
+  connectOrCreate?: Array<TransactionCreateOrConnectWithoutCardBillingInput>;
+  @Field(() => [TransactionUpsertWithWhereUniqueWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpsertWithWhereUniqueWithoutCardBillingInput)
+  upsert?: Array<TransactionUpsertWithWhereUniqueWithoutCardBillingInput>;
+  @Field(() => TransactionCreateManyCardBillingInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => TransactionCreateManyCardBillingInputEnvelope)
+  createMany?: InstanceType<
+    typeof TransactionCreateManyCardBillingInputEnvelope
+  >;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  set?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  disconnect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  delete?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionWhereUniqueInput], { nullable: true })
+  @Type(() => TransactionWhereUniqueInput)
+  connect?: Array<Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>>;
+  @Field(() => [TransactionUpdateWithWhereUniqueWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateWithWhereUniqueWithoutCardBillingInput)
+  update?: Array<TransactionUpdateWithWhereUniqueWithoutCardBillingInput>;
+  @Field(() => [TransactionUpdateManyWithWhereWithoutCardBillingInput], {
+    nullable: true,
+  })
+  @Type(() => TransactionUpdateManyWithWhereWithoutCardBillingInput)
+  updateMany?: Array<TransactionUpdateManyWithWhereWithoutCardBillingInput>;
+  @Field(() => [TransactionScalarWhereInput], { nullable: true })
+  @Type(() => TransactionScalarWhereInput)
+  deleteMany?: Array<TransactionScalarWhereInput>;
 }
 
 @InputType()
@@ -11676,6 +16289,16 @@ export class TransactionUpdateManyWithoutUserNestedInput {
 }
 
 @InputType()
+export class TransactionUpdateWithWhereUniqueWithoutCardBillingInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionUpdateWithoutCardBillingInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutCardBillingInput)
+  data!: InstanceType<typeof TransactionUpdateWithoutCardBillingInput>;
+}
+
+@InputType()
 export class TransactionUpdateWithWhereUniqueWithoutDestinyAccountInput {
   @Field(() => TransactionWhereUniqueInput, { nullable: false })
   @Type(() => TransactionWhereUniqueInput)
@@ -11706,6 +16329,56 @@ export class TransactionUpdateWithWhereUniqueWithoutUserInput {
 }
 
 @InputType()
+export class TransactionUpdateWithoutCardBillingInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  description?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
+  @Type(() => DecimalFieldUpdateOperationsInput)
+  amount?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  date?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionStatusFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  status?: InstanceType<typeof EnumTransactionStatusFieldUpdateOperationsInput>;
+  @Field(() => EnumTransactionTypeFieldUpdateOperationsInput, {
+    nullable: true,
+  })
+  type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => AccountUpdateOneWithoutSourceTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
+  sourceAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
+  @Field(() => AccountUpdateOneWithoutDestinyTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUpdateOneWithoutDestinyTransactionsNestedInput)
+  destinyAccount?: InstanceType<
+    typeof AccountUpdateOneWithoutDestinyTransactionsNestedInput
+  >;
+  @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => UserUpdateOneRequiredWithoutTransactionsNestedInput)
+  user?: InstanceType<
+    typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
+  >;
+}
+
+@InputType()
 export class TransactionUpdateWithoutDestinyAccountInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
@@ -11724,6 +16397,10 @@ export class TransactionUpdateWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11734,6 +16411,13 @@ export class TransactionUpdateWithoutDestinyAccountInput {
   @Type(() => AccountUpdateOneWithoutSourceTransactionsNestedInput)
   sourceAccount?: InstanceType<
     typeof AccountUpdateOneWithoutSourceTransactionsNestedInput
+  >;
+  @Field(() => CardBillingUpdateOneWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateOneWithoutTransactionsNestedInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingUpdateOneWithoutTransactionsNestedInput
   >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
@@ -11763,6 +16447,10 @@ export class TransactionUpdateWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11773,6 +16461,13 @@ export class TransactionUpdateWithoutSourceAccountInput {
   @Type(() => AccountUpdateOneWithoutDestinyTransactionsNestedInput)
   destinyAccount?: InstanceType<
     typeof AccountUpdateOneWithoutDestinyTransactionsNestedInput
+  >;
+  @Field(() => CardBillingUpdateOneWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateOneWithoutTransactionsNestedInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingUpdateOneWithoutTransactionsNestedInput
   >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
@@ -11802,6 +16497,10 @@ export class TransactionUpdateWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11819,6 +16518,13 @@ export class TransactionUpdateWithoutUserInput {
   @Type(() => AccountUpdateOneWithoutDestinyTransactionsNestedInput)
   destinyAccount?: InstanceType<
     typeof AccountUpdateOneWithoutDestinyTransactionsNestedInput
+  >;
+  @Field(() => CardBillingUpdateOneWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateOneWithoutTransactionsNestedInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingUpdateOneWithoutTransactionsNestedInput
   >;
 }
 
@@ -11841,6 +16547,10 @@ export class TransactionUpdateInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
+  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodFieldUpdateOperationsInput
+  >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -11859,6 +16569,13 @@ export class TransactionUpdateInput {
   destinyAccount?: InstanceType<
     typeof AccountUpdateOneWithoutDestinyTransactionsNestedInput
   >;
+  @Field(() => CardBillingUpdateOneWithoutTransactionsNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardBillingUpdateOneWithoutTransactionsNestedInput)
+  cardBilling?: InstanceType<
+    typeof CardBillingUpdateOneWithoutTransactionsNestedInput
+  >;
   @Field(() => UserUpdateOneRequiredWithoutTransactionsNestedInput, {
     nullable: true,
   })
@@ -11866,6 +16583,19 @@ export class TransactionUpdateInput {
   user?: InstanceType<
     typeof UserUpdateOneRequiredWithoutTransactionsNestedInput
   >;
+}
+
+@InputType()
+export class TransactionUpsertWithWhereUniqueWithoutCardBillingInput {
+  @Field(() => TransactionWhereUniqueInput, { nullable: false })
+  @Type(() => TransactionWhereUniqueInput)
+  where!: Prisma.AtLeast<TransactionWhereUniqueInput, 'id'>;
+  @Field(() => TransactionUpdateWithoutCardBillingInput, { nullable: false })
+  @Type(() => TransactionUpdateWithoutCardBillingInput)
+  update!: InstanceType<typeof TransactionUpdateWithoutCardBillingInput>;
+  @Field(() => TransactionCreateWithoutCardBillingInput, { nullable: false })
+  @Type(() => TransactionCreateWithoutCardBillingInput)
+  create!: InstanceType<typeof TransactionCreateWithoutCardBillingInput>;
 }
 
 @InputType()
@@ -11931,10 +16661,14 @@ export class TransactionWhereUniqueInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => EnumPaymentMethodFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   destinyAccountId?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  cardBillingId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -11947,6 +16681,9 @@ export class TransactionWhereUniqueInput {
   @Field(() => AccountNullableRelationFilter, { nullable: true })
   @Type(() => AccountNullableRelationFilter)
   destinyAccount?: InstanceType<typeof AccountNullableRelationFilter>;
+  @Field(() => CardBillingNullableRelationFilter, { nullable: true })
+  @Type(() => CardBillingNullableRelationFilter)
+  cardBilling?: InstanceType<typeof CardBillingNullableRelationFilter>;
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
@@ -11976,10 +16713,14 @@ export class TransactionWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
+  @Field(() => EnumPaymentMethodFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   destinyAccountId?: InstanceType<typeof StringNullableFilter>;
+  @Field(() => StringNullableFilter, { nullable: true })
+  cardBillingId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
   userId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -11992,6 +16733,9 @@ export class TransactionWhereInput {
   @Field(() => AccountNullableRelationFilter, { nullable: true })
   @Type(() => AccountNullableRelationFilter)
   destinyAccount?: InstanceType<typeof AccountNullableRelationFilter>;
+  @Field(() => CardBillingNullableRelationFilter, { nullable: true })
+  @Type(() => CardBillingNullableRelationFilter)
+  cardBilling?: InstanceType<typeof CardBillingNullableRelationFilter>;
   @Field(() => UserRelationFilter, { nullable: true })
   @Type(() => UserRelationFilter)
   user?: InstanceType<typeof UserRelationFilter>;
@@ -12011,10 +16755,14 @@ export class Transaction {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
+  @Field(() => PaymentMethod, { nullable: false })
+  paymentMethod!: keyof typeof PaymentMethod;
   @Field(() => String, { nullable: true })
   sourceAccountId!: string | null;
   @Field(() => String, { nullable: true })
   destinyAccountId!: string | null;
+  @Field(() => String, { nullable: true })
+  cardBillingId!: string | null;
   @Field(() => String, { nullable: false })
   userId!: string;
   @Field(() => Date, { nullable: false })
@@ -12025,6 +16773,8 @@ export class Transaction {
   sourceAccount?: InstanceType<typeof Account> | null;
   @Field(() => Account, { nullable: true })
   destinyAccount?: InstanceType<typeof Account> | null;
+  @Field(() => CardBilling, { nullable: true })
+  cardBilling?: InstanceType<typeof CardBilling> | null;
   @Field(() => User, { nullable: false })
   user?: InstanceType<typeof User>;
 }

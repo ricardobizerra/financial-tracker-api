@@ -10,44 +10,181 @@ import { getQueriedFields } from '@/utils/get-queried-fields';
 import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { TransactionFilterArgs } from './transaction.model';
-import { TransactionCreateWithoutUserInput } from '@/lib/graphql/prisma-client';
-import { TransactionType } from '@prisma/client';
+import {
+  Account,
+  AccountType,
+  CardBillingStatus,
+  TransactionType,
+} from '@prisma/client';
+import { CreateTransactionInput } from './input/create-transaction.input';
+import { AccountService } from '@/account/account.service';
+import { PrismaService } from '@/lib/prisma/prisma.service';
 
 @Resolver()
 export class TransactionResolver {
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(
+    private readonly transactionService: TransactionService,
+    private readonly accountService: AccountService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   @Auth()
   @Mutation(() => TransactionModel, { name: 'createTransaction' })
   async createTransaction(
-    @Args('data') data: TransactionCreateWithoutUserInput,
+    @Args('data') data: CreateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
-    if (data.type === TransactionType.INCOME && !data.destinyAccount) {
+    if (data.type === TransactionType.INCOME && !data.destinyAccountId) {
       throw new Error('Destiny account is mandatory for income transactions');
     }
 
-    if (data.type === TransactionType.EXPENSE && !data.sourceAccount) {
+    if (data.type === TransactionType.EXPENSE && !data.sourceAccountId) {
       throw new Error('Source account is mandatory for expense transactions');
     }
 
     if (
       data.type === TransactionType.BETWEEN_ACCOUNTS &&
-      !data.sourceAccount &&
-      !data.destinyAccount
+      !data.sourceAccountId &&
+      !data.destinyAccountId
     ) {
       throw new Error(
         'Source and destiny accounts are mandatory for transactions between accounts',
       );
     }
 
+    let destinyAccount: Account | null = null;
+
+    if (
+      data.type === TransactionType.INCOME ||
+      data.type === TransactionType.BETWEEN_ACCOUNTS
+    ) {
+      destinyAccount = await this.accountService.find({
+        id: data.destinyAccountId,
+      });
+
+      if (!destinyAccount) {
+        throw new Error('Destiny account not found');
+      }
+    }
+
+    let sourceAccount: Account | null = null;
+
+    if (
+      data.type === TransactionType.EXPENSE ||
+      data.type === TransactionType.BETWEEN_ACCOUNTS
+    ) {
+      sourceAccount = await this.accountService.find({
+        id: data.sourceAccountId,
+      });
+
+      if (!sourceAccount) {
+        throw new Error('Source account not found');
+      }
+    }
+
+    let cardBillingId: string | null = null;
+
+    if (
+      data.type === TransactionType.EXPENSE &&
+      sourceAccount.type === AccountType.CREDIT_CARD
+    ) {
+      const billing = await this.prismaService.cardBilling.findFirst({
+        where: {
+          accountCard: {
+            accountId: sourceAccount.id,
+          },
+          periodStart: {
+            lte: data.date,
+          },
+          periodEnd: {
+            gte: data.date,
+          },
+          status: CardBillingStatus.PENDING,
+        },
+      });
+
+      if (billing) {
+        cardBillingId = billing.id;
+      } else {
+        const billing = await this.prismaService.cardBilling.findFirst({
+          where: {
+            accountCard: {
+              accountId: sourceAccount.id,
+            },
+            periodStart: {
+              gte: data.date,
+            },
+            status: CardBillingStatus.PENDING,
+          },
+        });
+
+        if (billing) {
+          cardBillingId = billing.id;
+        } else {
+          const lastBilling = await this.prismaService.cardBilling.findFirst({
+            where: {
+              accountCard: {
+                accountId: sourceAccount.id,
+              },
+            },
+            orderBy: {
+              periodEnd: 'desc',
+            },
+          });
+
+          const billing = await this.prismaService.cardBilling.create({
+            data: {
+              accountCard: {
+                connect: {
+                  accountId: sourceAccount.id,
+                },
+              },
+              periodStart: lastBilling?.periodEnd,
+              periodEnd: undefined,
+              status: CardBillingStatus.PENDING,
+            },
+          });
+
+          cardBillingId = billing.id;
+        }
+      }
+    }
+
     return this.transactionService.create({
-      ...data,
+      amount: data.amount,
+      description: data.description,
+      date: data.date,
+      status: data.status,
+      type: data.type,
+      paymentMethod: data.paymentMethod,
+      ...((data.type === TransactionType.EXPENSE ||
+        data.type === TransactionType.BETWEEN_ACCOUNTS) && {
+        sourceAccount: {
+          connect: {
+            id: data.sourceAccountId,
+          },
+        },
+      }),
+      ...((data.type === TransactionType.INCOME ||
+        data.type === TransactionType.BETWEEN_ACCOUNTS) && {
+        destinyAccount: {
+          connect: {
+            id: data.destinyAccountId,
+          },
+        },
+      }),
       user: {
         connect: {
           id: user.id,
         },
       },
+      ...(cardBillingId && {
+        cardBilling: {
+          connect: {
+            id: cardBillingId,
+          },
+        },
+      }),
     });
   }
 

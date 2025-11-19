@@ -59,6 +59,8 @@ model Account {
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
   institutionId String
 
+  accountCard AccountCard?
+
   sourceTransactions     Transaction[]           @relation("SourceAccount")
   destinyTransactions    Transaction[]           @relation("DestinyAccount")
   investments            Investment[]
@@ -66,6 +68,49 @@ model Account {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AccountCard {
+  id String @id @default(uuid())
+
+  lastFourDigits  String?
+  billingCycleDay Int?
+  type            CardType
+
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String  @unique
+
+  billings CardBilling[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CardBilling {
+  id String @id @default(uuid())
+
+  periodStart DateTime
+  periodEnd   DateTime?
+  dueDate     DateTime?
+  closingDate DateTime?
+
+  totalAmount    Decimal  @default(0)
+  paidAmount     Decimal  @default(0)
+  minimumPayment Decimal?
+
+  status CardBillingStatus
+
+  accountCard   AccountCard @relation(fields: [accountCardId], references: [id], onDelete: Cascade)
+  accountCardId String
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([accountCardId, periodStart])
+  @@index([accountCardId])
+  @@index([dueDate])
 }
 
 model Investment {
@@ -114,18 +159,22 @@ model InvestmentTransaction {
 }
 
 model Transaction {
-  id          String            @id @default(uuid())
-  description String
-  amount      Decimal
-  date        DateTime
-  status      TransactionStatus
-  type        TransactionType
+  id            String            @id @default(uuid())
+  description   String
+  amount        Decimal
+  date          DateTime
+  status        TransactionStatus
+  type          TransactionType
+  paymentMethod PaymentMethod
 
   sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "SourceAccount")
   sourceAccountId String?
 
   destinyAccount   Account? @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "DestinyAccount")
   destinyAccountId String?
+
+  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull)
+  cardBillingId String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
@@ -141,6 +190,26 @@ enum AccountType {
   INVESTMENT // Investimentos
   CREDIT_CARD // Cartão de crédito
   OTHER // Outros tipos
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+enum CardBillingStatus {
+  PENDING
+  PAID
+  OVERDUE
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BOLETO
 }
 
 enum InvestmentStatus {
