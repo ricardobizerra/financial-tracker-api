@@ -57,6 +57,9 @@ export class TransactionService {
                 },
               ],
             }),
+            ...(filterArgs.cardBillingId && {
+              cardBillingId: filterArgs.cardBillingId,
+            }),
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
                 [field]: {
@@ -113,6 +116,9 @@ export class TransactionService {
               destinyAccountId: filterArgs.accountId,
             },
           ],
+        }),
+        ...(!!filterArgs.cardBillingId && {
+          cardBillingId: filterArgs.cardBillingId,
         }),
         ...(!!searchArgs.search && {
           OR: ['name', 'description'].map((field) => ({
@@ -211,6 +217,9 @@ export class TransactionService {
                   destinyAccountId: filterArgs.accountId,
                 },
               ],
+            }),
+            ...(!!filterArgs.cardBillingId && {
+              cardBillingId: filterArgs.cardBillingId,
             }),
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({

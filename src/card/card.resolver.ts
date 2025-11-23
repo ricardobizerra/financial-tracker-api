@@ -1,6 +1,11 @@
-import { Resolver, Query, Args, Info } from '@nestjs/graphql';
+import { Resolver, Query, Args, Info, Mutation, ID } from '@nestjs/graphql';
 import { CardService } from './card.service';
-import { AccountCard, CardBilling, User } from '@/lib/graphql/prisma-client';
+import {
+  AccountCard,
+  CardBilling,
+  PaymentMethod,
+  User,
+} from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
 import { CardBillingModel, CardBillingOnDate } from './card.model';
 import { CurrentUser } from '@/user/user.decorator';
@@ -26,9 +31,9 @@ export class CardResolver {
   @Query(() => CardBillingOnDate)
   async billing(
     @Info() info: GraphQLResolveInfo,
-    @Args('accountId') accountId: string,
+    @Args('accountId', { type: () => ID! }) accountId: string,
     @CurrentUser() user: User,
-    @Args('id', { nullable: true }) id?: string,
+    @Args('id', { type: () => ID, nullable: true }) id?: string,
   ): Promise<CardBillingOnDate> {
     const queriedFields = getQueriedFields<CardBillingOnDate>(
       info,
@@ -45,6 +50,23 @@ export class CardResolver {
       throw new NotFoundException('Account not found');
     }
 
-    return this.cardService.findBilling(queriedFields, accountId, user.id, id);
+    return this.cardService.findCurrentBilling(
+      queriedFields,
+      accountId,
+      user.id,
+      id,
+    );
+  }
+
+  @Auth()
+  @Mutation(() => CardBilling)
+  async closeBilling(
+    @CurrentUser() user: User,
+    @Args('billingId') billingId: string,
+  ): Promise<CardBilling> {
+    return this.cardService.closeBilling({
+      billingId,
+      userId: user.id,
+    });
   }
 }

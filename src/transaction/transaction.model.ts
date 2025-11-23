@@ -22,4 +22,7 @@ export class OrdenationTransactionArgs extends Ordenation(TransactionModel, [
 export class TransactionFilterArgs {
   @Field(() => ID, { nullable: true })
   accountId: string;
+
+  @Field(() => ID, { nullable: true })
+  cardBillingId: string;
 }

@@ -227,10 +227,26 @@ export class AccountService {
     };
   }
 
-  async find(where: Prisma.AccountWhereUniqueInput): Promise<Account | null> {
-    return this.prismaService.account.findUnique({
+  async find(
+    where: Prisma.AccountWhereUniqueInput,
+    queriedFields?: (keyof AccountModel)[],
+  ): Promise<Account | null> {
+    const account = await this.prismaService.account.findUnique({
       where,
+      ...(queriedFields?.length && {
+        select: {
+          ...selectObject<Account, AccountModel>(queriedFields, {
+            balance: [
+              'initialBalance',
+              'sourceTransactions',
+              'destinyTransactions',
+            ],
+          }),
+        },
+      }),
     });
+
+    return account;
   }
 
   async create(data: AccountCreateInput) {
@@ -245,7 +261,7 @@ export class AccountService {
     return this.prismaService.account.delete({ where: { id } });
   }
 
-  private calculateBalance(
+  calculateBalance(
     sourceTransactions: { amount: Decimal }[],
     destinyTransactions: { amount: Decimal }[],
     initialBalance: Decimal,

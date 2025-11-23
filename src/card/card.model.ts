@@ -1,12 +1,14 @@
 import { AccountCard, CardBilling } from '@/lib/graphql/prisma-client';
 import { Field, ObjectType, OmitType } from '@nestjs/graphql';
+import { Decimal } from '@prisma/client/runtime/library';
+import { GraphQLDecimal } from 'prisma-graphql-type-decimal';
 
 @ObjectType()
 export class CardBillingModel extends OmitType(CardBilling, [
   '_count',
 ] as const) {
-  @Field(() => AccountCard, { nullable: true })
-  accountCard?: AccountCard;
+  @Field(() => GraphQLDecimal)
+  totalAmount: Decimal;
 }
 
 @ObjectType()

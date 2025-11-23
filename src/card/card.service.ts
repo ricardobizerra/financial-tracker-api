@@ -1,9 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../lib/prisma/prisma.service';
-import { AccountCard, CardBilling } from '@/lib/graphql/prisma-client';
+import {
+  AccountCard,
+  CardBilling,
+  CardBillingCreateInput,
+} from '@/lib/graphql/prisma-client';
+import {
+  Account,
+  CardBillingStatus,
+  PaymentMethod,
+  Prisma,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { CardBillingModel, CardBillingOnDate } from './card.model';
-import { Prisma } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
+import { Decimal } from '@prisma/client/runtime/library';
+import { format } from 'date-fns';
 
 @Injectable()
 export class CardService {
@@ -20,6 +34,34 @@ export class CardService {
   }
 
   async findBilling(
+    where: Prisma.CardBillingWhereUniqueInput,
+  ): Promise<CardBillingModel | null> {
+    const billing = await this.prisma.cardBilling.findUnique({
+      where,
+      include: {
+        transactions: true,
+        accountCard: {
+          include: {
+            account: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      ...billing,
+      totalAmount: billing?.transactions.reduce(
+        (acc, transaction) => acc.add(transaction.amount),
+        new Decimal(0),
+      ),
+    };
+  }
+
+  async findCurrentBilling(
     queriedFields: (keyof CardBillingOnDate)[],
     accountId: string,
     userId: string,
@@ -50,7 +92,12 @@ export class CardService {
           },
         },
       },
-      select: selectObject<CardBilling, CardBillingModel>(billingQueriedFields),
+      select: {
+        ...selectObject<CardBilling, CardBillingModel>(billingQueriedFields, {
+          totalAmount: [],
+        }),
+        transactions: true,
+      },
       orderBy: { periodStart: 'desc' },
     });
 
@@ -93,9 +140,191 @@ export class CardService {
         : undefined;
 
     return {
-      billing: currentBilling,
+      billing: {
+        ...currentBilling,
+        totalAmount: currentBilling?.transactions.reduce(
+          (acc, transaction) => acc.add(transaction.amount),
+          new Decimal(0),
+        ),
+      },
       nextBillingId: nextBilling?.id,
       previousBillingId: previousBilling?.id,
     };
+  }
+
+  async updatePaymentTransaction(billingId: string): Promise<Transaction> {
+    const billing = await this.findBilling({ id: billingId });
+
+    if (!billing) {
+      throw new NotFoundException('Card billing not found');
+    }
+
+    const existing = await this.prisma.transaction.findFirst({
+      where: {
+        billingPayment: {
+          id: billingId,
+        },
+        type: TransactionType.BETWEEN_ACCOUNTS,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Billing payment transaction not found');
+    }
+
+    return this.prisma.transaction.update({
+      where: { id: existing.id },
+      data: { amount: billing.totalAmount },
+    });
+  }
+
+  async createBilling({
+    cardId,
+    cardBillingCycleDay,
+    periodStart,
+    limit,
+  }: {
+    cardId: string;
+    cardBillingCycleDay: number;
+    periodStart: Date;
+    limit: Decimal;
+  }): Promise<CardBilling> {
+    const periodEnd = new Date(periodStart);
+    const paymentDate = new Date(periodStart);
+
+    if (periodStart.getDate() > cardBillingCycleDay) {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+    }
+
+    periodEnd.setDate(cardBillingCycleDay);
+    periodEnd.setHours(23 + 3, 59, 59, 999);
+
+    if (periodStart.getDate() > cardBillingCycleDay) {
+      paymentDate.setMonth(paymentDate.getMonth() + 1);
+    }
+
+    paymentDate.setDate(cardBillingCycleDay);
+    paymentDate.setHours(23 + 3, 59, 59, 999);
+
+    const billing = await this.prisma.cardBilling.create({
+      data: {
+        accountCard: {
+          connect: {
+            id: cardId,
+          },
+        },
+        periodStart,
+        periodEnd,
+        paymentDate,
+        status: CardBillingStatus.PENDING,
+        limit,
+      },
+      include: {
+        accountCard: {
+          include: {
+            account: {
+              include: {
+                institution: true,
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await Promise.all([
+      this.prisma.cardBillingHistory.create({
+        data: {
+          cardBilling: {
+            connect: {
+              id: billing.id,
+            },
+          },
+          status: CardBillingStatus.PENDING,
+        },
+      }),
+      await this.prisma.transaction.create({
+        data: {
+          amount: 0,
+          date: paymentDate,
+          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
+          status: TransactionStatus.PLANNED,
+          type: TransactionType.BETWEEN_ACCOUNTS,
+          paymentMethod: PaymentMethod.PIX,
+          destinyAccount: {
+            connect: {
+              id: billing.accountCard.account.id,
+            },
+          },
+          billingPayment: {
+            connect: {
+              id: billing.id,
+            },
+          },
+          user: {
+            connect: {
+              id: billing.accountCard.account.user.id,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return billing;
+  }
+
+  async closeBilling({
+    billingId,
+    userId,
+  }: {
+    billingId: string;
+    userId: string;
+  }) {
+    const billing = await this.prisma.cardBilling.findFirst({
+      where: {
+        id: billingId,
+        accountCard: {
+          account: {
+            userId,
+          },
+        },
+        status: CardBillingStatus.PENDING,
+      },
+      include: {
+        accountCard: {
+          include: {
+            account: true,
+          },
+        },
+        paymentTransaction: true,
+      },
+    });
+
+    if (!billing) {
+      throw new NotFoundException('Billing not found or already closed');
+    }
+
+    // TODO: enable transaction payment
+
+    // await this.prisma.transaction.update({
+    //   where: {
+    //     id: billing.paymentTransaction.id,
+    //   },
+    //   data: {
+    //     sourceAccount: {
+    //       connect: {
+    //         id: sourceAccountId,
+    //       },
+    //     },
+    //   },
+    // });
+
+    return this.prisma.cardBilling.update({
+      where: { id: billingId },
+      data: {
+        status: CardBillingStatus.CLOSED,
+      },
+    });
   }
 }

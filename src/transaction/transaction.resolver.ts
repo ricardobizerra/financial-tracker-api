@@ -19,12 +19,14 @@ import {
 import { CreateTransactionInput } from './input/create-transaction.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
+import { CardService } from '@/card/card.service';
 
 @Resolver()
 export class TransactionResolver {
   constructor(
     private readonly transactionService: TransactionService,
     private readonly accountService: AccountService,
+    private readonly cardService: CardService,
     private readonly prismaService: PrismaService,
   ) {}
 
@@ -88,18 +90,26 @@ export class TransactionResolver {
       data.type === TransactionType.EXPENSE &&
       sourceAccount.type === AccountType.CREDIT_CARD
     ) {
+      const card = await this.cardService.find({
+        accountId: sourceAccount.id,
+      });
+
+      if (!card) {
+        throw new Error('Card not found');
+      }
+
       const billing = await this.prismaService.cardBilling.findFirst({
         where: {
           accountCard: {
-            accountId: sourceAccount.id,
+            id: card.id,
           },
           periodStart: {
             lte: data.date,
           },
-          periodEnd: {
-            gte: data.date,
-          },
           status: CardBillingStatus.PENDING,
+        },
+        orderBy: {
+          periodStart: 'desc',
         },
       });
 
@@ -109,7 +119,7 @@ export class TransactionResolver {
         const billing = await this.prismaService.cardBilling.findFirst({
           where: {
             accountCard: {
-              accountId: sourceAccount.id,
+              id: card.id,
             },
             periodStart: {
               gte: data.date,
@@ -124,7 +134,7 @@ export class TransactionResolver {
           const lastBilling = await this.prismaService.cardBilling.findFirst({
             where: {
               accountCard: {
-                accountId: sourceAccount.id,
+                id: card.id,
               },
             },
             orderBy: {
@@ -132,17 +142,11 @@ export class TransactionResolver {
             },
           });
 
-          const billing = await this.prismaService.cardBilling.create({
-            data: {
-              accountCard: {
-                connect: {
-                  accountId: sourceAccount.id,
-                },
-              },
-              periodStart: lastBilling?.periodEnd,
-              periodEnd: undefined,
-              status: CardBillingStatus.PENDING,
-            },
+          const billing = await this.cardService.createBilling({
+            cardId: card.id,
+            cardBillingCycleDay: card.billingCycleDay,
+            periodStart: lastBilling?.periodEnd,
+            limit: card.defaultLimit,
           });
 
           cardBillingId = billing.id;
@@ -150,7 +154,7 @@ export class TransactionResolver {
       }
     }
 
-    return this.transactionService.create({
+    const transaction = await this.transactionService.create({
       amount: data.amount,
       description: data.description,
       date: data.date,
@@ -186,6 +190,12 @@ export class TransactionResolver {
         },
       }),
     });
+
+    if (cardBillingId) {
+      await this.cardService.updatePaymentTransaction(cardBillingId);
+    }
+
+    return transaction;
   }
 
   @Auth()

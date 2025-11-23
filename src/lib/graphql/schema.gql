@@ -97,13 +97,17 @@ type Account {
 
 type AccountCardAvgAggregate {
   billingCycleDay: Float
+  billingPaymentDay: Float
+  defaultLimit: Decimal
 }
 
 type AccountCardCountAggregate {
   id: Int!
   lastFourDigits: Int!
   billingCycleDay: Int!
+  billingPaymentDay: Int!
   type: Int!
+  defaultLimit: Int!
   accountId: Int!
   createdAt: Int!
   updatedAt: Int!
@@ -118,7 +122,9 @@ type AccountCardMaxAggregate {
   id: String
   lastFourDigits: String
   billingCycleDay: Int
+  billingPaymentDay: Int
   type: CardType
+  defaultLimit: Decimal
   accountId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -133,7 +139,9 @@ type AccountCardMinAggregate {
   id: String
   lastFourDigits: String
   billingCycleDay: Int
+  billingPaymentDay: Int
   type: CardType
+  defaultLimit: Decimal
   accountId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -141,13 +149,17 @@ type AccountCardMinAggregate {
 
 type AccountCardSumAggregate {
   billingCycleDay: Int
+  billingPaymentDay: Int
+  defaultLimit: Decimal
 }
 
 type AccountCard {
   id: ID!
   lastFourDigits: String
-  billingCycleDay: Int
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
   type: CardType!
+  defaultLimit: Decimal!
   accountId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -157,22 +169,18 @@ type AccountCard {
 }
 
 type CardBillingAvgAggregate {
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  limit: Decimal
 }
 
 type CardBillingCountAggregate {
   id: Int!
   periodStart: Int!
   periodEnd: Int!
-  dueDate: Int!
-  closingDate: Int!
-  totalAmount: Int!
-  paidAmount: Int!
-  minimumPayment: Int!
+  paymentDate: Int!
+  limit: Int!
   status: Int!
   accountCardId: Int!
+  paymentTransactionId: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
@@ -180,25 +188,25 @@ type CardBillingCountAggregate {
 
 type CardBillingCount {
   transactions: Int!
+  statusHistory: Int!
 }
 
 type CardBillingMaxAggregate {
   id: String
   periodStart: DateTime
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal
   status: CardBillingStatus
   accountCardId: String
+  paymentTransactionId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
 
 enum CardBillingStatus {
   PENDING
+  CLOSED
   PAID
   OVERDUE
   COMPLETED
@@ -208,39 +216,70 @@ type CardBillingMinAggregate {
   id: String
   periodStart: DateTime
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal
   status: CardBillingStatus
   accountCardId: String
+  paymentTransactionId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
 
 type CardBillingSumAggregate {
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  limit: Decimal
 }
 
 type CardBilling {
   id: ID!
   periodStart: DateTime!
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal!
-  paidAmount: Decimal!
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal!
   status: CardBillingStatus!
   accountCardId: String!
+  paymentTransactionId: String
   createdAt: DateTime!
   updatedAt: DateTime!
   accountCard: AccountCard!
+  paymentTransaction: Transaction
   transactions: [Transaction!]
+  statusHistory: [CardBillingHistory!]
   _count: CardBillingCount!
+}
+
+type CardBillingHistoryCountAggregate {
+  id: Int!
+  status: Int!
+  changedAt: Int!
+  cardBillingId: Int!
+  changedById: Int!
+  _all: Int!
+}
+
+type CardBillingHistoryMaxAggregate {
+  id: String
+  status: CardBillingStatus
+  changedAt: DateTime
+  cardBillingId: String
+  changedById: String
+}
+
+type CardBillingHistoryMinAggregate {
+  id: String
+  status: CardBillingStatus
+  changedAt: DateTime
+  cardBillingId: String
+  changedById: String
+}
+
+type CardBillingHistory {
+  id: ID!
+  status: CardBillingStatus!
+  changedAt: DateTime!
+  cardBillingId: String!
+  changedById: String
+  cardBilling: CardBilling!
+  changedBy: User
 }
 
 type InstitutionCountAggregate {
@@ -550,6 +589,7 @@ type Transaction {
   updatedAt: DateTime!
   sourceAccount: Account
   destinyAccount: Account
+  billingPayment: CardBilling
   cardBilling: CardBilling
   user: User!
 }
@@ -569,6 +609,7 @@ type UserCount {
   accounts: Int!
   investments: Int!
   transactions: Int!
+  cardBillingStatusHistories: Int!
 }
 
 type UserMaxAggregate {
@@ -607,6 +648,7 @@ type User {
   accounts: [Account!]
   investments: [Investment!]
   transactions: [Transaction!]
+  cardBillingStatusHistories: [CardBillingHistory!]
   _count: UserCount!
 }
 
@@ -729,6 +771,30 @@ type AccountModelEdge {
   node: AccountModel!
 }
 
+type CardBillingModel {
+  id: ID!
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  accountCardId: String!
+  paymentTransactionId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accountCard: AccountCard!
+  paymentTransaction: Transaction
+  transactions: [Transaction!]
+  statusHistory: [CardBillingHistory!]
+  totalAmount: Decimal!
+}
+
+type CardBillingOnDate {
+  billing: CardBillingModel
+  nextBillingId: String
+  previousBillingId: String
+}
+
 type TransactionModel {
   id: ID!
   description: String!
@@ -744,6 +810,7 @@ type TransactionModel {
   updatedAt: DateTime!
   sourceAccount: Account
   destinyAccount: Account
+  billingPayment: CardBilling
   cardBilling: CardBilling
 }
 
@@ -779,29 +846,6 @@ type InstitutionModelEdge {
   node: InstitutionModel!
 }
 
-type CardBillingModel {
-  id: ID!
-  periodStart: DateTime!
-  periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal!
-  paidAmount: Decimal!
-  minimumPayment: Decimal
-  status: CardBillingStatus!
-  accountCardId: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  accountCard: AccountCard
-  transactions: [Transaction!]
-}
-
-type CardBillingOnDate {
-  billing: CardBillingModel
-  nextBillingId: String
-  previousBillingId: String
-}
-
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
@@ -810,12 +854,12 @@ type Query {
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes: InvestmentRegimeSummaryConnection!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, type: AccountType): AccountConnection!
-  account(id: String!): AccountModel!
-  transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID): TransactionConnection!
+  account(id: ID!): AccountModel!
+  accountCard(id: String!): AccountCard
+  billing(accountId: ID!, id: ID): CardBillingOnDate!
+  transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardBillingId: ID): TransactionConnection!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
   institution(id: String!): InstitutionModel!
-  accountCard(id: String!): AccountCard
-  billing(accountId: String!, id: String): CardBillingOnDate!
 }
 
 enum OrdenationUserModel {
@@ -881,6 +925,7 @@ enum OrdenationTransactionModel {
   updatedAt
   sourceAccount
   destinyAccount
+  billingPayment
   cardBilling
 }
 
@@ -901,7 +946,8 @@ type Mutation {
   authSignIn(data: AuthSignInInput!): SignIn!
   createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
-  createAccount(data: AccountCreateWithoutUserInput!): AccountModel!
+  createAccount(data: CreateAccountInput!): AccountModel!
+  closeBilling(billingId: String!): CardBilling!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
 }
 
@@ -916,6 +962,7 @@ input UserCreateInput {
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
 }
 
 input AccountCreateNestedManyWithoutUserInput {
@@ -1185,6 +1232,7 @@ input UserWhereInput {
   accounts: AccountListRelationFilter
   investments: InvestmentListRelationFilter
   transactions: TransactionListRelationFilter
+  cardBillingStatusHistories: CardBillingHistoryListRelationFilter
 }
 
 input EnumRoleFilter {
@@ -1417,6 +1465,7 @@ input TransactionWhereInput {
   updatedAt: DateTimeFilter
   sourceAccount: AccountNullableRelationFilter
   destinyAccount: AccountNullableRelationFilter
+  billingPayment: CardBillingNullableRelationFilter
   cardBilling: CardBillingNullableRelationFilter
   user: UserRelationFilter
 }
@@ -1480,39 +1529,17 @@ input CardBillingWhereInput {
   id: StringFilter
   periodStart: DateTimeFilter
   periodEnd: DateTimeNullableFilter
-  dueDate: DateTimeNullableFilter
-  closingDate: DateTimeNullableFilter
-  totalAmount: DecimalFilter
-  paidAmount: DecimalFilter
-  minimumPayment: DecimalNullableFilter
+  paymentDate: DateTimeNullableFilter
+  limit: DecimalFilter
   status: EnumCardBillingStatusFilter
   accountCardId: StringFilter
+  paymentTransactionId: StringNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   accountCard: AccountCardRelationFilter
+  paymentTransaction: TransactionNullableRelationFilter
   transactions: TransactionListRelationFilter
-}
-
-input DecimalNullableFilter {
-  equals: Decimal
-  in: [Decimal!]
-  notIn: [Decimal!]
-  lt: Decimal
-  lte: Decimal
-  gt: Decimal
-  gte: Decimal
-  not: NestedDecimalNullableFilter
-}
-
-input NestedDecimalNullableFilter {
-  equals: Decimal
-  in: [Decimal!]
-  notIn: [Decimal!]
-  lt: Decimal
-  lte: Decimal
-  gt: Decimal
-  gte: Decimal
-  not: NestedDecimalNullableFilter
+  statusHistory: CardBillingHistoryListRelationFilter
 }
 
 input EnumCardBillingStatusFilter {
@@ -1540,13 +1567,37 @@ input AccountCardWhereInput {
   NOT: [AccountCardWhereInput!]
   id: StringFilter
   lastFourDigits: StringNullableFilter
-  billingCycleDay: IntNullableFilter
+  billingCycleDay: IntFilter
+  billingPaymentDay: IntFilter
   type: EnumCardTypeFilter
+  defaultLimit: DecimalFilter
   accountId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   account: AccountRelationFilter
   billings: CardBillingListRelationFilter
+}
+
+input IntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
+input NestedIntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
 }
 
 input EnumCardTypeFilter {
@@ -1569,6 +1620,40 @@ input CardBillingListRelationFilter {
   none: CardBillingWhereInput
 }
 
+input TransactionNullableRelationFilter {
+  is: TransactionWhereInput
+  isNot: TransactionWhereInput
+}
+
+input CardBillingHistoryListRelationFilter {
+  every: CardBillingHistoryWhereInput
+  some: CardBillingHistoryWhereInput
+  none: CardBillingHistoryWhereInput
+}
+
+input CardBillingHistoryWhereInput {
+  AND: [CardBillingHistoryWhereInput!]
+  OR: [CardBillingHistoryWhereInput!]
+  NOT: [CardBillingHistoryWhereInput!]
+  id: StringFilter
+  status: EnumCardBillingStatusFilter
+  changedAt: DateTimeFilter
+  cardBillingId: StringFilter
+  changedById: StringNullableFilter
+  cardBilling: CardBillingRelationFilter
+  changedBy: UserNullableRelationFilter
+}
+
+input CardBillingRelationFilter {
+  is: CardBillingWhereInput
+  isNot: CardBillingWhereInput
+}
+
+input UserNullableRelationFilter {
+  is: UserWhereInput
+  isNot: UserWhereInput
+}
+
 input InstitutionRelationFilter {
   is: InstitutionWhereInput
   isNot: InstitutionWhereInput
@@ -1588,8 +1673,10 @@ input AccountCardCreateNestedOneWithoutAccountInput {
 input AccountCardCreateWithoutAccountInput {
   id: String
   lastFourDigits: String
-  billingCycleDay: Int
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
   type: CardType!
+  defaultLimit: Decimal!
   createdAt: DateTime
   updatedAt: DateTime
   billings: CardBillingCreateNestedManyWithoutAccountCardInput
@@ -1606,25 +1693,23 @@ input CardBillingCreateWithoutAccountCardInput {
   id: String
   periodStart: DateTime!
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal!
   status: CardBillingStatus!
   createdAt: DateTime
   updatedAt: DateTime
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
   transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
 }
 
-input TransactionCreateNestedManyWithoutCardBillingInput {
-  create: [TransactionCreateWithoutCardBillingInput!]
-  connectOrCreate: [TransactionCreateOrConnectWithoutCardBillingInput!]
-  createMany: TransactionCreateManyCardBillingInputEnvelope
-  connect: [TransactionWhereUniqueInput!]
+input TransactionCreateNestedOneWithoutBillingPaymentInput {
+  create: TransactionCreateWithoutBillingPaymentInput
+  connectOrCreate: TransactionCreateOrConnectWithoutBillingPaymentInput
+  connect: TransactionWhereUniqueInput
 }
 
-input TransactionCreateWithoutCardBillingInput {
+input TransactionCreateWithoutBillingPaymentInput {
   id: String
   description: String!
   amount: Decimal!
@@ -1636,6 +1721,7 @@ input TransactionCreateWithoutCardBillingInput {
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
   user: UserCreateNestedOneWithoutTransactionsInput!
 }
 
@@ -1678,6 +1764,7 @@ input UserCreateWithoutAccountsInput {
   updatedAt: DateTime
   investments: InvestmentCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
 }
 
 input InvestmentCreateNestedManyWithoutUserInput {
@@ -1746,6 +1833,7 @@ input TransactionCreateWithoutSourceAccountInput {
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
   user: UserCreateNestedOneWithoutTransactionsInput!
 }
@@ -1814,6 +1902,7 @@ input UserCreateWithoutInvestmentsInput {
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
 }
 
 input TransactionCreateNestedManyWithoutUserInput {
@@ -1835,28 +1924,28 @@ input TransactionCreateWithoutUserInput {
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
 }
 
-input CardBillingCreateNestedOneWithoutTransactionsInput {
-  create: CardBillingCreateWithoutTransactionsInput
-  connectOrCreate: CardBillingCreateOrConnectWithoutTransactionsInput
+input CardBillingCreateNestedOneWithoutPaymentTransactionInput {
+  create: CardBillingCreateWithoutPaymentTransactionInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutPaymentTransactionInput
   connect: CardBillingWhereUniqueInput
 }
 
-input CardBillingCreateWithoutTransactionsInput {
+input CardBillingCreateWithoutPaymentTransactionInput {
   id: String
   periodStart: DateTime!
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal!
   status: CardBillingStatus!
   createdAt: DateTime
   updatedAt: DateTime
   accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
 }
 
 input AccountCardCreateNestedOneWithoutBillingsInput {
@@ -1868,8 +1957,10 @@ input AccountCardCreateNestedOneWithoutBillingsInput {
 input AccountCardCreateWithoutBillingsInput {
   id: String
   lastFourDigits: String
-  billingCycleDay: Int
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
   type: CardType!
+  defaultLimit: Decimal!
   createdAt: DateTime
   updatedAt: DateTime
   account: AccountCreateNestedOneWithoutAccountCardInput!
@@ -1916,8 +2007,145 @@ input TransactionCreateWithoutDestinyAccountInput {
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
   user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input CardBillingCreateNestedOneWithoutTransactionsInput {
+  create: CardBillingCreateWithoutTransactionsInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutTransactionsInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutTransactionsInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
+}
+
+input CardBillingHistoryCreateNestedManyWithoutCardBillingInput {
+  create: [CardBillingHistoryCreateWithoutCardBillingInput!]
+  connectOrCreate: [CardBillingHistoryCreateOrConnectWithoutCardBillingInput!]
+  createMany: CardBillingHistoryCreateManyCardBillingInputEnvelope
+  connect: [CardBillingHistoryWhereUniqueInput!]
+}
+
+input CardBillingHistoryCreateWithoutCardBillingInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  changedBy: UserCreateNestedOneWithoutCardBillingStatusHistoriesInput
+}
+
+input UserCreateNestedOneWithoutCardBillingStatusHistoriesInput {
+  create: UserCreateWithoutCardBillingStatusHistoriesInput
+  connectOrCreate: UserCreateOrConnectWithoutCardBillingStatusHistoriesInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutCardBillingStatusHistoriesInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+}
+
+input UserCreateOrConnectWithoutCardBillingStatusHistoriesInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutCardBillingStatusHistoriesInput!
+}
+
+input UserWhereUniqueInput {
+  id: String
+  email: String
+  AND: [UserWhereInput!]
+  OR: [UserWhereInput!]
+  NOT: [UserWhereInput!]
+  password: StringFilter
+  name: StringFilter
+  role: EnumRoleFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  accounts: AccountListRelationFilter
+  investments: InvestmentListRelationFilter
+  transactions: TransactionListRelationFilter
+  cardBillingStatusHistories: CardBillingHistoryListRelationFilter
+}
+
+input CardBillingHistoryCreateOrConnectWithoutCardBillingInput {
+  where: CardBillingHistoryWhereUniqueInput!
+  create: CardBillingHistoryCreateWithoutCardBillingInput!
+}
+
+input CardBillingHistoryWhereUniqueInput {
+  id: String
+  AND: [CardBillingHistoryWhereInput!]
+  OR: [CardBillingHistoryWhereInput!]
+  NOT: [CardBillingHistoryWhereInput!]
+  status: EnumCardBillingStatusFilter
+  changedAt: DateTimeFilter
+  cardBillingId: StringFilter
+  changedById: StringNullableFilter
+  cardBilling: CardBillingRelationFilter
+  changedBy: UserNullableRelationFilter
+}
+
+input CardBillingHistoryCreateManyCardBillingInputEnvelope {
+  data: [CardBillingHistoryCreateManyCardBillingInput!]!
+  skipDuplicates: Boolean
+}
+
+input CardBillingHistoryCreateManyCardBillingInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  changedById: String
+}
+
+input CardBillingCreateOrConnectWithoutTransactionsInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutTransactionsInput!
+}
+
+input CardBillingWhereUniqueInput {
+  id: String
+  paymentTransactionId: String
+  accountCardId_periodStart: CardBillingAccountCardIdPeriodStartCompoundUniqueInput
+  AND: [CardBillingWhereInput!]
+  OR: [CardBillingWhereInput!]
+  NOT: [CardBillingWhereInput!]
+  periodStart: DateTimeFilter
+  periodEnd: DateTimeNullableFilter
+  paymentDate: DateTimeNullableFilter
+  limit: DecimalFilter
+  status: EnumCardBillingStatusFilter
+  accountCardId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  accountCard: AccountCardRelationFilter
+  paymentTransaction: TransactionNullableRelationFilter
+  transactions: TransactionListRelationFilter
+  statusHistory: CardBillingHistoryListRelationFilter
+}
+
+input CardBillingAccountCardIdPeriodStartCompoundUniqueInput {
+  accountCardId: String!
+  periodStart: DateTime!
 }
 
 input UserCreateNestedOneWithoutTransactionsInput {
@@ -1936,32 +2164,69 @@ input UserCreateWithoutTransactionsInput {
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
 }
 
-input UserCreateOrConnectWithoutTransactionsInput {
-  where: UserWhereUniqueInput!
-  create: UserCreateWithoutTransactionsInput!
+input CardBillingHistoryCreateNestedManyWithoutChangedByInput {
+  create: [CardBillingHistoryCreateWithoutChangedByInput!]
+  connectOrCreate: [CardBillingHistoryCreateOrConnectWithoutChangedByInput!]
+  createMany: CardBillingHistoryCreateManyChangedByInputEnvelope
+  connect: [CardBillingHistoryWhereUniqueInput!]
 }
 
-input UserWhereUniqueInput {
+input CardBillingHistoryCreateWithoutChangedByInput {
   id: String
-  email: String
-  AND: [UserWhereInput!]
-  OR: [UserWhereInput!]
-  NOT: [UserWhereInput!]
-  password: StringFilter
-  name: StringFilter
-  role: EnumRoleFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  accounts: AccountListRelationFilter
-  investments: InvestmentListRelationFilter
-  transactions: TransactionListRelationFilter
+  status: CardBillingStatus!
+  changedAt: DateTime
+  cardBilling: CardBillingCreateNestedOneWithoutStatusHistoryInput!
 }
 
-input TransactionCreateOrConnectWithoutDestinyAccountInput {
+input CardBillingCreateNestedOneWithoutStatusHistoryInput {
+  create: CardBillingCreateWithoutStatusHistoryInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutStatusHistoryInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutStatusHistoryInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+}
+
+input TransactionCreateNestedManyWithoutCardBillingInput {
+  create: [TransactionCreateWithoutCardBillingInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutCardBillingInput!]
+  createMany: TransactionCreateManyCardBillingInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutCardBillingInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod!
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutCardBillingInput {
   where: TransactionWhereUniqueInput!
-  create: TransactionCreateWithoutDestinyAccountInput!
+  create: TransactionCreateWithoutCardBillingInput!
 }
 
 input TransactionWhereUniqueInput {
@@ -1983,8 +2248,61 @@ input TransactionWhereUniqueInput {
   updatedAt: DateTimeFilter
   sourceAccount: AccountNullableRelationFilter
   destinyAccount: AccountNullableRelationFilter
+  billingPayment: CardBillingNullableRelationFilter
   cardBilling: CardBillingNullableRelationFilter
   user: UserRelationFilter
+}
+
+input TransactionCreateManyCardBillingInputEnvelope {
+  data: [TransactionCreateManyCardBillingInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyCardBillingInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod!
+  sourceAccountId: String
+  destinyAccountId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CardBillingCreateOrConnectWithoutStatusHistoryInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutStatusHistoryInput!
+}
+
+input CardBillingHistoryCreateOrConnectWithoutChangedByInput {
+  where: CardBillingHistoryWhereUniqueInput!
+  create: CardBillingHistoryCreateWithoutChangedByInput!
+}
+
+input CardBillingHistoryCreateManyChangedByInputEnvelope {
+  data: [CardBillingHistoryCreateManyChangedByInput!]!
+  skipDuplicates: Boolean
+}
+
+input CardBillingHistoryCreateManyChangedByInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  cardBillingId: String!
+}
+
+input UserCreateOrConnectWithoutTransactionsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutDestinyAccountInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutDestinyAccountInput!
 }
 
 input TransactionCreateManyDestinyAccountInputEnvelope {
@@ -2150,43 +2468,19 @@ input AccountCardWhereUniqueInput {
   OR: [AccountCardWhereInput!]
   NOT: [AccountCardWhereInput!]
   lastFourDigits: StringNullableFilter
-  billingCycleDay: IntNullableFilter
+  billingCycleDay: IntFilter
+  billingPaymentDay: IntFilter
   type: EnumCardTypeFilter
+  defaultLimit: DecimalFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   account: AccountRelationFilter
   billings: CardBillingListRelationFilter
 }
 
-input CardBillingCreateOrConnectWithoutTransactionsInput {
+input CardBillingCreateOrConnectWithoutPaymentTransactionInput {
   where: CardBillingWhereUniqueInput!
-  create: CardBillingCreateWithoutTransactionsInput!
-}
-
-input CardBillingWhereUniqueInput {
-  id: String
-  accountCardId_periodStart: CardBillingAccountCardIdPeriodStartCompoundUniqueInput
-  AND: [CardBillingWhereInput!]
-  OR: [CardBillingWhereInput!]
-  NOT: [CardBillingWhereInput!]
-  periodStart: DateTimeFilter
-  periodEnd: DateTimeNullableFilter
-  dueDate: DateTimeNullableFilter
-  closingDate: DateTimeNullableFilter
-  totalAmount: DecimalFilter
-  paidAmount: DecimalFilter
-  minimumPayment: DecimalNullableFilter
-  status: EnumCardBillingStatusFilter
-  accountCardId: StringFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-  accountCard: AccountCardRelationFilter
-  transactions: TransactionListRelationFilter
-}
-
-input CardBillingAccountCardIdPeriodStartCompoundUniqueInput {
-  accountCardId: String!
-  periodStart: DateTime!
+  create: CardBillingCreateWithoutPaymentTransactionInput!
 }
 
 input TransactionCreateOrConnectWithoutUserInput {
@@ -2381,29 +2675,9 @@ input AccountCreateOrConnectWithoutSourceTransactionsInput {
   create: AccountCreateWithoutSourceTransactionsInput!
 }
 
-input TransactionCreateOrConnectWithoutCardBillingInput {
+input TransactionCreateOrConnectWithoutBillingPaymentInput {
   where: TransactionWhereUniqueInput!
-  create: TransactionCreateWithoutCardBillingInput!
-}
-
-input TransactionCreateManyCardBillingInputEnvelope {
-  data: [TransactionCreateManyCardBillingInput!]!
-  skipDuplicates: Boolean
-}
-
-input TransactionCreateManyCardBillingInput {
-  id: String
-  description: String!
-  amount: Decimal!
-  date: DateTime!
-  status: TransactionStatus!
-  type: TransactionType!
-  paymentMethod: PaymentMethod!
-  sourceAccountId: String
-  destinyAccountId: String
-  userId: String!
-  createdAt: DateTime
-  updatedAt: DateTime
+  create: TransactionCreateWithoutBillingPaymentInput!
 }
 
 input CardBillingCreateOrConnectWithoutAccountCardInput {
@@ -2420,12 +2694,10 @@ input CardBillingCreateManyAccountCardInput {
   id: String
   periodStart: DateTime!
   periodEnd: DateTime
-  dueDate: DateTime
-  closingDate: DateTime
-  totalAmount: Decimal
-  paidAmount: Decimal
-  minimumPayment: Decimal
+  paymentDate: DateTime
+  limit: Decimal!
   status: CardBillingStatus!
+  paymentTransactionId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -2479,6 +2751,23 @@ input CreateInvestmentInput {
   accountId: ID!
 }
 
+input CreateAccountInput {
+  name: String!
+  type: AccountType!
+  description: String
+  institutionId: ID!
+  initialBalance: Decimal!
+  isActive: Boolean!
+  cardInfos: CreateAccountCardInfos
+}
+
+input CreateAccountCardInfos {
+  type: CardType!
+  billingCycleDay: Float!
+  billingPaymentDay: Float!
+  defaultLimit: Decimal!
+}
+
 input CreateTransactionInput {
   description: String!
   amount: Decimal!
@@ -2486,6 +2775,7 @@ input CreateTransactionInput {
   status: TransactionStatus!
   type: TransactionType!
   paymentMethod: PaymentMethod!
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   sourceAccountId: ID
   destinyAccountId: ID
 }

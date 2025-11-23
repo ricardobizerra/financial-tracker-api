@@ -23,9 +23,10 @@ model User {
 
   role Role
 
-  accounts     Account[]
-  investments  Investment[]
-  transactions Transaction[]
+  accounts                   Account[]
+  investments                Investment[]
+  transactions               Transaction[]
+  cardBillingStatusHistories CardBillingHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,9 +74,11 @@ model Account {
 model AccountCard {
   id String @id @default(uuid())
 
-  lastFourDigits  String?
-  billingCycleDay Int?
-  type            CardType
+  lastFourDigits    String?
+  billingCycleDay   Int
+  billingPaymentDay Int
+  type              CardType
+  defaultLimit      Decimal
 
   account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   accountId String  @unique
@@ -91,26 +94,42 @@ model CardBilling {
 
   periodStart DateTime
   periodEnd   DateTime?
-  dueDate     DateTime?
-  closingDate DateTime?
-
-  totalAmount    Decimal  @default(0)
-  paidAmount     Decimal  @default(0)
-  minimumPayment Decimal?
+  paymentDate DateTime?
+  limit       Decimal
 
   status CardBillingStatus
 
   accountCard   AccountCard @relation(fields: [accountCardId], references: [id], onDelete: Cascade)
   accountCardId String
 
-  transactions Transaction[]
+  paymentTransaction   Transaction? @relation(fields: [paymentTransactionId], references: [id], name: "BillingPayment")
+  paymentTransactionId String?      @unique
+
+  transactions  Transaction[]        @relation(name: "BillingTransactions")
+  statusHistory CardBillingHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([accountCardId, periodStart])
   @@index([accountCardId])
-  @@index([dueDate])
+  @@index([paymentDate])
+}
+
+model CardBillingHistory {
+  id        String            @id @default(uuid())
+  status    CardBillingStatus
+  changedAt DateTime          @default(now())
+
+  cardBilling   CardBilling @relation(fields: [cardBillingId], references: [id], onDelete: Cascade)
+  cardBillingId String
+
+  changedBy   User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedById String?
+
+  @@index([cardBillingId])
+  @@index([changedById])
+  @@index([changedAt])
 }
 
 model Investment {
@@ -173,7 +192,9 @@ model Transaction {
   destinyAccount   Account? @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "DestinyAccount")
   destinyAccountId String?
 
-  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull)
+  billingPayment CardBilling? @relation(name: "BillingPayment")
+
+  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull, name: "BillingTransactions")
   cardBillingId String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -199,6 +220,7 @@ enum CardType {
 
 enum CardBillingStatus {
   PENDING
+  CLOSED
   PAID
   OVERDUE
   COMPLETED

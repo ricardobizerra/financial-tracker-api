@@ -1,7 +1,7 @@
 import { Info, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AccountService } from './account.service';
 import { AccountConnection, AccountFilterArgs } from './account.model';
-import { Args } from '@nestjs/graphql';
+import { Args, ID } from '@nestjs/graphql';
 import { Auth } from '@/auth/auth.decorator';
 import {
   AccountCreateInput,
@@ -18,11 +18,14 @@ import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { AccountType } from '@prisma/client';
 import { PrismaService } from '@/lib/prisma/prisma.service';
+import { CardService } from '@/card/card.service';
+import { CreateAccountInput } from './create-account.input';
 
 @Resolver()
 export class AccountResolver {
   constructor(
     private readonly accountService: AccountService,
+    private readonly cardService: CardService,
     private readonly prismaService: PrismaService,
   ) {}
 
@@ -50,18 +53,47 @@ export class AccountResolver {
 
   @Auth()
   @Query(() => AccountModel, { name: 'account' })
-  async findOne(@Args('id') id: string) {
-    return this.accountService.find({ id });
+  async findOne(
+    @Args('id', { type: () => ID! }) id: string,
+    @Info() info: GraphQLResolveInfo,
+  ): Promise<AccountModel | null> {
+    const queriedFields = getQueriedFields<AccountModel>(
+      info,
+      'account',
+      false,
+    );
+
+    const account = await this.accountService.find({ id }, queriedFields);
+
+    return {
+      ...account,
+      ...((!queriedFields?.length || queriedFields.includes('balance')) && {
+        balance: this.accountService.calculateBalance(
+          account.sourceTransactions,
+          account.destinyTransactions,
+          account.initialBalance,
+        ),
+      }),
+    };
   }
 
   @Auth()
   @Mutation(() => AccountModel, { name: 'createAccount' })
   async create(
-    @Args('data') data: AccountCreateWithoutUserInput,
+    @Args('data') data: CreateAccountInput,
     @CurrentUser() user: UserModel,
   ) {
     const createdAccount = await this.accountService.create({
-      ...data,
+      name: data.name,
+      type: data.type,
+      description: data.description,
+      institution: {
+        connect: {
+          id: data.institutionId,
+        },
+      },
+      initialBalance: data.initialBalance,
+      isActive: data.isActive,
       user: {
         connect: {
           id: user.id,
@@ -70,15 +102,21 @@ export class AccountResolver {
     });
 
     if (data.type === AccountType.CREDIT_CARD) {
+      if (!data.cardInfos) {
+        throw new Error('Card infos are required');
+      }
+
       const accountCard = await this.prismaService.accountCard.create({
         data: {
-          type: CardType.CREDIT,
-          billingCycleDay: 1,
+          type: data.cardInfos.type,
+          billingCycleDay: data.cardInfos.billingCycleDay,
+          billingPaymentDay: data.cardInfos.billingPaymentDay,
           account: {
             connect: {
               id: createdAccount.id,
             },
           },
+          defaultLimit: data.cardInfos.defaultLimit,
         },
       });
 
@@ -87,17 +125,11 @@ export class AccountResolver {
         throw new Error('Account card not created');
       }
 
-      const billing = await this.prismaService.cardBilling.create({
-        data: {
-          accountCard: {
-            connect: {
-              id: accountCard.id,
-            },
-          },
-          periodStart: createdAccount.createdAt,
-          periodEnd: undefined,
-          status: CardBillingStatus.PENDING,
-        },
+      const billing = await this.cardService.createBilling({
+        cardId: accountCard.id,
+        cardBillingCycleDay: data.cardInfos.billingCycleDay,
+        periodStart: createdAccount.createdAt,
+        limit: accountCard.defaultLimit,
       });
 
       if (!billing) {
