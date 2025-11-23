@@ -1,4 +1,7 @@
-import { TransactionCreateWithoutUserInput } from '@/lib/graphql/prisma-client';
+import {
+  PaymentMethod,
+  TransactionCreateWithoutUserInput,
+} from '@/lib/graphql/prisma-client';
 import { Field, ID, InputType, OmitType } from '@nestjs/graphql';
 
 @InputType()
@@ -13,6 +16,9 @@ export class CreateTransactionInput extends OmitType(
     'cardBilling',
   ] as const,
 ) {
+  @Field(() => PaymentMethod)
+  paymentMethod!: keyof typeof PaymentMethod;
+
   @Field(() => ID, {
     nullable: true,
   })

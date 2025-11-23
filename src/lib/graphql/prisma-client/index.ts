@@ -31,6 +31,8 @@ export enum TransactionScalarFieldEnum {
   status = 'status',
   type = 'type',
   paymentMethod = 'paymentMethod',
+  paymentEnabled = 'paymentEnabled',
+  paymentLimit = 'paymentLimit',
   sourceAccountId = 'sourceAccountId',
   destinyAccountId = 'destinyAccountId',
   cardBillingId = 'cardBillingId',
@@ -49,6 +51,7 @@ export enum TransactionStatus {
   PLANNED = 'PLANNED',
   COMPLETED = 'COMPLETED',
   CANCELED = 'CANCELED',
+  OVERDUE = 'OVERDUE',
 }
 
 export enum TransactionIsolationLevel {
@@ -14459,39 +14462,37 @@ export class EnumInvestmentTransactionRoleWithAggregatesFilter {
 }
 
 @InputType()
-export class EnumPaymentMethodFieldUpdateOperationsInput {
-  @Field(() => PaymentMethod, { nullable: true })
-  set?: keyof typeof PaymentMethod;
-}
-
-@InputType()
-export class EnumPaymentMethodFilter {
+export class EnumPaymentMethodNullableFilter {
   @Field(() => PaymentMethod, { nullable: true })
   equals?: keyof typeof PaymentMethod;
   @Field(() => [PaymentMethod], { nullable: true })
   in?: Array<keyof typeof PaymentMethod>;
   @Field(() => [PaymentMethod], { nullable: true })
   notIn?: Array<keyof typeof PaymentMethod>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  not?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
 }
 
 @InputType()
-export class EnumPaymentMethodWithAggregatesFilter {
+export class EnumPaymentMethodNullableWithAggregatesFilter {
   @Field(() => PaymentMethod, { nullable: true })
   equals?: keyof typeof PaymentMethod;
   @Field(() => [PaymentMethod], { nullable: true })
   in?: Array<keyof typeof PaymentMethod>;
   @Field(() => [PaymentMethod], { nullable: true })
   notIn?: Array<keyof typeof PaymentMethod>;
-  @Field(() => NestedEnumPaymentMethodWithAggregatesFilter, { nullable: true })
-  not?: InstanceType<typeof NestedEnumPaymentMethodWithAggregatesFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _count?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  _min?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  _max?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<
+    typeof NestedEnumPaymentMethodNullableWithAggregatesFilter
+  >;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
 }
 
 @InputType()
@@ -15221,33 +15222,37 @@ export class NestedEnumInvestmentTransactionRoleWithAggregatesFilter {
 }
 
 @InputType()
-export class NestedEnumPaymentMethodFilter {
+export class NestedEnumPaymentMethodNullableFilter {
   @Field(() => PaymentMethod, { nullable: true })
   equals?: keyof typeof PaymentMethod;
   @Field(() => [PaymentMethod], { nullable: true })
   in?: Array<keyof typeof PaymentMethod>;
   @Field(() => [PaymentMethod], { nullable: true })
   notIn?: Array<keyof typeof PaymentMethod>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  not?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  not?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
 }
 
 @InputType()
-export class NestedEnumPaymentMethodWithAggregatesFilter {
+export class NestedEnumPaymentMethodNullableWithAggregatesFilter {
   @Field(() => PaymentMethod, { nullable: true })
   equals?: keyof typeof PaymentMethod;
   @Field(() => [PaymentMethod], { nullable: true })
   in?: Array<keyof typeof PaymentMethod>;
   @Field(() => [PaymentMethod], { nullable: true })
   notIn?: Array<keyof typeof PaymentMethod>;
-  @Field(() => NestedEnumPaymentMethodWithAggregatesFilter, { nullable: true })
-  not?: InstanceType<typeof NestedEnumPaymentMethodWithAggregatesFilter>;
-  @Field(() => NestedIntFilter, { nullable: true })
-  _count?: InstanceType<typeof NestedIntFilter>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  _min?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
-  @Field(() => NestedEnumPaymentMethodFilter, { nullable: true })
-  _max?: InstanceType<typeof NestedEnumPaymentMethodFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableWithAggregatesFilter, {
+    nullable: true,
+  })
+  not?: InstanceType<
+    typeof NestedEnumPaymentMethodNullableWithAggregatesFilter
+  >;
+  @Field(() => NestedIntNullableFilter, { nullable: true })
+  _count?: InstanceType<typeof NestedIntNullableFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  _min?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
+  @Field(() => NestedEnumPaymentMethodNullableFilter, { nullable: true })
+  _max?: InstanceType<typeof NestedEnumPaymentMethodNullableFilter>;
 }
 
 @InputType()
@@ -15697,6 +15702,12 @@ export class NullableDateTimeFieldUpdateOperationsInput {
 }
 
 @InputType()
+export class NullableEnumPaymentMethodFieldUpdateOperationsInput {
+  @Field(() => PaymentMethod, { nullable: true })
+  set?: keyof typeof PaymentMethod;
+}
+
+@InputType()
 export class NullableFloatFieldUpdateOperationsInput {
   @Field(() => Float, { nullable: true })
   set?: number;
@@ -16064,6 +16075,10 @@ export class TransactionCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   paymentMethod?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: true;
+  @Field(() => Boolean, { nullable: true })
+  paymentLimit?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
@@ -16096,6 +16111,10 @@ export class TransactionCountAggregate {
   @Field(() => Int, { nullable: false })
   paymentMethod!: number;
   @Field(() => Int, { nullable: false })
+  paymentEnabled!: number;
+  @Field(() => Int, { nullable: false })
+  paymentLimit!: number;
+  @Field(() => Int, { nullable: false })
   sourceAccountId!: number;
   @Field(() => Int, { nullable: false })
   destinyAccountId!: number;
@@ -16127,6 +16146,10 @@ export class TransactionCountOrderByAggregateInput {
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   paymentMethod?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentEnabled?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -16166,8 +16189,12 @@ export class TransactionCreateManyCardBillingInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16205,8 +16232,12 @@ export class TransactionCreateManyDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16244,8 +16275,12 @@ export class TransactionCreateManySourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16283,8 +16318,12 @@ export class TransactionCreateManyUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16313,8 +16352,12 @@ export class TransactionCreateManyInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16496,8 +16539,12 @@ export class TransactionCreateWithoutBillingPaymentInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16544,8 +16591,12 @@ export class TransactionCreateWithoutCardBillingInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16592,8 +16643,12 @@ export class TransactionCreateWithoutDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16640,8 +16695,12 @@ export class TransactionCreateWithoutSourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16688,8 +16747,12 @@ export class TransactionCreateWithoutUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16740,8 +16803,12 @@ export class TransactionCreateInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -16827,8 +16894,12 @@ export class TransactionGroupBy {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: false })
+  paymentEnabled!: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16883,6 +16954,10 @@ export class TransactionMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   paymentMethod?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: true;
+  @Field(() => Boolean, { nullable: true })
+  paymentLimit?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
@@ -16912,6 +16987,10 @@ export class TransactionMaxAggregate {
   type?: keyof typeof TransactionType;
   @Field(() => PaymentMethod, { nullable: true })
   paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -16943,6 +17022,10 @@ export class TransactionMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   paymentMethod?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  paymentEnabled?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentLimit?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   destinyAccountId?: keyof typeof SortOrder;
@@ -16973,6 +17056,10 @@ export class TransactionMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   paymentMethod?: true;
   @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: true;
+  @Field(() => Boolean, { nullable: true })
+  paymentLimit?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
@@ -17002,6 +17089,10 @@ export class TransactionMinAggregate {
   type?: keyof typeof TransactionType;
   @Field(() => PaymentMethod, { nullable: true })
   paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17032,6 +17123,10 @@ export class TransactionMinOrderByAggregateInput {
   type?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   paymentMethod?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentEnabled?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  paymentLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -17076,8 +17171,12 @@ export class TransactionOrderByWithAggregationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  paymentMethod?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  paymentMethod?: keyof typeof SortOrder;
+  paymentEnabled?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  paymentLimit?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
@@ -17121,8 +17220,12 @@ export class TransactionOrderByWithRelationInput {
   status?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   type?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  paymentMethod?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  paymentMethod?: keyof typeof SortOrder;
+  paymentEnabled?: keyof typeof SortOrder;
+  @Field(() => SortOrderInput, { nullable: true })
+  paymentLimit?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
@@ -17176,8 +17279,16 @@ export class TransactionScalarWhereWithAggregatesInput {
   status?: InstanceType<typeof EnumTransactionStatusWithAggregatesFilter>;
   @Field(() => EnumTransactionTypeWithAggregatesFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeWithAggregatesFilter>;
-  @Field(() => EnumPaymentMethodWithAggregatesFilter, { nullable: true })
-  paymentMethod?: InstanceType<typeof EnumPaymentMethodWithAggregatesFilter>;
+  @Field(() => EnumPaymentMethodNullableWithAggregatesFilter, {
+    nullable: true,
+  })
+  paymentMethod?: InstanceType<
+    typeof EnumPaymentMethodNullableWithAggregatesFilter
+  >;
+  @Field(() => BoolWithAggregatesFilter, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolWithAggregatesFilter>;
+  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
+  paymentLimit?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
@@ -17216,8 +17327,12 @@ export class TransactionScalarWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
-  @Field(() => EnumPaymentMethodFilter, { nullable: true })
-  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
+  @Field(() => EnumPaymentMethodNullableFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodNullableFilter>;
+  @Field(() => BoolFilter, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  paymentLimit?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -17350,8 +17465,12 @@ export class TransactionUncheckedCreateWithoutBillingPaymentInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17382,8 +17501,12 @@ export class TransactionUncheckedCreateWithoutCardBillingInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17420,8 +17543,12 @@ export class TransactionUncheckedCreateWithoutDestinyAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17458,8 +17585,12 @@ export class TransactionUncheckedCreateWithoutSourceAccountInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17496,8 +17627,12 @@ export class TransactionUncheckedCreateWithoutUserInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17534,8 +17669,12 @@ export class TransactionUncheckedCreateInput {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: keyof typeof PaymentMethod;
+  @Field(() => Boolean, { nullable: true })
+  paymentEnabled?: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit?: Date | string;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -17626,9 +17765,17 @@ export class TransactionUncheckedUpdateManyWithoutCardBillingInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -17716,9 +17863,17 @@ export class TransactionUncheckedUpdateManyWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -17802,9 +17957,17 @@ export class TransactionUncheckedUpdateManyWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
@@ -17882,9 +18045,17 @@ export class TransactionUncheckedUpdateManyWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -17921,9 +18092,17 @@ export class TransactionUncheckedUpdateManyInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -17962,9 +18141,17 @@ export class TransactionUncheckedUpdateWithoutBillingPaymentInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -18003,9 +18190,17 @@ export class TransactionUncheckedUpdateWithoutCardBillingInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -18050,9 +18245,17 @@ export class TransactionUncheckedUpdateWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -18095,9 +18298,17 @@ export class TransactionUncheckedUpdateWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
@@ -18140,9 +18351,17 @@ export class TransactionUncheckedUpdateWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -18187,9 +18406,17 @@ export class TransactionUncheckedUpdateInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
@@ -18236,9 +18463,17 @@ export class TransactionUpdateManyMutationInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18580,9 +18815,17 @@ export class TransactionUpdateWithoutBillingPaymentInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18637,9 +18880,17 @@ export class TransactionUpdateWithoutCardBillingInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18694,9 +18945,17 @@ export class TransactionUpdateWithoutDestinyAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18751,9 +19010,17 @@ export class TransactionUpdateWithoutSourceAccountInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18808,9 +19075,17 @@ export class TransactionUpdateWithoutUserInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18865,9 +19140,17 @@ export class TransactionUpdateInput {
     nullable: true,
   })
   type?: InstanceType<typeof EnumTransactionTypeFieldUpdateOperationsInput>;
-  @Field(() => EnumPaymentMethodFieldUpdateOperationsInput, { nullable: true })
+  @Field(() => NullableEnumPaymentMethodFieldUpdateOperationsInput, {
+    nullable: true,
+  })
   paymentMethod?: InstanceType<
-    typeof EnumPaymentMethodFieldUpdateOperationsInput
+    typeof NullableEnumPaymentMethodFieldUpdateOperationsInput
+  >;
+  @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
+  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
+  paymentLimit?: InstanceType<
+    typeof NullableDateTimeFieldUpdateOperationsInput
   >;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
@@ -18999,8 +19282,12 @@ export class TransactionWhereUniqueInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
-  @Field(() => EnumPaymentMethodFilter, { nullable: true })
-  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
+  @Field(() => EnumPaymentMethodNullableFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodNullableFilter>;
+  @Field(() => BoolFilter, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  paymentLimit?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -19054,8 +19341,12 @@ export class TransactionWhereInput {
   status?: InstanceType<typeof EnumTransactionStatusFilter>;
   @Field(() => EnumTransactionTypeFilter, { nullable: true })
   type?: InstanceType<typeof EnumTransactionTypeFilter>;
-  @Field(() => EnumPaymentMethodFilter, { nullable: true })
-  paymentMethod?: InstanceType<typeof EnumPaymentMethodFilter>;
+  @Field(() => EnumPaymentMethodNullableFilter, { nullable: true })
+  paymentMethod?: InstanceType<typeof EnumPaymentMethodNullableFilter>;
+  @Field(() => BoolFilter, { nullable: true })
+  paymentEnabled?: InstanceType<typeof BoolFilter>;
+  @Field(() => DateTimeNullableFilter, { nullable: true })
+  paymentLimit?: InstanceType<typeof DateTimeNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -19099,8 +19390,12 @@ export class Transaction {
   status!: keyof typeof TransactionStatus;
   @Field(() => TransactionType, { nullable: false })
   type!: keyof typeof TransactionType;
-  @Field(() => PaymentMethod, { nullable: false })
-  paymentMethod!: keyof typeof PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod!: keyof typeof PaymentMethod | null;
+  @Field(() => Boolean, { nullable: false, defaultValue: true })
+  paymentEnabled!: boolean;
+  @Field(() => Date, { nullable: true })
+  paymentLimit!: Date | null;
   @Field(() => String, { nullable: true })
   sourceAccountId!: string | null;
   @Field(() => String, { nullable: true })

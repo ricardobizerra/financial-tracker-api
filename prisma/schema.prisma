@@ -178,13 +178,15 @@ model InvestmentTransaction {
 }
 
 model Transaction {
-  id            String            @id @default(uuid())
-  description   String
-  amount        Decimal
-  date          DateTime
-  status        TransactionStatus
-  type          TransactionType
-  paymentMethod PaymentMethod
+  id             String            @id @default(uuid())
+  description    String
+  amount         Decimal
+  date           DateTime
+  status         TransactionStatus
+  type           TransactionType
+  paymentMethod  PaymentMethod?
+  paymentEnabled Boolean           @default(true)
+  paymentLimit   DateTime?
 
   sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "SourceAccount")
   sourceAccountId String?
@@ -260,6 +262,7 @@ enum TransactionStatus {
   PLANNED
   COMPLETED
   CANCELED
+  OVERDUE
 }
 
 enum TransactionType {

@@ -251,7 +251,8 @@ export class CardService {
           description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
           status: TransactionStatus.PLANNED,
           type: TransactionType.BETWEEN_ACCOUNTS,
-          paymentMethod: PaymentMethod.PIX,
+          paymentEnabled: false,
+          paymentLimit: paymentDate,
           destinyAccount: {
             connect: {
               id: billing.accountCard.account.id,
@@ -305,20 +306,14 @@ export class CardService {
       throw new NotFoundException('Billing not found or already closed');
     }
 
-    // TODO: enable transaction payment
-
-    // await this.prisma.transaction.update({
-    //   where: {
-    //     id: billing.paymentTransaction.id,
-    //   },
-    //   data: {
-    //     sourceAccount: {
-    //       connect: {
-    //         id: sourceAccountId,
-    //       },
-    //     },
-    //   },
-    // });
+    await this.prisma.transaction.update({
+      where: {
+        id: billing.paymentTransaction.id,
+      },
+      data: {
+        paymentEnabled: true,
+      },
+    });
 
     return this.prisma.cardBilling.update({
       where: { id: billingId },

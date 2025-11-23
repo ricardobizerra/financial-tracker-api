@@ -508,6 +508,8 @@ type TransactionCountAggregate {
   status: Int!
   type: Int!
   paymentMethod: Int!
+  paymentEnabled: Int!
+  paymentLimit: Int!
   sourceAccountId: Int!
   destinyAccountId: Int!
   cardBillingId: Int!
@@ -525,6 +527,8 @@ type TransactionMaxAggregate {
   status: TransactionStatus
   type: TransactionType
   paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -537,6 +541,7 @@ enum TransactionStatus {
   PLANNED
   COMPLETED
   CANCELED
+  OVERDUE
 }
 
 enum TransactionType {
@@ -561,6 +566,8 @@ type TransactionMinAggregate {
   status: TransactionStatus
   type: TransactionType
   paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -580,7 +587,9 @@ type Transaction {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean!
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -802,7 +811,9 @@ type TransactionModel {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean!
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -918,6 +929,8 @@ enum OrdenationTransactionModel {
   status
   type
   paymentMethod
+  paymentEnabled
+  paymentLimit
   sourceAccountId
   destinyAccountId
   cardBillingId
@@ -1456,7 +1469,9 @@ input TransactionWhereInput {
   date: DateTimeFilter
   status: EnumTransactionStatusFilter
   type: EnumTransactionTypeFilter
-  paymentMethod: EnumPaymentMethodFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  paymentEnabled: BoolFilter
+  paymentLimit: DateTimeNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
@@ -1498,18 +1513,18 @@ input NestedEnumTransactionTypeFilter {
   not: NestedEnumTransactionTypeFilter
 }
 
-input EnumPaymentMethodFilter {
+input EnumPaymentMethodNullableFilter {
   equals: PaymentMethod
   in: [PaymentMethod!]
   notIn: [PaymentMethod!]
-  not: NestedEnumPaymentMethodFilter
+  not: NestedEnumPaymentMethodNullableFilter
 }
 
-input NestedEnumPaymentMethodFilter {
+input NestedEnumPaymentMethodNullableFilter {
   equals: PaymentMethod
   in: [PaymentMethod!]
   notIn: [PaymentMethod!]
-  not: NestedEnumPaymentMethodFilter
+  not: NestedEnumPaymentMethodNullableFilter
 }
 
 input AccountNullableRelationFilter {
@@ -1716,7 +1731,9 @@ input TransactionCreateWithoutBillingPaymentInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -1829,7 +1846,9 @@ input TransactionCreateWithoutSourceAccountInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
@@ -1919,7 +1938,9 @@ input TransactionCreateWithoutUserInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2003,7 +2024,9 @@ input TransactionCreateWithoutDestinyAccountInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2215,7 +2238,9 @@ input TransactionCreateWithoutCardBillingInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2239,7 +2264,9 @@ input TransactionWhereUniqueInput {
   date: DateTimeFilter
   status: EnumTransactionStatusFilter
   type: EnumTransactionTypeFilter
-  paymentMethod: EnumPaymentMethodFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  paymentEnabled: BoolFilter
+  paymentLimit: DateTimeNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
@@ -2265,7 +2292,9 @@ input TransactionCreateManyCardBillingInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   userId: String!
@@ -2317,7 +2346,9 @@ input TransactionCreateManyDestinyAccountInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   sourceAccountId: String
   cardBillingId: String
   userId: String!
@@ -2500,7 +2531,9 @@ input TransactionCreateManyUserInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -2625,7 +2658,9 @@ input TransactionCreateManySourceAccountInput {
   date: DateTime!
   status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   destinyAccountId: String
   cardBillingId: String
   userId: String!
@@ -2775,6 +2810,8 @@ input CreateTransactionInput {
   status: TransactionStatus!
   type: TransactionType!
   paymentMethod: PaymentMethod!
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
   billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   sourceAccountId: ID
   destinyAccountId: ID
