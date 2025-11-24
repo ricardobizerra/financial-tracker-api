@@ -181,11 +181,13 @@ export class CardService {
   async createBilling({
     cardId,
     cardBillingCycleDay,
+    cardBillingPaymentDay,
     periodStart,
     limit,
   }: {
     cardId: string;
     cardBillingCycleDay: number;
+    cardBillingPaymentDay: number;
     periodStart: Date;
     limit: Decimal;
   }): Promise<CardBilling> {
@@ -199,11 +201,11 @@ export class CardService {
     periodEnd.setDate(cardBillingCycleDay);
     periodEnd.setHours(23 + 3, 59, 59, 999);
 
-    if (periodStart.getDate() > cardBillingCycleDay) {
+    if (periodStart.getDate() > cardBillingPaymentDay) {
       paymentDate.setMonth(paymentDate.getMonth() + 1);
     }
 
-    paymentDate.setDate(cardBillingCycleDay);
+    paymentDate.setDate(cardBillingPaymentDay);
     paymentDate.setHours(23 + 3, 59, 59, 999);
 
     const billing = await this.prisma.cardBilling.create({

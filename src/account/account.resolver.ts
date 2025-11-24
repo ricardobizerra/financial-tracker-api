@@ -128,6 +128,7 @@ export class AccountResolver {
       const billing = await this.cardService.createBilling({
         cardId: accountCard.id,
         cardBillingCycleDay: data.cardInfos.billingCycleDay,
+        cardBillingPaymentDay: data.cardInfos.billingPaymentDay,
         periodStart: createdAccount.createdAt,
         limit: accountCard.defaultLimit,
       });

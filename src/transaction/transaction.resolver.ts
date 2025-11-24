@@ -145,6 +145,7 @@ export class TransactionResolver {
           const billing = await this.cardService.createBilling({
             cardId: card.id,
             cardBillingCycleDay: card.billingCycleDay,
+            cardBillingPaymentDay: card.billingPaymentDay,
             periodStart: lastBilling?.periodEnd,
             limit: card.defaultLimit,
           });
