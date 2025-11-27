@@ -9,6 +9,9 @@ export class CardBillingModel extends OmitType(CardBilling, [
 ] as const) {
   @Field(() => GraphQLDecimal)
   totalAmount: Decimal;
+
+  @Field(() => Number)
+  usagePercentage: number;
 }
 
 @ObjectType()

@@ -796,6 +796,7 @@ type CardBillingModel {
   transactions: [Transaction!]
   statusHistory: [CardBillingHistory!]
   totalAmount: Decimal!
+  usagePercentage: Float!
 }
 
 type CardBillingOnDate {

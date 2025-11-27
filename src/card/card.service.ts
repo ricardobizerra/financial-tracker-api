@@ -52,12 +52,15 @@ export class CardService {
       },
     });
 
+    const totalAmount = billing?.transactions.reduce(
+      (acc, transaction) => acc.add(transaction.amount),
+      new Decimal(0),
+    );
+
     return {
       ...billing,
-      totalAmount: billing?.transactions.reduce(
-        (acc, transaction) => acc.add(transaction.amount),
-        new Decimal(0),
-      ),
+      totalAmount,
+      usagePercentage: totalAmount.div(billing?.limit).mul(100).toNumber(),
     };
   }
 
@@ -95,6 +98,7 @@ export class CardService {
       select: {
         ...selectObject<CardBilling, CardBillingModel>(billingQueriedFields, {
           totalAmount: [],
+          usagePercentage: [],
         }),
         transactions: true,
       },
@@ -139,13 +143,19 @@ export class CardService {
           })
         : undefined;
 
+    const totalAmount = currentBilling?.transactions.reduce(
+      (acc, transaction) => acc.add(transaction.amount),
+      new Decimal(0),
+    );
+
     return {
       billing: {
         ...currentBilling,
-        totalAmount: currentBilling?.transactions.reduce(
-          (acc, transaction) => acc.add(transaction.amount),
-          new Decimal(0),
-        ),
+        totalAmount,
+        usagePercentage: totalAmount
+          .div(currentBilling?.limit)
+          .mul(100)
+          .toNumber(),
       },
       nextBillingId: nextBilling?.id,
       previousBillingId: previousBilling?.id,
