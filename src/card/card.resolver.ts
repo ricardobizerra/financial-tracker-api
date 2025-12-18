@@ -14,6 +14,7 @@ import { AccountService } from '@/account/account.service';
 import { NotFoundException } from '@nestjs/common';
 import { GraphQLResolveInfo } from 'graphql';
 import { getQueriedFields } from '@/utils/get-queried-fields';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Resolver(() => AccountCard)
 export class CardResolver {
@@ -86,6 +87,29 @@ export class CardResolver {
       sourceAccountId,
       date,
       description,
+    });
+  }
+
+  @Auth()
+  @Mutation(() => AccountCard)
+  async updateAccountCard(
+    @CurrentUser() user: User,
+    @Args('cardId', { type: () => ID }) cardId: string,
+    @Args('billingCycleDay', { type: () => Number, nullable: true })
+    billingCycleDay?: number,
+    @Args('billingPaymentDay', { type: () => Number, nullable: true })
+    billingPaymentDay?: number,
+    @Args('defaultLimit', { type: () => Number, nullable: true })
+    defaultLimit?: number,
+  ): Promise<AccountCard> {
+    return this.cardService.updateCard({
+      cardId,
+      userId: user.id,
+      billingCycleDay,
+      billingPaymentDay,
+      ...(defaultLimit !== undefined && {
+        defaultLimit: new Decimal(defaultLimit),
+      }),
     });
   }
 }

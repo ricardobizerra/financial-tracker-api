@@ -963,6 +963,7 @@ type Mutation {
   createAccount(data: CreateAccountInput!): AccountModel!
   closeBilling(billingId: String!): CardBilling!
   payBilling(billingId: String!, sourceAccountId: ID!, date: DateTime, description: String): Transaction!
+  updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): AccountCard!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
 }
 

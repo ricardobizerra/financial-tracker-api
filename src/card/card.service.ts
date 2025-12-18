@@ -34,6 +34,42 @@ export class CardService {
     return accountCard;
   }
 
+  async updateCard({
+    cardId,
+    userId,
+    billingCycleDay,
+    billingPaymentDay,
+    defaultLimit,
+  }: {
+    cardId: string;
+    userId: string;
+    billingCycleDay?: number;
+    billingPaymentDay?: number;
+    defaultLimit?: Decimal;
+  }): Promise<AccountCard> {
+    const card = await this.prisma.accountCard.findFirst({
+      where: {
+        id: cardId,
+        account: {
+          userId,
+        },
+      },
+    });
+
+    if (!card) {
+      throw new NotFoundException('Card not found');
+    }
+
+    return this.prisma.accountCard.update({
+      where: { id: cardId },
+      data: {
+        ...(billingCycleDay !== undefined && { billingCycleDay }),
+        ...(billingPaymentDay !== undefined && { billingPaymentDay }),
+        ...(defaultLimit !== undefined && { defaultLimit }),
+      },
+    });
+  }
+
   async findBilling(
     where: Prisma.CardBillingWhereUniqueInput,
   ): Promise<CardBillingModel | null> {
