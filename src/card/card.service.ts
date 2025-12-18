@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../lib/prisma/prisma.service';
 import {
   AccountCard,
@@ -333,5 +334,120 @@ export class CardService {
         status: CardBillingStatus.CLOSED,
       },
     });
+  }
+
+  async payBilling({
+    billingId,
+    userId,
+    sourceAccountId,
+    date = new Date(),
+    description,
+  }: {
+    billingId: string;
+    userId: string;
+    sourceAccountId: string;
+    date?: Date;
+    description?: string;
+  }): Promise<Transaction> {
+    // Find the billing with payment transaction
+    const billing = await this.prisma.cardBilling.findFirst({
+      where: {
+        id: billingId,
+        accountCard: {
+          account: {
+            user: { id: userId },
+          },
+        },
+      },
+      include: {
+        paymentTransaction: true,
+        accountCard: {
+          include: {
+            account: true,
+          },
+        },
+      },
+    });
+
+    if (!billing) {
+      throw new NotFoundException('Billing not found');
+    }
+
+    if (!billing.paymentTransaction) {
+      throw new NotFoundException(
+        'Payment transaction not found for this billing',
+      );
+    }
+
+    // Update the payment transaction with the provided details
+    return this.prisma.$transaction(async (tx) => {
+      // Update the payment transaction
+      const updatedTransaction = await tx.transaction.update({
+        where: { id: billing.paymentTransaction.id },
+        data: {
+          sourceAccount: { connect: { id: sourceAccountId } },
+          date,
+          ...(description && { description }),
+          status: TransactionStatus.COMPLETED,
+          paymentEnabled: true,
+        },
+        include: {
+          sourceAccount: true,
+          destinyAccount: true,
+        },
+      });
+
+      // Update the billing status to PAID if it's currently CLOSED
+      if (billing.status === CardBillingStatus.CLOSED) {
+        await Promise.all([
+          tx.cardBilling.update({
+            where: { id: billingId },
+            data: { status: CardBillingStatus.PAID },
+          }),
+          // Add history entry for the payment
+          tx.cardBillingHistory.create({
+            data: {
+              cardBilling: { connect: { id: billingId } },
+              status: CardBillingStatus.PAID,
+            },
+          }),
+        ]);
+      }
+
+      return updatedTransaction;
+    });
+  }
+
+  // Daily at midnight - check for overdue billings
+  @Cron('0 0 0 * * *')
+  async checkOverdueBillings(): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find CLOSED billings with paymentDate in the past
+    const overdueBillings = await this.prisma.cardBilling.findMany({
+      where: {
+        status: CardBillingStatus.CLOSED,
+        paymentDate: { lt: today },
+      },
+    });
+
+    // Update to OVERDUE and create history entries
+    await Promise.all(
+      overdueBillings.map((billing) =>
+        this.prisma.$transaction([
+          this.prisma.cardBilling.update({
+            where: { id: billing.id },
+            data: { status: CardBillingStatus.OVERDUE },
+          }),
+          this.prisma.cardBillingHistory.create({
+            data: {
+              cardBilling: { connect: { id: billing.id } },
+              status: CardBillingStatus.OVERDUE,
+            },
+          }),
+        ]),
+      ),
+    );
   }
 }

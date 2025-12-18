@@ -962,6 +962,7 @@ type Mutation {
   deleteInvestment(id: ID!): ID!
   createAccount(data: CreateAccountInput!): AccountModel!
   closeBilling(billingId: String!): CardBilling!
+  payBilling(billingId: String!, sourceAccountId: ID!, date: DateTime, description: String): Transaction!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
 }
 

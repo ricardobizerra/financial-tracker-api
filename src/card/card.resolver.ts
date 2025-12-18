@@ -4,6 +4,7 @@ import {
   AccountCard,
   CardBilling,
   PaymentMethod,
+  Transaction,
   User,
 } from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
@@ -67,6 +68,24 @@ export class CardResolver {
     return this.cardService.closeBilling({
       billingId,
       userId: user.id,
+    });
+  }
+
+  @Auth()
+  @Mutation(() => Transaction)
+  async payBilling(
+    @CurrentUser() user: User,
+    @Args('billingId') billingId: string,
+    @Args('sourceAccountId', { type: () => ID }) sourceAccountId: string,
+    @Args('date', { nullable: true }) date?: Date,
+    @Args('description', { nullable: true }) description?: string,
+  ): Promise<Transaction> {
+    return this.cardService.payBilling({
+      billingId,
+      userId: user.id,
+      sourceAccountId,
+      date,
+      description,
     });
   }
 }
