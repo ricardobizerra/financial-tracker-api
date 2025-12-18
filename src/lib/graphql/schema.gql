@@ -961,7 +961,7 @@ type Mutation {
   createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
   createAccount(data: CreateAccountInput!): AccountModel!
-  closeBilling(billingId: String!): CardBilling!
+  closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
   payBilling(billingId: String!, sourceAccountId: ID!, date: DateTime, description: String): Transaction!
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): AccountCard!
   createTransaction(data: CreateTransactionInput!): TransactionModel!

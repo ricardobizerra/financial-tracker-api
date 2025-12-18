@@ -327,9 +327,11 @@ export class CardService {
   async closeBilling({
     billingId,
     userId,
+    closingDate = new Date(),
   }: {
     billingId: string;
     userId: string;
+    closingDate?: Date;
   }) {
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
@@ -348,6 +350,7 @@ export class CardService {
           },
         },
         paymentTransaction: true,
+        transactions: true,
       },
     });
 
@@ -355,19 +358,66 @@ export class CardService {
       throw new NotFoundException('Billing not found or already closed');
     }
 
+    // Normalize closing date to end of day
+    const closeDateNormalized = new Date(closingDate);
+    closeDateNormalized.setHours(23, 59, 59, 999);
+
+    // Separate transactions: those within the closing period vs those after
+    const transactionsInBilling = billing.transactions.filter(
+      (t) => new Date(t.date) <= closeDateNormalized,
+    );
+    const transactionsForNextBilling = billing.transactions.filter(
+      (t) => new Date(t.date) > closeDateNormalized,
+    );
+
+    // Calculate billing total (only transactions within period)
+    const billingTotal = transactionsInBilling.reduce(
+      (acc, t) => acc.add(t.amount),
+      new Decimal(0),
+    );
+
+    // Create next billing cycle
+    const nextPeriodStart = new Date(closeDateNormalized);
+    nextPeriodStart.setDate(nextPeriodStart.getDate() + 1);
+    nextPeriodStart.setHours(0, 0, 0, 0);
+
+    const nextBilling = await this.createBilling({
+      cardId: billing.accountCardId,
+      cardBillingCycleDay: billing.accountCard.billingCycleDay,
+      cardBillingPaymentDay: billing.accountCard.billingPaymentDay,
+      periodStart: nextPeriodStart,
+      limit: billing.accountCard.defaultLimit,
+    });
+
+    // Move transactions after closing date to new billing
+    if (transactionsForNextBilling.length > 0) {
+      await this.prisma.transaction.updateMany({
+        where: {
+          id: { in: transactionsForNextBilling.map((t) => t.id) },
+        },
+        data: {
+          cardBillingId: nextBilling.id,
+        },
+      });
+    }
+
+    // Update payment transaction with correct amount
     await this.prisma.transaction.update({
       where: {
         id: billing.paymentTransaction.id,
       },
       data: {
         paymentEnabled: true,
+        amount: billingTotal,
       },
     });
 
+    // Close current billing with actual period end
     return this.prisma.cardBilling.update({
       where: { id: billingId },
       data: {
         status: CardBillingStatus.CLOSED,
+        periodEnd: closeDateNormalized,
       },
     });
   }

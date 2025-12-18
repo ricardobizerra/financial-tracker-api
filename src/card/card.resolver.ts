@@ -65,10 +65,12 @@ export class CardResolver {
   async closeBilling(
     @CurrentUser() user: User,
     @Args('billingId') billingId: string,
+    @Args('closingDate', { nullable: true }) closingDate?: Date,
   ): Promise<CardBilling> {
     return this.cardService.closeBilling({
       billingId,
       userId: user.id,
+      closingDate,
     });
   }
 
