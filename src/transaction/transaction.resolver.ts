@@ -14,6 +14,7 @@ import {
   Account,
   AccountType,
   CardBillingStatus,
+  PaymentMethod,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
@@ -88,6 +89,20 @@ export class TransactionResolver {
 
       if (!sourceAccount) {
         throw new Error('Source account not found');
+      }
+    }
+
+    // Validate payment method based on account type
+    const isCardPaymentMethod =
+      data.paymentMethod === PaymentMethod.CREDIT_CARD ||
+      data.paymentMethod === PaymentMethod.DEBIT_CARD;
+
+    if (isCardPaymentMethod) {
+      const relevantAccount = sourceAccount || destinyAccount;
+      if (relevantAccount && relevantAccount.type !== AccountType.CREDIT_CARD) {
+        throw new Error(
+          'Credit card and debit card payment methods can only be used with card-type accounts.',
+        );
       }
     }
 
