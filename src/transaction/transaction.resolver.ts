@@ -14,6 +14,7 @@ import {
   Account,
   AccountType,
   CardBillingStatus,
+  TransactionStatus,
   TransactionType,
 } from '@prisma/client';
 import { CreateTransactionInput } from './input/create-transaction.input';
@@ -36,6 +37,12 @@ export class TransactionResolver {
     @Args('data') data: CreateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
+    if (data.status === TransactionStatus.OVERDUE) {
+      throw new Error(
+        'OVERDUE status cannot be set manually. It is calculated by the system.',
+      );
+    }
+
     if (data.type === TransactionType.INCOME && !data.destinyAccountId) {
       throw new Error('Destiny account is mandatory for income transactions');
     }
