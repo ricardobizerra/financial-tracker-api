@@ -27,6 +27,7 @@ model User {
   investments                Investment[]
   transactions               Transaction[]
   cardBillingStatusHistories CardBillingHistory[]
+  recurringTransactions      RecurringTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -66,6 +67,9 @@ model Account {
   destinyTransactions    Transaction[]           @relation("DestinyAccount")
   investments            Investment[]
   investmentTransactions InvestmentTransaction[]
+
+  sourceRecurringTransactions  RecurringTransaction[] @relation("RecurringSource")
+  destinyRecurringTransactions RecurringTransaction[] @relation("RecurringDestiny")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -199,11 +203,47 @@ model Transaction {
   cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull, name: "BillingTransactions")
   cardBillingId String?
 
+  recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
+  recurringTransactionId String?
+
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model RecurringTransaction {
+  id              String          @id @default(uuid())
+  description     String
+  estimatedAmount Decimal
+  type            TransactionType
+  paymentMethod   PaymentMethod?
+
+  frequency   RecurrenceFrequency
+  dayOfMonth  Int // 1-28 to avoid month-end issues
+  monthOfYear Int? // For YEARLY: 1-12, null for MONTHLY
+
+  startDate DateTime
+  endDate   DateTime? // null = generate up to practical limit (2 years)
+  isActive  Boolean   @default(true)
+
+  sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "RecurringSource")
+  sourceAccountId String?
+
+  destinyAccount   Account? @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "RecurringDestiny")
+  destinyAccountId String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
 }
 
 enum AccountType {
@@ -269,4 +309,9 @@ enum TransactionType {
   INCOME
   EXPENSE
   BETWEEN_ACCOUNTS
+}
+
+enum RecurrenceFrequency {
+  MONTHLY
+  YEARLY
 }

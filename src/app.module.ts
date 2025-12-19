@@ -22,6 +22,7 @@ import { AccountModule } from './account/account.module';
 import { InstitutionModule } from './institution/institution.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { CardModule } from './card/card.module';
+import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CardModule } from './card/card.module';
     InstitutionModule,
     TransactionModule,
     CardModule,
+    RecurringTransactionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
