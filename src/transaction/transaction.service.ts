@@ -4,7 +4,7 @@ import {
   Transaction,
   TransactionCreateInput,
 } from '@/lib/graphql/prisma-client';
-import { Prisma } from '@prisma/client';
+import { Prisma, TransactionType } from '@prisma/client';
 import {
   TransactionModel,
   OrdenationTransactionArgs,
@@ -18,6 +18,55 @@ import { selectObject } from '@/utils/select-object';
 @Injectable()
 export class TransactionService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  private buildWhereClause({
+    userId,
+    filterArgs,
+    searchArgs,
+  }: {
+    userId: string;
+    filterArgs: TransactionFilterArgs;
+    searchArgs: SearchArgs;
+  }): Prisma.TransactionWhereInput {
+    return {
+      userId,
+      ...(filterArgs.accountId && {
+        OR: [
+          { sourceAccountId: filterArgs.accountId },
+          { destinyAccountId: filterArgs.accountId },
+        ],
+      }),
+      ...(filterArgs.cardBillingId && {
+        cardBillingId: filterArgs.cardBillingId,
+      }),
+      ...(filterArgs.startDate && {
+        date: {
+          gte: filterArgs.startDate,
+          ...(filterArgs.endDate && { lte: filterArgs.endDate }),
+        },
+      }),
+      ...(!filterArgs.startDate &&
+        filterArgs.endDate && {
+          date: { lte: filterArgs.endDate },
+        }),
+      ...(filterArgs.types &&
+        filterArgs.types.length > 0 && {
+          type: { in: filterArgs.types },
+        }),
+      ...(filterArgs.statuses &&
+        filterArgs.statuses.length > 0 && {
+          status: { in: filterArgs.statuses },
+        }),
+      ...(searchArgs.search && {
+        OR: ['name', 'description'].map((field) => ({
+          [field]: {
+            contains: searchArgs.search,
+            mode: 'insensitive',
+          },
+        })),
+      }),
+    };
+  }
 
   async findMany({
     filterArgs,
@@ -43,32 +92,11 @@ export class TransactionService {
         ? Number(Buffer.from(before, 'base64').toString('utf-8'))
         : 0;
 
+    const whereClause = this.buildWhereClause({ userId, filterArgs, searchArgs });
+
     const transactionsLengthQuery = last
       ? await this.prismaService.transaction.count({
-          where: {
-            userId,
-            ...(filterArgs.accountId && {
-              OR: [
-                {
-                  sourceAccountId: filterArgs.accountId,
-                },
-                {
-                  destinyAccountId: filterArgs.accountId,
-                },
-              ],
-            }),
-            ...(filterArgs.cardBillingId && {
-              cardBillingId: filterArgs.cardBillingId,
-            }),
-            ...(!!searchArgs.search && {
-              OR: ['name', 'description'].map((field) => ({
-                [field]: {
-                  contains: searchArgs.search,
-                  mode: 'insensitive',
-                },
-              })),
-            }),
-          },
+          where: whereClause,
         })
       : undefined;
 
@@ -105,30 +133,7 @@ export class TransactionService {
           }
         : undefined,
       select: selectObject<Transaction, TransactionModel>(queriedFields),
-      where: {
-        userId,
-        ...(filterArgs.accountId && {
-          OR: [
-            {
-              sourceAccountId: filterArgs.accountId,
-            },
-            {
-              destinyAccountId: filterArgs.accountId,
-            },
-          ],
-        }),
-        ...(!!filterArgs.cardBillingId && {
-          cardBillingId: filterArgs.cardBillingId,
-        }),
-        ...(!!searchArgs.search && {
-          OR: ['name', 'description'].map((field) => ({
-            [field]: {
-              contains: searchArgs.search,
-              mode: 'insensitive',
-            },
-          })),
-        }),
-      },
+      where: whereClause,
     });
 
     if (last) {
@@ -206,30 +211,7 @@ export class TransactionService {
           select: {
             id: true,
           },
-          where: {
-            userId,
-            ...(filterArgs.accountId && {
-              OR: [
-                {
-                  sourceAccountId: filterArgs.accountId,
-                },
-                {
-                  destinyAccountId: filterArgs.accountId,
-                },
-              ],
-            }),
-            ...(!!filterArgs.cardBillingId && {
-              cardBillingId: filterArgs.cardBillingId,
-            }),
-            ...(!!searchArgs.search && {
-              OR: ['name', 'description'].map((field) => ({
-                [field]: {
-                  contains: searchArgs.search,
-                  mode: 'insensitive',
-                },
-              })),
-            }),
-          },
+          where: whereClause,
         })
       : undefined;
 
@@ -247,6 +229,53 @@ export class TransactionService {
     return {
       edges,
       pageInfo,
+    };
+  }
+
+  async getSummary({
+    userId,
+    filterArgs,
+    searchArgs,
+  }: {
+    userId: string;
+    filterArgs: TransactionFilterArgs;
+    searchArgs: SearchArgs;
+  }) {
+    const whereClause = this.buildWhereClause({ userId, filterArgs, searchArgs });
+
+    const aggregations = await this.prismaService.transaction.groupBy({
+      by: ['type'],
+      where: whereClause,
+      _sum: {
+        amount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let transactionCount = 0;
+
+    for (const agg of aggregations) {
+      const amount = Number(agg._sum.amount || 0);
+      const count = agg._count.id;
+
+      if (agg.type === TransactionType.INCOME) {
+        totalIncome += amount;
+      } else if (agg.type === TransactionType.EXPENSE) {
+        totalExpense += amount;
+      }
+
+      transactionCount += count;
+    }
+
+    return {
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      transactionCount,
     };
   }
 
@@ -270,3 +299,4 @@ export class TransactionService {
     return this.prismaService.transaction.delete({ where: { id } });
   }
 }
+

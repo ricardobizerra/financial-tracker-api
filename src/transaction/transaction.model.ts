@@ -1,4 +1,8 @@
-import { Transaction, TransactionType } from '@/lib/graphql/prisma-client';
+import {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+} from '@/lib/graphql/prisma-client';
 import { Field, ID, ObjectType, OmitType } from '@nestjs/graphql';
 import { Connection } from '@/utils/models/connection.model';
 import { ArgsType } from '@nestjs/graphql';
@@ -21,8 +25,20 @@ export class OrdenationTransactionArgs extends Ordenation(TransactionModel, [
 @ArgsType()
 export class TransactionFilterArgs {
   @Field(() => ID, { nullable: true })
-  accountId: string;
+  accountId?: string;
 
   @Field(() => ID, { nullable: true })
-  cardBillingId: string;
+  cardBillingId?: string;
+
+  @Field(() => Date, { nullable: true })
+  startDate?: Date;
+
+  @Field(() => Date, { nullable: true })
+  endDate?: Date;
+
+  @Field(() => [TransactionType], { nullable: true })
+  types?: TransactionType[];
+
+  @Field(() => [TransactionStatus], { nullable: true })
+  statuses?: TransactionStatus[];
 }

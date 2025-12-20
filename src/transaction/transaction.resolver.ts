@@ -22,6 +22,7 @@ import { CreateTransactionInput } from './input/create-transaction.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
+import { TransactionsSummaryModel } from './transactions-summary.model';
 
 @Resolver()
 export class TransactionResolver {
@@ -253,6 +254,20 @@ export class TransactionResolver {
       searchArgs,
       ordenationArgs,
       filterArgs,
+    });
+  }
+
+  @Auth()
+  @Query(() => TransactionsSummaryModel, { name: 'transactionsSummary' })
+  async getTransactionsSummary(
+    @Args() searchArgs: SearchArgs,
+    @Args() filterArgs: TransactionFilterArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.transactionService.getSummary({
+      userId: user.id,
+      filterArgs,
+      searchArgs,
     });
   }
 }
