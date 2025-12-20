@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
-import { Prisma } from '@prisma/client';
+import { Prisma, TransactionStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
   AccountFilterArgs,
@@ -97,6 +97,15 @@ export class AccountService {
             'sourceTransactions',
             'destinyTransactions',
           ],
+        }),
+        // Garantir que date e status estejam disponíveis para o calculateBalance
+        ...(queriedFields.includes('balance') && {
+          sourceTransactions: {
+            select: { amount: true, date: true, status: true },
+          },
+          destinyTransactions: {
+            select: { amount: true, date: true, status: true },
+          },
         }),
       },
       where: {
@@ -230,7 +239,10 @@ export class AccountService {
   async find(
     where: Prisma.AccountWhereUniqueInput,
     queriedFields?: (keyof AccountModel)[],
-  ): Promise<Account | null> {
+  ) {
+    const needsBalance =
+      !queriedFields?.length || queriedFields.includes('balance');
+
     const account = await this.prismaService.account.findUnique({
       where,
       ...(queriedFields?.length && {
@@ -242,11 +254,21 @@ export class AccountService {
               'destinyTransactions',
             ],
           }),
+          // Garantir que date e status estejam disponíveis para o calculateBalance
+          ...(needsBalance && {
+            sourceTransactions: {
+              select: { amount: true, date: true, status: true },
+            },
+            destinyTransactions: {
+              select: { amount: true, date: true, status: true },
+            },
+          }),
         },
       }),
     });
 
-    return account;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return account as any;
   }
 
   async create(data: AccountCreateInput) {
@@ -262,16 +284,42 @@ export class AccountService {
   }
 
   calculateBalance(
-    sourceTransactions: { amount: Decimal }[],
-    destinyTransactions: { amount: Decimal }[],
+    sourceTransactions: {
+      amount: Decimal;
+      date: Date;
+      status: TransactionStatus;
+    }[],
+    destinyTransactions: {
+      amount: Decimal;
+      date: Date;
+      status: TransactionStatus;
+    }[],
     initialBalance: Decimal,
   ): Decimal {
-    const incomingAmount = destinyTransactions.reduce(
+    const now = new Date();
+
+    // Filtra apenas transações não canceladas até hoje
+    const filterValidTransactions = (
+      transactions: {
+        amount: Decimal;
+        date: Date;
+        status: TransactionStatus;
+      }[],
+    ) =>
+      transactions.filter(
+        (t) => t.status !== TransactionStatus.CANCELED && t.date <= now,
+      );
+
+    const validDestinyTransactions =
+      filterValidTransactions(destinyTransactions);
+    const validSourceTransactions = filterValidTransactions(sourceTransactions);
+
+    const incomingAmount = validDestinyTransactions.reduce(
       (total, transaction) => total.plus(transaction.amount),
       new Decimal(0),
     );
 
-    const outgoingAmount = sourceTransactions.reduce(
+    const outgoingAmount = validSourceTransactions.reduce(
       (total, transaction) => total.plus(transaction.amount),
       new Decimal(0),
     );
