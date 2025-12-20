@@ -374,7 +374,7 @@ export class InvestmentService {
       data: {
         amount: data.amount,
         startDate: data.startDate,
-        duration: isPoupanca ? data.duration : undefined,
+        duration: isPoupanca ? undefined : data.duration,
         regimeName: data.regimeName,
         regimePercentage: isPoupanca ? data.regimePercentage : 100,
         account: {
