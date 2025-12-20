@@ -92,7 +92,11 @@ export class TransactionService {
         ? Number(Buffer.from(before, 'base64').toString('utf-8'))
         : 0;
 
-    const whereClause = this.buildWhereClause({ userId, filterArgs, searchArgs });
+    const whereClause = this.buildWhereClause({
+      userId,
+      filterArgs,
+      searchArgs,
+    });
 
     const transactionsLengthQuery = last
       ? await this.prismaService.transaction.count({
@@ -241,7 +245,11 @@ export class TransactionService {
     filterArgs: TransactionFilterArgs;
     searchArgs: SearchArgs;
   }) {
-    const whereClause = this.buildWhereClause({ userId, filterArgs, searchArgs });
+    const whereClause = this.buildWhereClause({
+      userId,
+      filterArgs,
+      searchArgs,
+    });
 
     const aggregations = await this.prismaService.transaction.groupBy({
       by: ['type'],
@@ -299,4 +307,3 @@ export class TransactionService {
     return this.prismaService.transaction.delete({ where: { id } });
   }
 }
-
