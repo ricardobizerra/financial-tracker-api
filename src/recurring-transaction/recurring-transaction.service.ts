@@ -69,6 +69,19 @@ export class RecurringTransactionService {
       );
     }
 
+    // Validate that income transactions are not assigned to credit card accounts
+    if (data.type === TransactionType.INCOME && data.destinyAccountId) {
+      const destinyAccount = await this.prismaService.account.findUnique({
+        where: { id: data.destinyAccountId },
+      });
+
+      if (destinyAccount?.type === AccountType.CREDIT_CARD) {
+        throw new Error(
+          'Income transactions cannot be assigned to credit card accounts',
+        );
+      }
+    }
+
     // Calculate all occurrence dates
     const occurrences = this.calculateOccurrences(
       data.startDate,

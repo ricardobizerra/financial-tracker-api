@@ -75,6 +75,16 @@ export class TransactionResolver {
       if (!destinyAccount) {
         throw new Error('Destiny account not found');
       }
+
+      // Prevent income transactions to credit card accounts
+      if (
+        data.type === TransactionType.INCOME &&
+        destinyAccount.type === AccountType.CREDIT_CARD
+      ) {
+        throw new Error(
+          'Income transactions cannot be assigned to credit card accounts',
+        );
+      }
     }
 
     let sourceAccount: Account | null = null;

@@ -44,7 +44,7 @@ export class AccountService {
     const accountsLengthQuery = last
       ? await this.prismaService.account.count({
           where: {
-            type: filterArgs.type ?? undefined,
+            ...(filterArgs.types && { type: { in: filterArgs.types } }),
             userId,
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
@@ -100,7 +100,7 @@ export class AccountService {
         }),
       },
       where: {
-        type: filterArgs.type ?? undefined,
+        ...(filterArgs.types && { type: { in: filterArgs.types } }),
         userId,
         ...(!!searchArgs.search && {
           OR: ['name', 'description'].map((field) => ({
@@ -196,7 +196,7 @@ export class AccountService {
             id: true,
           },
           where: {
-            type: filterArgs.type ?? undefined,
+            ...(filterArgs.types && { type: { in: filterArgs.types } }),
             userId,
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
