@@ -306,4 +306,147 @@ export class TransactionService {
   async delete(id: string) {
     return this.prismaService.transaction.delete({ where: { id } });
   }
+
+  async getBalanceForecast({
+    userId,
+    accountId,
+    startDate,
+    endDate,
+    initialBalance,
+  }: {
+    userId: string;
+    accountId?: string;
+    startDate: Date;
+    endDate: Date;
+    initialBalance: number;
+  }) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Buscar todas as transações no período
+    const transactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          not: 'CANCELED',
+        },
+      },
+      select: {
+        id: true,
+        date: true,
+        amount: true,
+        type: true,
+        status: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Agrupar transações por dia
+    const transactionsByDate = new Map<string, typeof transactions>();
+
+    transactions.forEach((tx) => {
+      const dateKey = tx.date.toISOString().split('T')[0];
+      const existing = transactionsByDate.get(dateKey) || [];
+      existing.push(tx);
+      transactionsByDate.set(dateKey, existing);
+    });
+
+    // Gerar pontos do gráfico dia a dia
+    const dataPoints: {
+      date: Date;
+      balance: number;
+      isProjected: boolean;
+      incomeAmount: number;
+      expenseAmount: number;
+      transactionCount: number;
+    }[] = [];
+
+    let runningBalance = initialBalance;
+    const currentDate = new Date(startDate);
+    let currentBalance = initialBalance;
+    let projectedBalance = initialBalance;
+
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const dayTransactions = transactionsByDate.get(dateKey) || [];
+      const isProjected = currentDate > today;
+
+      let incomeAmount = 0;
+      let expenseAmount = 0;
+
+      dayTransactions.forEach((tx) => {
+        // Para projeções, incluir apenas transações agendadas
+        if (isProjected && tx.status === 'COMPLETED') return;
+        // Para histórico, incluir apenas transações completadas
+        if (!isProjected && tx.status !== 'COMPLETED') return;
+
+        const amount = Number(tx.amount);
+
+        if (tx.type === TransactionType.INCOME) {
+          // Se tem accountId, considerar apenas se a conta destino é a conta
+          if (!accountId || tx.destinyAccountId === accountId) {
+            runningBalance += amount;
+            incomeAmount += amount;
+          }
+        } else if (tx.type === TransactionType.EXPENSE) {
+          // Se tem accountId, considerar apenas se a conta origem é a conta
+          if (!accountId || tx.sourceAccountId === accountId) {
+            runningBalance -= amount;
+            expenseAmount += amount;
+          }
+        } else if (tx.type === TransactionType.BETWEEN_ACCOUNTS && accountId) {
+          // Para transferências, verificar se entra ou sai da conta
+          if (tx.destinyAccountId === accountId) {
+            runningBalance += amount;
+            incomeAmount += amount;
+          }
+          if (tx.sourceAccountId === accountId) {
+            runningBalance -= amount;
+            expenseAmount += amount;
+          }
+        }
+      });
+
+      dataPoints.push({
+        date: new Date(currentDate),
+        balance: runningBalance,
+        isProjected,
+        incomeAmount,
+        expenseAmount,
+        transactionCount: dayTransactions.length,
+      });
+
+      // Guardar saldo atual e projetado
+      if (
+        currentDate.toISOString().split('T')[0] ===
+        today.toISOString().split('T')[0]
+      ) {
+        currentBalance = runningBalance;
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    projectedBalance = runningBalance;
+
+    return {
+      dataPoints,
+      currentBalance,
+      projectedBalance,
+      balanceTrend: projectedBalance - currentBalance,
+      startDate,
+      endDate,
+    };
+  }
 }

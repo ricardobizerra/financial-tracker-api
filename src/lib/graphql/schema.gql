@@ -961,6 +961,24 @@ type TransactionsSummaryModel {
   transactionCount: Int!
 }
 
+type BalanceForecastPointModel {
+  date: DateTime!
+  balance: Float!
+  isProjected: Boolean!
+  incomeAmount: Float!
+  expenseAmount: Float!
+  transactionCount: Float!
+}
+
+type BalanceForecastModel {
+  dataPoints: [BalanceForecastPointModel!]!
+  currentBalance: Float!
+  projectedBalance: Float!
+  balanceTrend: Float!
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
 type InstitutionModel {
   id: ID!
   code: String!
@@ -1028,6 +1046,16 @@ type Query {
   billing(accountId: ID!, id: ID): CardBillingOnDate!
   transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionConnection!
   transactionsSummary(search: String, accountId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionsSummaryModel!
+  balanceForecast(
+    accountId: String
+    period: BalanceForecastPeriod! = THREE_MONTHS
+
+    """Custom start date (only used when period is CUSTOM)"""
+    startDate: DateTime
+
+    """Custom end date (only used when period is CUSTOM)"""
+    endDate: DateTime
+  ): BalanceForecastModel!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
   institution(id: String!): InstitutionModel!
   recurringTransaction(id: String!): RecurringTransactionModel
@@ -1105,6 +1133,16 @@ enum OrdenationTransactionModel {
   billingPayment
   cardBilling
   recurringTransaction
+}
+
+"""Period presets for balance forecast"""
+enum BalanceForecastPeriod {
+  WEEK
+  MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  YEAR
+  CUSTOM
 }
 
 enum OrdenationInstitutionModel {

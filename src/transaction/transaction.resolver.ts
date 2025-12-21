@@ -23,6 +23,11 @@ import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
 import { TransactionsSummaryModel } from './transactions-summary.model';
+import {
+  BalanceForecastModel,
+  BalanceForecastArgs,
+  BalanceForecastPeriod,
+} from './balance-forecast.model';
 
 @Resolver()
 export class TransactionResolver {
@@ -268,6 +273,84 @@ export class TransactionResolver {
       userId: user.id,
       filterArgs,
       searchArgs,
+    });
+  }
+
+  @Auth()
+  @Query(() => BalanceForecastModel, { name: 'balanceForecast' })
+  async getBalanceForecast(
+    @Args() args: BalanceForecastArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let startDate: Date;
+    let endDate: Date;
+
+    // Calcular datas baseado no período selecionado
+    switch (args.period) {
+      case BalanceForecastPeriod.WEEK:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 7);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 7);
+        break;
+      case BalanceForecastPeriod.MONTH:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 30);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 30);
+        break;
+      case BalanceForecastPeriod.THREE_MONTHS:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 90);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 90);
+        break;
+      case BalanceForecastPeriod.SIX_MONTHS:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 180);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 180);
+        break;
+      case BalanceForecastPeriod.YEAR:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 365);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 365);
+        break;
+      case BalanceForecastPeriod.CUSTOM:
+        if (!args.startDate || !args.endDate) {
+          throw new Error(
+            'Start date and end date are required for custom period',
+          );
+        }
+        startDate = args.startDate;
+        endDate = args.endDate;
+        break;
+      default:
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 90);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + 90);
+    }
+
+    // Obter saldo inicial da conta (se especificada)
+    let initialBalance = 0;
+    if (args.accountId) {
+      const account = await this.accountService.find({ id: args.accountId });
+      if (account) {
+        initialBalance = Number(account.initialBalance || 0);
+      }
+    }
+
+    return this.transactionService.getBalanceForecast({
+      userId: user.id,
+      accountId: args.accountId,
+      startDate,
+      endDate,
+      initialBalance,
     });
   }
 }
