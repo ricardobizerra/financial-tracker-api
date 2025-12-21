@@ -28,6 +28,14 @@ import {
   BalanceForecastArgs,
   BalanceForecastPeriod,
 } from './balance-forecast.model';
+import {
+  TransactionsCalendarModel,
+  TransactionsCalendarArgs,
+} from './transactions-calendar.model';
+import {
+  FinancialAgendaModel,
+  FinancialAgendaArgs,
+} from './financial-agenda.model';
 
 @Resolver()
 export class TransactionResolver {
@@ -351,6 +359,33 @@ export class TransactionResolver {
       startDate,
       endDate,
       initialBalance,
+    });
+  }
+
+  @Auth()
+  @Query(() => TransactionsCalendarModel, { name: 'transactionsCalendar' })
+  async getTransactionsCalendar(
+    @Args() args: TransactionsCalendarArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.transactionService.getTransactionsCalendar({
+      userId: user.id,
+      accountId: args.accountId,
+      year: args.year,
+      month: args.month,
+    });
+  }
+
+  @Auth()
+  @Query(() => FinancialAgendaModel, { name: 'financialAgenda' })
+  async getFinancialAgenda(
+    @Args() args: FinancialAgendaArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.transactionService.getFinancialAgenda({
+      userId: user.id,
+      accountId: args.accountId,
+      daysAhead: args.daysAhead,
     });
   }
 }

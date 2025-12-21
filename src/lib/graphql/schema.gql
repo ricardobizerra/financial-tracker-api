@@ -988,6 +988,53 @@ type BalanceForecastModel {
   endDate: DateTime!
 }
 
+type CalendarDayTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  status: String!
+}
+
+type CalendarDayModel {
+  date: DateTime!
+  totalIncome: Float!
+  totalExpense: Float!
+  transactionCount: Int!
+  transactions: [CalendarDayTransactionModel!]!
+}
+
+type TransactionsCalendarModel {
+  days: [CalendarDayModel!]!
+  monthTotalIncome: Float!
+  monthTotalExpense: Float!
+  monthBalance: Float!
+}
+
+type AgendaTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  status: String!
+  date: DateTime!
+  daysUntilDue: Int!
+  isOverdue: Boolean!
+}
+
+type AgendaGroupModel {
+  label: String!
+  transactions: [AgendaTransactionModel!]!
+}
+
+type FinancialAgendaModel {
+  groups: [AgendaGroupModel!]!
+  totalIncome: Float!
+  totalExpense: Float!
+  balance: Float!
+  pendingCount: Int!
+}
+
 type InstitutionModel {
   id: ID!
   code: String!
@@ -1065,6 +1112,8 @@ type Query {
     """Custom end date (only used when period is CUSTOM)"""
     endDate: DateTime
   ): BalanceForecastModel!
+  transactionsCalendar(accountId: String, year: Int!, month: Int!): TransactionsCalendarModel!
+  financialAgenda(accountId: String, daysAhead: Int! = 60): FinancialAgendaModel!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
   institution(id: String!): InstitutionModel!
   recurringTransaction(id: String!): RecurringTransactionModel

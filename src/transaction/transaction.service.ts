@@ -483,4 +483,273 @@ export class TransactionService {
       endDate,
     };
   }
+
+  async getTransactionsCalendar({
+    userId,
+    accountId,
+    year,
+    month,
+  }: {
+    userId: string;
+    accountId?: string;
+    year: number;
+    month: number;
+  }) {
+    // Calcular primeiro e último dia do mês
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    const transactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          not: 'CANCELED',
+        },
+      },
+      select: {
+        id: true,
+        description: true,
+        amount: true,
+        type: true,
+        status: true,
+        date: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Agrupar por dia
+    const transactionsByDate = new Map<string, typeof transactions>();
+    transactions.forEach((tx) => {
+      const dateKey = tx.date.toISOString().split('T')[0];
+      const existing = transactionsByDate.get(dateKey) || [];
+      existing.push(tx);
+      transactionsByDate.set(dateKey, existing);
+    });
+
+    // Gerar dias do mês
+    const days: {
+      date: Date;
+      totalIncome: number;
+      totalExpense: number;
+      transactionCount: number;
+      transactions: {
+        id: string;
+        description: string;
+        amount: number;
+        type: string;
+        status: string;
+      }[];
+    }[] = [];
+
+    let monthTotalIncome = 0;
+    let monthTotalExpense = 0;
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const dayTransactions = transactionsByDate.get(dateKey) || [];
+
+      let dayIncome = 0;
+      let dayExpense = 0;
+      const txList: {
+        id: string;
+        description: string;
+        amount: number;
+        type: string;
+        status: string;
+      }[] = [];
+
+      dayTransactions.forEach((tx) => {
+        const amount = Number(tx.amount);
+        const isIncome =
+          tx.type === TransactionType.INCOME ||
+          (tx.type === TransactionType.BETWEEN_ACCOUNTS &&
+            accountId &&
+            tx.destinyAccountId === accountId);
+        const isExpense =
+          tx.type === TransactionType.EXPENSE ||
+          (tx.type === TransactionType.BETWEEN_ACCOUNTS &&
+            accountId &&
+            tx.sourceAccountId === accountId);
+
+        if (isIncome) {
+          dayIncome += amount;
+        }
+        if (isExpense) {
+          dayExpense += amount;
+        }
+
+        txList.push({
+          id: tx.id,
+          description: tx.description || 'Sem descrição',
+          amount,
+          type: tx.type,
+          status: tx.status,
+        });
+      });
+
+      if (txList.length > 0) {
+        days.push({
+          date: new Date(currentDate),
+          totalIncome: dayIncome,
+          totalExpense: dayExpense,
+          transactionCount: txList.length,
+          transactions: txList,
+        });
+      }
+
+      monthTotalIncome += dayIncome;
+      monthTotalExpense += dayExpense;
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return {
+      days,
+      monthTotalIncome,
+      monthTotalExpense,
+      monthBalance: monthTotalIncome - monthTotalExpense,
+    };
+  }
+
+  async getFinancialAgenda({
+    userId,
+    accountId,
+    daysAhead,
+  }: {
+    userId: string;
+    accountId?: string;
+    daysAhead: number;
+  }) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + daysAhead);
+
+    const transactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: {
+          gte: today,
+          lte: endDate,
+        },
+        status: {
+          notIn: ['COMPLETED', 'CANCELED'],
+        },
+      },
+      select: {
+        id: true,
+        description: true,
+        amount: true,
+        type: true,
+        status: true,
+        date: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Calcular dias até vencimento e agrupar
+    const thisWeek: typeof transactions = [];
+    const nextWeek: typeof transactions = [];
+    const thisMonth: typeof transactions = [];
+    const later: typeof transactions = [];
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    transactions.forEach((tx) => {
+      const daysUntil = Math.ceil(
+        (tx.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      const amount = Number(tx.amount);
+
+      if (tx.type === TransactionType.INCOME) {
+        totalIncome += amount;
+      } else if (tx.type === TransactionType.EXPENSE) {
+        totalExpense += amount;
+      }
+
+      if (daysUntil <= 7) {
+        thisWeek.push(tx);
+      } else if (daysUntil <= 14) {
+        nextWeek.push(tx);
+      } else if (daysUntil <= 30) {
+        thisMonth.push(tx);
+      } else {
+        later.push(tx);
+      }
+    });
+
+    const mapTransactions = (txs: typeof transactions) =>
+      txs.map((tx) => {
+        const daysUntilDue = Math.ceil(
+          (tx.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        return {
+          id: tx.id,
+          description: tx.description || 'Sem descrição',
+          amount: Number(tx.amount),
+          type: tx.type,
+          status: tx.status,
+          date: tx.date,
+          daysUntilDue,
+          isOverdue: daysUntilDue < 0,
+        };
+      });
+
+    const groups: {
+      label: string;
+      transactions: ReturnType<typeof mapTransactions>;
+    }[] = [];
+
+    if (thisWeek.length > 0) {
+      groups.push({
+        label: 'Esta semana',
+        transactions: mapTransactions(thisWeek),
+      });
+    }
+    if (nextWeek.length > 0) {
+      groups.push({
+        label: 'Próxima semana',
+        transactions: mapTransactions(nextWeek),
+      });
+    }
+    if (thisMonth.length > 0) {
+      groups.push({
+        label: 'Este mês',
+        transactions: mapTransactions(thisMonth),
+      });
+    }
+    if (later.length > 0) {
+      groups.push({
+        label: 'Mais tarde',
+        transactions: mapTransactions(later),
+      });
+    }
+
+    return {
+      groups,
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      pendingCount: transactions.length,
+    };
+  }
 }
