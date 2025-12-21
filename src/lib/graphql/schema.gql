@@ -961,6 +961,14 @@ type TransactionsSummaryModel {
   transactionCount: Int!
 }
 
+type BalanceForecastTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  isIncome: Boolean!
+}
+
 type BalanceForecastPointModel {
   date: DateTime!
   balance: Float!
@@ -968,6 +976,7 @@ type BalanceForecastPointModel {
   incomeAmount: Float!
   expenseAmount: Float!
   transactionCount: Float!
+  transactions: [BalanceForecastTransactionModel!]!
 }
 
 type BalanceForecastModel {

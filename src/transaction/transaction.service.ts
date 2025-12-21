@@ -344,6 +344,7 @@ export class TransactionService {
         amount: true,
         type: true,
         status: true,
+        description: true,
         sourceAccountId: true,
         destinyAccountId: true,
       },
@@ -370,6 +371,13 @@ export class TransactionService {
       incomeAmount: number;
       expenseAmount: number;
       transactionCount: number;
+      transactions: {
+        id: string;
+        description: string;
+        amount: number;
+        type: string;
+        isIncome: boolean;
+      }[];
     }[] = [];
 
     let runningBalance = initialBalance;
@@ -385,6 +393,14 @@ export class TransactionService {
       let incomeAmount = 0;
       let expenseAmount = 0;
 
+      const dayTxList: {
+        id: string;
+        description: string;
+        amount: number;
+        type: string;
+        isIncome: boolean;
+      }[] = [];
+
       dayTransactions.forEach((tx) => {
         // Para projeções, incluir apenas transações agendadas
         if (isProjected && tx.status === 'COMPLETED') return;
@@ -392,29 +408,46 @@ export class TransactionService {
         if (!isProjected && tx.status !== 'COMPLETED') return;
 
         const amount = Number(tx.amount);
+        let included = false;
+        let isIncome = false;
 
         if (tx.type === TransactionType.INCOME) {
-          // Se tem accountId, considerar apenas se a conta destino é a conta
           if (!accountId || tx.destinyAccountId === accountId) {
             runningBalance += amount;
             incomeAmount += amount;
+            included = true;
+            isIncome = true;
           }
         } else if (tx.type === TransactionType.EXPENSE) {
-          // Se tem accountId, considerar apenas se a conta origem é a conta
           if (!accountId || tx.sourceAccountId === accountId) {
             runningBalance -= amount;
             expenseAmount += amount;
+            included = true;
+            isIncome = false;
           }
         } else if (tx.type === TransactionType.BETWEEN_ACCOUNTS && accountId) {
-          // Para transferências, verificar se entra ou sai da conta
           if (tx.destinyAccountId === accountId) {
             runningBalance += amount;
             incomeAmount += amount;
+            included = true;
+            isIncome = true;
           }
           if (tx.sourceAccountId === accountId) {
             runningBalance -= amount;
             expenseAmount += amount;
+            included = true;
+            isIncome = false;
           }
+        }
+
+        if (included) {
+          dayTxList.push({
+            id: tx.id,
+            description: tx.description || 'Sem descrição',
+            amount,
+            type: tx.type,
+            isIncome,
+          });
         }
       });
 
@@ -424,7 +457,8 @@ export class TransactionService {
         isProjected,
         incomeAmount,
         expenseAmount,
-        transactionCount: dayTransactions.length,
+        transactionCount: dayTxList.length,
+        transactions: dayTxList,
       });
 
       // Guardar saldo atual e projetado

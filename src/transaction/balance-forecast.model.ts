@@ -21,6 +21,24 @@ registerEnumType(BalanceForecastPeriod, {
 });
 
 @ObjectType()
+export class BalanceForecastTransactionModel {
+  @Field()
+  id: string;
+
+  @Field()
+  description: string;
+
+  @Field(() => Float)
+  amount: number;
+
+  @Field()
+  type: string;
+
+  @Field()
+  isIncome: boolean;
+}
+
+@ObjectType()
 export class BalanceForecastPointModel {
   @Field()
   date: Date;
@@ -39,6 +57,9 @@ export class BalanceForecastPointModel {
 
   @Field()
   transactionCount: number;
+
+  @Field(() => [BalanceForecastTransactionModel])
+  transactions: BalanceForecastTransactionModel[];
 }
 
 @ObjectType()
