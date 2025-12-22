@@ -1112,7 +1112,7 @@ type Query {
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
-  investmentRegimes: InvestmentRegimeSummaryConnection!
+  investmentRegimes(accountId: String): InvestmentRegimeSummaryConnection!
   investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, types: [AccountType!]): AccountConnection!
   account(id: ID!): AccountModel!

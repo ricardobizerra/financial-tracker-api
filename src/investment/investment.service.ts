@@ -448,15 +448,22 @@ export class InvestmentService {
 
   async getInvestmentRegimes({
     userId,
+    accountId,
     queriedFields,
   }: {
     userId: string;
+    accountId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
+    const whereClause = {
+      userId,
+      ...(accountId && { accountId }),
+    };
+
     // Get all investments grouped by regime
     const investmentsByRegime = await this.prismaService.investment.groupBy({
       by: ['regimeName'],
-      where: { userId },
+      where: whereClause,
       _sum: {
         amount: true,
       },
@@ -472,7 +479,7 @@ export class InvestmentService {
 
     // Get all investments with their corrected and taxed amounts
     const allInvestments = await this.prismaService.investment.findMany({
-      where: { userId },
+      where: whereClause,
       select: {
         id: true,
         amount: true,

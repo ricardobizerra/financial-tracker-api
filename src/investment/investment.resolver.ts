@@ -163,6 +163,8 @@ export class InvestmentResolver {
   async investmentRegimes(
     @CurrentUser() user: UserModel,
     @Info() info: GraphQLResolveInfo,
+    @Args('accountId', { type: () => String, nullable: true })
+    accountId: string | null,
   ) {
     const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
       info,
@@ -171,6 +173,7 @@ export class InvestmentResolver {
 
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
+      accountId,
       queriedFields,
     });
   }
