@@ -864,6 +864,23 @@ type InvestmentRegimeSummaryEdge {
   node: InvestmentRegimeSummary!
 }
 
+type InvestmentEvolutionPointModel {
+  date: DateTime!
+  invested: Float!
+  currentAmount: Float!
+  taxedAmount: Float!
+  profit: Float!
+}
+
+type InvestmentEvolutionModel {
+  dataPoints: [InvestmentEvolutionPointModel!]!
+  totalInvested: Float!
+  totalCurrentAmount: Float!
+  totalTaxedAmount: Float!
+  totalProfit: String!
+  totalProfitPercentage: String!
+}
+
 type AccountModel {
   id: ID!
   name: String!
@@ -1096,6 +1113,7 @@ type Query {
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes: InvestmentRegimeSummaryConnection!
+  investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, types: [AccountType!]): AccountConnection!
   account(id: ID!): AccountModel!
   accountCard(id: String!): AccountCard
@@ -1149,6 +1167,14 @@ enum OrdenationInvestmentModel {
   updatedAt
   account
   transactions
+}
+
+enum InvestmentEvolutionPeriod {
+  MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  YEAR
+  ALL
 }
 
 enum OrdenationAccountModel {

@@ -971,4 +971,191 @@ export class InvestmentService {
         ),
     );
   }
+
+  async getInvestmentEvolution({
+    userId,
+    accountId,
+    period,
+  }: {
+    userId: string;
+    accountId?: string;
+    period: string;
+  }) {
+    // Calcular data de início baseado no período
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'MONTH':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          now.getDate(),
+        );
+        break;
+      case 'THREE_MONTHS':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 3,
+          now.getDate(),
+        );
+        break;
+      case 'SIX_MONTHS':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 6,
+          now.getDate(),
+        );
+        break;
+      case 'YEAR':
+        startDate = new Date(
+          now.getFullYear() - 1,
+          now.getMonth(),
+          now.getDate(),
+        );
+        break;
+      case 'ALL':
+      default:
+        startDate = new Date(2000, 0, 1);
+        break;
+    }
+
+    // Buscar investimentos do usuário
+    const investments = await this.prismaService.investment.findMany({
+      where: {
+        userId,
+        ...(accountId && { accountId }),
+      },
+      select: {
+        id: true,
+        amount: true,
+        correctedAmount: true,
+        taxedAmount: true,
+        startDate: true,
+        finishedAt: true,
+        regimeName: true,
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
+
+    if (investments.length === 0) {
+      return {
+        dataPoints: [],
+        totalInvested: 0,
+        totalCurrentAmount: 0,
+        totalTaxedAmount: 0,
+        totalProfit: '0',
+        totalProfitPercentage: '0%',
+      };
+    }
+
+    // Encontrar a data mais antiga relevante
+    const oldestInvestmentDate = investments.reduce((oldest, inv) => {
+      const invDate = new Date(inv.startDate);
+      return invDate < oldest ? invDate : oldest;
+    }, new Date());
+
+    const effectiveStartDate =
+      oldestInvestmentDate > startDate ? oldestInvestmentDate : startDate;
+
+    // Gerar pontos de dados mensais
+    const dataPoints: {
+      date: Date;
+      invested: number;
+      currentAmount: number;
+      taxedAmount: number;
+      profit: number;
+    }[] = [];
+
+    const currentDate = new Date(effectiveStartDate);
+    currentDate.setDate(1); // Primeiro dia do mês
+
+    while (currentDate <= now) {
+      const pointDate = new Date(currentDate);
+
+      // Calcular investimentos ativos naquela data
+      let invested = 0;
+      let currentAmount = 0;
+      let taxedAmount = 0;
+
+      investments.forEach((inv) => {
+        const invStartDate = new Date(inv.startDate);
+        const invEndDate = inv.finishedAt ? new Date(inv.finishedAt) : null;
+
+        // Se o investimento já existia naquela data
+        if (invStartDate <= pointDate) {
+          // Se ainda está ativo ou encerrou depois dessa data
+          if (!invEndDate || invEndDate >= pointDate) {
+            invested += Number(inv.amount);
+
+            // Para valores correntes, usar proporcional ao tempo
+            const daysFromStart = Math.floor(
+              (pointDate.getTime() - invStartDate.getTime()) /
+                (1000 * 60 * 60 * 24),
+            );
+            const totalDays = Math.floor(
+              (now.getTime() - invStartDate.getTime()) / (1000 * 60 * 60 * 24),
+            );
+
+            if (totalDays > 0) {
+              const progressRatio = Math.min(daysFromStart / totalDays, 1);
+              const profit =
+                Number(inv.correctedAmount || inv.amount) - Number(inv.amount);
+              const taxedProfit =
+                Number(inv.taxedAmount || inv.amount) - Number(inv.amount);
+
+              currentAmount += Number(inv.amount) + profit * progressRatio;
+              taxedAmount += Number(inv.amount) + taxedProfit * progressRatio;
+            } else {
+              currentAmount += Number(inv.amount);
+              taxedAmount += Number(inv.amount);
+            }
+          }
+        }
+      });
+
+      if (invested > 0) {
+        dataPoints.push({
+          date: pointDate,
+          invested,
+          currentAmount,
+          taxedAmount,
+          profit: currentAmount - invested,
+        });
+      }
+
+      // Avançar para o próximo mês
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+
+    // Calcular totais atuais
+    const totalInvested = investments.reduce(
+      (sum, inv) => sum + Number(inv.amount),
+      0,
+    );
+    const totalCurrentAmount = investments.reduce(
+      (sum, inv) => sum + Number(inv.correctedAmount || inv.amount),
+      0,
+    );
+    const totalTaxedAmount = investments.reduce(
+      (sum, inv) => sum + Number(inv.taxedAmount || inv.amount),
+      0,
+    );
+    const totalProfit = totalCurrentAmount - totalInvested;
+    const totalProfitPercentage =
+      totalInvested > 0
+        ? ((totalProfit / totalInvested) * 100).toFixed(2) + '%'
+        : '0%';
+
+    return {
+      dataPoints,
+      totalInvested,
+      totalCurrentAmount,
+      totalTaxedAmount,
+      totalProfit: totalProfit.toFixed(2),
+      totalProfitPercentage,
+    };
+  }
 }

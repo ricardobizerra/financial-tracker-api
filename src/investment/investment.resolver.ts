@@ -40,6 +40,10 @@ import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
 import { TransactionService } from '@/transaction/transaction.service';
 import { Decimal } from '@prisma/client/runtime/library';
+import {
+  InvestmentEvolutionModel,
+  InvestmentEvolutionArgs,
+} from './investment-evolution.model';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
@@ -168,6 +172,19 @@ export class InvestmentResolver {
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
       queriedFields,
+    });
+  }
+
+  @Auth()
+  @Query(() => InvestmentEvolutionModel, { name: 'investmentEvolution' })
+  async getInvestmentEvolution(
+    @Args() args: InvestmentEvolutionArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentEvolution({
+      userId: user.id,
+      accountId: args.accountId,
+      period: args.period || 'YEAR',
     });
   }
 }
