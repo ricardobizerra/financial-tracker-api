@@ -60,8 +60,8 @@ export class InvestmentResolver {
     @Args() ordenationArgs: OrdenationInvestmentArgs,
     @Args('regime', { type: () => Regime, nullable: true })
     regime: Regime | null,
-    @Args('accountId', { type: () => String, nullable: true })
-    accountId: string | null,
+    @Args('accountIds', { type: () => [String!], nullable: true })
+    accountIds: string[] | null,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
@@ -76,7 +76,7 @@ export class InvestmentResolver {
       ordenationArgs,
       userId: user?.id,
       regime,
-      accountId,
+      accountIds,
     });
   }
 
