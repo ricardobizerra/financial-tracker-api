@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
-import { Prisma, TransactionStatus } from '@prisma/client';
+import {
+  AccountType,
+  CardBillingStatus,
+  InvestmentStatus,
+  Prisma,
+  TransactionStatus,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
   AccountFilterArgs,
@@ -97,6 +103,8 @@ export class AccountService {
             'sourceTransactions',
             'destinyTransactions',
           ],
+          currentBillingAmount: ['accountCard', 'type'],
+          totalInvested: ['investments', 'type'],
         }),
         // Garantir que date e status estejam disponíveis para o calculateBalance
         ...(queriedFields.includes('balance') && {
@@ -105,6 +113,42 @@ export class AccountService {
           },
           destinyTransactions: {
             select: { amount: true, date: true, status: true },
+          },
+        }),
+        // Garantir dados para currentBillingAmount
+        ...(queriedFields.includes('currentBillingAmount') && {
+          type: true,
+          accountCard: {
+            select: {
+              billings: {
+                where: {
+                  status: {
+                    in: [
+                      CardBillingStatus.PENDING,
+                      CardBillingStatus.CLOSED,
+                      CardBillingStatus.OVERDUE,
+                    ],
+                  },
+                },
+                select: {
+                  status: true,
+                  transactions: {
+                    where: { status: { not: TransactionStatus.CANCELED } },
+                    select: { amount: true },
+                  },
+                },
+                orderBy: { periodStart: 'desc' },
+                take: 1,
+              },
+            },
+          },
+        }),
+        // Garantir dados para totalInvested
+        ...(queriedFields.includes('totalInvested') && {
+          type: true,
+          investments: {
+            where: { status: InvestmentStatus.OPEN },
+            select: { amount: true },
           },
         }),
       },
@@ -161,6 +205,8 @@ export class AccountService {
             account.destinyTransactions,
             account.initialBalance,
           ),
+          currentBillingAmount: this.calculateCurrentBillingAmount(account),
+          totalInvested: this.calculateTotalInvested(account),
         },
       };
     });
@@ -253,6 +299,8 @@ export class AccountService {
               'sourceTransactions',
               'destinyTransactions',
             ],
+            currentBillingAmount: ['accountCard', 'type'],
+            totalInvested: ['investments', 'type'],
           }),
           // Garantir que date e status estejam disponíveis para o calculateBalance
           ...(needsBalance && {
@@ -325,5 +373,50 @@ export class AccountService {
     );
 
     return initialBalance.plus(incomingAmount).minus(outgoingAmount);
+  }
+
+  calculateCurrentBillingAmount(account: {
+    type?: AccountType;
+    accountCard?: {
+      billings?: Array<{
+        status: CardBillingStatus;
+        transactions?: Array<{ amount: Decimal }>;
+      }>;
+    };
+  }): Decimal | null {
+    if (account.type !== AccountType.CREDIT_CARD) {
+      return null;
+    }
+
+    const currentBilling = account.accountCard?.billings?.[0];
+    if (!currentBilling) {
+      return new Decimal(0);
+    }
+
+    return (
+      currentBilling.transactions?.reduce(
+        (total, t) => total.plus(t.amount),
+        new Decimal(0),
+      ) || new Decimal(0)
+    );
+  }
+
+  calculateTotalInvested(account: {
+    type?: AccountType;
+    investments?: Array<{ amount: Decimal | number }>;
+  }): Decimal | null {
+    if (
+      account.type !== AccountType.INVESTMENT &&
+      account.type !== AccountType.SAVINGS
+    ) {
+      return null;
+    }
+
+    return (
+      account.investments?.reduce(
+        (total, inv) => total.plus(new Decimal(inv.amount)),
+        new Decimal(0),
+      ) || new Decimal(0)
+    );
   }
 }

@@ -18,6 +18,16 @@ export class AccountModel extends OmitType(Account, [
   @Type(() => Object)
   @Transform(transformToDecimal)
   balance?: Decimal;
+
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  currentBillingAmount?: Decimal;
+
+  @Field(() => GraphQLDecimal, { nullable: true })
+  @Type(() => Object)
+  @Transform(transformToDecimal)
+  totalInvested?: Decimal;
 }
 
 @ObjectType()
