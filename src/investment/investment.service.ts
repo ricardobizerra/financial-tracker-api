@@ -1167,4 +1167,46 @@ export class InvestmentService {
       totalProfitPercentage,
     };
   }
+
+  async getAccountsWithInvestmentCount({
+    userId,
+    regime,
+  }: {
+    userId: string;
+    regime: RegimePrisma;
+  }) {
+    // Determine account type based on regime
+    const accountType =
+      regime === 'POUPANCA' ? AccountType.SAVINGS : AccountType.INVESTMENT;
+
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        userId,
+        type: accountType,
+      },
+      include: {
+        institution: true,
+        _count: {
+          select: {
+            investments: {
+              where: {
+                regimeName: regime,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return accounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      institutionName: account.institution?.name,
+      institutionLogoUrl: account.institution?.logoUrl,
+      investmentCount: account._count.investments,
+    }));
+  }
 }

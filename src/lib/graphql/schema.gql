@@ -864,6 +864,14 @@ type InvestmentRegimeSummaryEdge {
   node: InvestmentRegimeSummary!
 }
 
+type AccountWithInvestmentCount {
+  id: String!
+  name: String!
+  institutionName: String
+  institutionLogoUrl: String
+  investmentCount: Int!
+}
+
 type InvestmentEvolutionPointModel {
   date: DateTime!
   invested: Float!
@@ -1114,6 +1122,7 @@ type Query {
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes(accountId: String): InvestmentRegimeSummaryConnection!
   investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
+  investmentAccounts(regime: Regime!): [AccountWithInvestmentCount!]!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, types: [AccountType!]): AccountConnection!
   account(id: ID!): AccountModel!
   accountCard(id: String!): AccountCard

@@ -22,6 +22,7 @@ import {
   InvestmentRegimeSummaryConnection,
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
+  AccountWithInvestmentCount,
 } from './investment.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
@@ -191,6 +192,21 @@ export class InvestmentResolver {
       userId: user.id,
       accountId: args.accountId,
       period: args.period || 'YEAR',
+    });
+  }
+
+  @Auth()
+  @Query(() => [AccountWithInvestmentCount], {
+    name: 'investmentAccounts',
+  })
+  async getAccountsWithInvestmentCount(
+    @Args('regime', { type: () => Regime, nullable: false })
+    regime: Regime,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getAccountsWithInvestmentCount({
+      userId: user.id,
+      regime,
     });
   }
 }
