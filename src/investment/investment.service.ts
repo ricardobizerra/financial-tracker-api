@@ -59,15 +59,23 @@ export class InvestmentService {
     ordenationArgs,
     userId,
     regime,
+    accountId,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
     regime: Regime | null;
+    accountId?: string | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+
+    const whereClause = {
+      userId,
+      ...(regime && { regimeName: regime }),
+      ...(accountId && { accountId }),
+    };
 
     const unbufferedCursor = after
       ? Number(Buffer.from(after, 'base64').toString('utf-8'))
@@ -77,10 +85,7 @@ export class InvestmentService {
 
     const investmentsLengthQuery = last
       ? await this.prismaService.investment.count({
-          where: {
-            regimeName: regime,
-            userId,
-          },
+          where: whereClause,
         })
       : undefined;
 
@@ -169,10 +174,7 @@ export class InvestmentService {
           ] satisfies (keyof Investment)[],
         }),
       }),
-      where: {
-        userId,
-        regimeName: regime,
-      },
+      where: whereClause,
     });
 
     let cdiLastDate: string;
