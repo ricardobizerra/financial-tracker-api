@@ -19,6 +19,7 @@ import {
   TransactionType,
 } from '@prisma/client';
 import { CreateTransactionInput } from './input/create-transaction.input';
+import { UpdateTransactionInput } from './input/update-transaction.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -243,6 +244,64 @@ export class TransactionResolver {
     }
 
     return transaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'updateTransaction' })
+  async updateTransaction(
+    @Args('data') data: UpdateTransactionInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    // Buscar transação existente
+    const existingTransaction = await this.prismaService.transaction.findUnique(
+      {
+        where: { id: data.id },
+        include: {
+          cardBilling: true,
+        },
+      },
+    );
+
+    if (!existingTransaction) {
+      throw new Error('Transaction not found');
+    }
+
+    // Validar que a transação pertence ao usuário
+    if (existingTransaction.userId !== user.id) {
+      throw new Error('Transaction does not belong to user');
+    }
+
+    // Validar: não editar transação COMPLETED
+    if (existingTransaction.status === TransactionStatus.COMPLETED) {
+      throw new Error('Cannot edit completed transactions');
+    }
+
+    // Validar: não editar transação de fatura fechada/paga
+    if (existingTransaction.cardBilling) {
+      const closedStatuses: CardBillingStatus[] = [
+        CardBillingStatus.PAID,
+        CardBillingStatus.CLOSED,
+        CardBillingStatus.COMPLETED,
+      ];
+      if (closedStatuses.includes(existingTransaction.cardBilling.status)) {
+        throw new Error('Cannot edit transactions from closed or paid billing');
+      }
+    }
+
+    // Atualizar transação
+    const updatedTransaction = await this.transactionService.update(data.id, {
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.amount !== undefined && { amount: data.amount }),
+      ...(data.date !== undefined && { date: data.date }),
+      ...(data.paymentMethod !== undefined && {
+        paymentMethod: data.paymentMethod as PaymentMethod,
+      }),
+      ...(data.status !== undefined && {
+        status: data.status as TransactionStatus,
+      }),
+    });
+
+    return updatedTransaction;
   }
 
   @Auth()

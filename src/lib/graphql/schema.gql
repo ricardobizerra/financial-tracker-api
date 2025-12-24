@@ -1285,6 +1285,7 @@ type Mutation {
   payBilling(billingId: String!, sourceAccountId: ID!, date: DateTime, description: String): Transaction!
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): AccountCard!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
+  updateTransaction(data: UpdateTransactionInput!): TransactionModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
   updateRecurringTransactionFromDate(id: String!, fromDate: DateTime!, data: UpdateRecurringTransactionInput!): RecurringTransactionModel!
   pauseRecurringTransaction(id: String!): RecurringTransactionModel!
@@ -3589,6 +3590,15 @@ input CreateTransactionInput {
   recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
   sourceAccountId: ID
   destinyAccountId: ID
+}
+
+input UpdateTransactionInput {
+  id: ID!
+  description: String
+  amount: Float
+  date: DateTime
+  paymentMethod: PaymentMethod
+  status: TransactionStatus
 }
 
 input CreateRecurringTransactionInput {

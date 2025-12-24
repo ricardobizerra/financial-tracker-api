@@ -299,7 +299,7 @@ export class TransactionService {
     return this.prismaService.transaction.create({ data });
   }
 
-  async update(id: string, data: TransactionCreateInput) {
+  async update(id: string, data: Prisma.TransactionUpdateInput) {
     return this.prismaService.transaction.update({ where: { id }, data });
   }
 
