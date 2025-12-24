@@ -20,6 +20,8 @@ import {
 } from '@prisma/client';
 import { CreateTransactionInput } from './input/create-transaction.input';
 import { UpdateTransactionInput } from './input/update-transaction.input';
+import { ConfirmTransactionInput } from './input/confirm-transaction.input';
+import { RescheduleTransactionInput } from './input/reschedule-transaction.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -271,9 +273,34 @@ export class TransactionResolver {
       throw new Error('Transaction does not belong to user');
     }
 
-    // Validar: não editar transação COMPLETED
-    if (existingTransaction.status === TransactionStatus.COMPLETED) {
-      throw new Error('Cannot edit completed transactions');
+    const isCompleted =
+      existingTransaction.status === TransactionStatus.COMPLETED;
+    const isCanceled =
+      existingTransaction.status === TransactionStatus.CANCELED;
+    const isImmutable = isCompleted || isCanceled;
+
+    // Para transações COMPLETED ou CANCELED, apenas a descrição pode ser editada
+    if (isImmutable) {
+      // Verificar se está tentando editar algo além da descrição
+      if (
+        data.amount !== undefined ||
+        data.date !== undefined ||
+        data.paymentMethod !== undefined ||
+        data.status !== undefined
+      ) {
+        throw new Error(
+          'Transações finalizadas ou canceladas só podem ter a descrição editada',
+        );
+      }
+
+      // Atualizar apenas descrição
+      const updatedTransaction = await this.transactionService.update(data.id, {
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+      });
+
+      return updatedTransaction;
     }
 
     // Validar: não editar transação de fatura fechada/paga
@@ -288,7 +315,7 @@ export class TransactionResolver {
       }
     }
 
-    // Atualizar transação
+    // Atualizar transação (todos os campos permitidos)
     const updatedTransaction = await this.transactionService.update(data.id, {
       ...(data.description !== undefined && { description: data.description }),
       ...(data.amount !== undefined && { amount: data.amount }),
@@ -299,6 +326,144 @@ export class TransactionResolver {
       ...(data.status !== undefined && {
         status: data.status as TransactionStatus,
       }),
+    });
+
+    return updatedTransaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'confirmTransaction' })
+  async confirmTransaction(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: ConfirmTransactionInput,
+  ): Promise<TransactionModel> {
+    // Buscar transação com cardBilling
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id: data.id },
+      include: { cardBilling: true },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    // Validar status atual
+    const allowedStatuses: TransactionStatus[] = [
+      TransactionStatus.PLANNED,
+
+      TransactionStatus.OVERDUE,
+    ];
+    if (!allowedStatuses.includes(transaction.status)) {
+      throw new Error('Apenas transações pendentes podem ser confirmadas');
+    }
+
+    // Validar cardBilling se existir
+    if (transaction.cardBilling) {
+      const closedStatuses: CardBillingStatus[] = [
+        CardBillingStatus.PAID,
+        CardBillingStatus.CLOSED,
+        CardBillingStatus.COMPLETED,
+      ];
+      if (closedStatuses.includes(transaction.cardBilling.status)) {
+        throw new Error(
+          'Não é possível confirmar transação de fatura fechada ou paga',
+        );
+      }
+    }
+
+    // Atualizar transação
+    const updatedTransaction = await this.transactionService.update(data.id, {
+      status: TransactionStatus.COMPLETED,
+      ...(data.amount !== undefined && { amount: data.amount }),
+      ...(data.date !== undefined && { date: data.date }),
+    });
+
+    return updatedTransaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'cancelTransaction' })
+  async cancelTransaction(
+    @CurrentUser() user: UserModel,
+    @Args('id') id: string,
+  ): Promise<TransactionModel> {
+    // Buscar transação com cardBilling
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id },
+      include: { cardBilling: true },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    // Validar status atual
+    const allowedStatuses: TransactionStatus[] = [
+      TransactionStatus.PLANNED,
+
+      TransactionStatus.OVERDUE,
+    ];
+    if (!allowedStatuses.includes(transaction.status)) {
+      throw new Error('Apenas transações pendentes podem ser canceladas');
+    }
+
+    // Validar cardBilling se existir
+    if (transaction.cardBilling) {
+      const closedStatuses: CardBillingStatus[] = [
+        CardBillingStatus.PAID,
+        CardBillingStatus.CLOSED,
+        CardBillingStatus.COMPLETED,
+      ];
+      if (closedStatuses.includes(transaction.cardBilling.status)) {
+        throw new Error(
+          'Não é possível cancelar transação de fatura fechada ou paga',
+        );
+      }
+    }
+
+    // Atualizar transação
+    const updatedTransaction = await this.transactionService.update(id, {
+      status: TransactionStatus.CANCELED,
+    });
+
+    return updatedTransaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'rescheduleTransaction' })
+  async rescheduleTransaction(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: RescheduleTransactionInput,
+  ): Promise<TransactionModel> {
+    // Buscar transação
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id: data.id },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    // Apenas PLANNED pode ser reagendada
+    if (transaction.status !== TransactionStatus.PLANNED) {
+      throw new Error('Apenas transações planejadas podem ser reagendadas');
+    }
+
+    // Atualizar transação
+    const updatedTransaction = await this.transactionService.update(data.id, {
+      date: data.newDate,
     });
 
     return updatedTransaction;

@@ -1286,6 +1286,9 @@ type Mutation {
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): AccountCard!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
   updateTransaction(data: UpdateTransactionInput!): TransactionModel!
+  confirmTransaction(data: ConfirmTransactionInput!): TransactionModel!
+  cancelTransaction(id: String!): TransactionModel!
+  rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
   updateRecurringTransactionFromDate(id: String!, fromDate: DateTime!, data: UpdateRecurringTransactionInput!): RecurringTransactionModel!
   pauseRecurringTransaction(id: String!): RecurringTransactionModel!
@@ -3599,6 +3602,17 @@ input UpdateTransactionInput {
   date: DateTime
   paymentMethod: PaymentMethod
   status: TransactionStatus
+}
+
+input ConfirmTransactionInput {
+  id: ID!
+  amount: Float
+  date: DateTime
+}
+
+input RescheduleTransactionInput {
+  id: ID!
+  newDate: DateTime!
 }
 
 input CreateRecurringTransactionInput {
