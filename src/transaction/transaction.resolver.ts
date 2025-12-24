@@ -22,6 +22,10 @@ import { CreateTransactionInput } from './input/create-transaction.input';
 import { UpdateTransactionInput } from './input/update-transaction.input';
 import { ConfirmTransactionInput } from './input/confirm-transaction.input';
 import { RescheduleTransactionInput } from './input/reschedule-transaction.input';
+import {
+  UpdateRecurringTransactionsInput,
+  UpdateRecurringScope,
+} from './input/update-recurring-transactions.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -467,6 +471,109 @@ export class TransactionResolver {
     });
 
     return updatedTransaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'updateRecurringTransactions' })
+  async updateRecurringTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: UpdateRecurringTransactionsInput,
+  ): Promise<TransactionModel> {
+    // Buscar transação inicial
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id: data.transactionId },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    // THIS_ONLY: usa updateTransaction existente
+    if (data.scope === UpdateRecurringScope.THIS_ONLY) {
+      const updatedTransaction = await this.transactionService.update(
+        data.transactionId,
+        {
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
+          ...(data.amount !== undefined && { amount: data.amount }),
+          ...(data.paymentMethod !== undefined && {
+            paymentMethod: data.paymentMethod,
+          }),
+        },
+      );
+      return updatedTransaction;
+    }
+
+    // Verificar se é transação recorrente
+    if (!transaction.recurringTransactionId) {
+      throw new Error('Transação não faz parte de uma recorrência');
+    }
+
+    // Construir dados de atualização
+    const updateData: {
+      description?: string;
+      amount?: number;
+      paymentMethod?: PaymentMethod;
+    } = {};
+    if (data.description !== undefined)
+      updateData.description = data.description;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.paymentMethod !== undefined)
+      updateData.paymentMethod = data.paymentMethod;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new Error('Nenhum campo para atualizar');
+    }
+
+    // Atualizar transações em batch
+    if (data.scope === UpdateRecurringScope.THIS_AND_FUTURE) {
+      // Atualizar esta + futuras PLANNED
+      await this.prismaService.transaction.updateMany({
+        where: {
+          recurringTransactionId: transaction.recurringTransactionId,
+          userId: user.id,
+          status: TransactionStatus.PLANNED,
+          date: { gte: transaction.date },
+        },
+        data: updateData,
+      });
+    } else if (data.scope === UpdateRecurringScope.ALL_PLANNED) {
+      // Atualizar todas PLANNED
+      await this.prismaService.transaction.updateMany({
+        where: {
+          recurringTransactionId: transaction.recurringTransactionId,
+          userId: user.id,
+          status: TransactionStatus.PLANNED,
+        },
+        data: updateData,
+      });
+    }
+
+    // Atualizar RecurringTransaction para futuras gerações
+    await this.prismaService.recurringTransaction.update({
+      where: { id: transaction.recurringTransactionId },
+      data: {
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+        ...(data.amount !== undefined && { estimatedAmount: data.amount }),
+        ...(data.paymentMethod !== undefined && {
+          paymentMethod: data.paymentMethod,
+        }),
+      },
+    });
+
+    // Retornar transação atualizada
+    const updatedTransaction = await this.prismaService.transaction.findUnique({
+      where: { id: data.transactionId },
+    });
+
+    return updatedTransaction as TransactionModel;
   }
 
   @Auth()

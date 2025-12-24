@@ -1289,6 +1289,7 @@ type Mutation {
   confirmTransaction(data: ConfirmTransactionInput!): TransactionModel!
   cancelTransaction(id: String!): TransactionModel!
   rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
+  updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
   updateRecurringTransactionFromDate(id: String!, fromDate: DateTime!, data: UpdateRecurringTransactionInput!): RecurringTransactionModel!
   pauseRecurringTransaction(id: String!): RecurringTransactionModel!
@@ -3613,6 +3614,21 @@ input ConfirmTransactionInput {
 input RescheduleTransactionInput {
   id: ID!
   newDate: DateTime!
+}
+
+input UpdateRecurringTransactionsInput {
+  transactionId: ID!
+  scope: UpdateRecurringScope!
+  description: String
+  amount: Float
+  paymentMethod: PaymentMethod
+}
+
+"""Scope for updating recurring transactions"""
+enum UpdateRecurringScope {
+  THIS_ONLY
+  THIS_AND_FUTURE
+  ALL_PLANNED
 }
 
 input CreateRecurringTransactionInput {
