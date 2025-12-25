@@ -4,7 +4,7 @@ import {
   Transaction,
   TransactionCreateInput,
 } from '@/lib/graphql/prisma-client';
-import { Prisma, TransactionType } from '@prisma/client';
+import { Prisma, TransactionType, TransactionStatus } from '@prisma/client';
 import {
   TransactionModel,
   OrdenationTransactionArgs,
@@ -251,8 +251,9 @@ export class TransactionService {
       searchArgs,
     });
 
+    // Agregação por tipo e status para calcular realized/forecast
     const aggregations = await this.prismaService.transaction.groupBy({
-      by: ['type'],
+      by: ['type', 'status'],
       where: whereClause,
       _sum: {
         amount: true,
@@ -262,28 +263,55 @@ export class TransactionService {
       },
     });
 
+    // Totais legados (mantidos para compatibilidade)
     let totalIncome = 0;
     let totalExpense = 0;
     let transactionCount = 0;
 
+    // Saldo Realizado (apenas COMPLETED)
+    let realizedIncome = 0;
+    let realizedExpense = 0;
+
+    // Saldo Previsto (COMPLETED + PLANNED + OVERDUE, exclui CANCELED)
+    let forecastIncome = 0;
+    let forecastExpense = 0;
+
     for (const agg of aggregations) {
       const amount = Number(agg._sum.amount || 0);
       const count = agg._count.id;
+      const isCompleted = agg.status === TransactionStatus.COMPLETED;
+      const isForecastable =
+        agg.status === TransactionStatus.COMPLETED ||
+        agg.status === TransactionStatus.PLANNED ||
+        agg.status === TransactionStatus.OVERDUE;
 
       if (agg.type === TransactionType.INCOME) {
         totalIncome += amount;
+        if (isCompleted) realizedIncome += amount;
+        if (isForecastable) forecastIncome += amount;
       } else if (agg.type === TransactionType.EXPENSE) {
         totalExpense += amount;
+        if (isCompleted) realizedExpense += amount;
+        if (isForecastable) forecastExpense += amount;
       }
 
       transactionCount += count;
     }
 
     return {
+      // Legacy
       totalIncome,
       totalExpense,
       balance: totalIncome - totalExpense,
       transactionCount,
+      // Realized
+      realizedIncome,
+      realizedExpense,
+      realizedBalance: realizedIncome - realizedExpense,
+      // Forecast
+      forecastIncome,
+      forecastExpense,
+      forecastBalance: forecastIncome - forecastExpense,
     };
   }
 

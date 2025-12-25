@@ -986,6 +986,12 @@ type TransactionsSummaryModel {
   totalExpense: Decimal!
   balance: Decimal!
   transactionCount: Int!
+  realizedIncome: Decimal!
+  realizedExpense: Decimal!
+  realizedBalance: Decimal!
+  forecastIncome: Decimal!
+  forecastExpense: Decimal!
+  forecastBalance: Decimal!
 }
 
 type BalanceForecastTransactionModel {
