@@ -780,4 +780,131 @@ export class TransactionService {
       pendingCount: transactions.length,
     };
   }
+
+  async getTransactionsGroupedByPeriod({
+    userId,
+    accountId,
+    limitPerGroup = 10,
+  }: {
+    userId: string;
+    accountId?: string;
+    limitPerGroup?: number;
+  }) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const startOfNextMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      1,
+    );
+    const endOfNextMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 2,
+      0,
+    );
+
+    // Buscar todas as transações não canceladas
+    const transactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        status: { not: TransactionStatus.CANCELED },
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+      },
+      orderBy: { date: 'asc' },
+      include: {
+        sourceAccount: { include: { institution: true } },
+        destinyAccount: { include: { institution: true } },
+        billingPayment: {
+          include: {
+            accountCard: {
+              include: { account: { include: { institution: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    type PeriodKey =
+      | 'OVERDUE'
+      | 'TODAY'
+      | 'THIS_WEEK'
+      | 'THIS_MONTH'
+      | 'NEXT_MONTH'
+      | 'FUTURE'
+      | 'PAST';
+
+    const groups: Record<PeriodKey, typeof transactions> = {
+      OVERDUE: [],
+      TODAY: [],
+      THIS_WEEK: [],
+      THIS_MONTH: [],
+      NEXT_MONTH: [],
+      FUTURE: [],
+      PAST: [],
+    };
+
+    const labels: Record<PeriodKey, string> = {
+      OVERDUE: 'Atrasadas',
+      TODAY: 'Hoje',
+      THIS_WEEK: 'Esta semana',
+      THIS_MONTH: 'Este mês',
+      NEXT_MONTH: 'Próximo mês',
+      FUTURE: 'Futuro',
+      PAST: 'Passadas',
+    };
+
+    for (const tx of transactions) {
+      const txDate = new Date(tx.date);
+
+      if (tx.status === TransactionStatus.OVERDUE) {
+        groups.OVERDUE.push(tx);
+      } else if (txDate >= today && txDate < tomorrow) {
+        groups.TODAY.push(tx);
+      } else if (txDate >= tomorrow && txDate < endOfWeek) {
+        groups.THIS_WEEK.push(tx);
+      } else if (txDate >= endOfWeek && txDate <= endOfMonth) {
+        groups.THIS_MONTH.push(tx);
+      } else if (txDate >= startOfNextMonth && txDate <= endOfNextMonth) {
+        groups.NEXT_MONTH.push(tx);
+      } else if (txDate > endOfNextMonth) {
+        groups.FUTURE.push(tx);
+      } else if (txDate < today && tx.status === TransactionStatus.COMPLETED) {
+        // Transações passadas completadas
+        groups.PAST.push(tx);
+      }
+    }
+
+    // Ordenar PAST do mais recente para o mais antigo
+    groups.PAST.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    // Ordem desejada dos grupos
+    const orderedKeys: PeriodKey[] = [
+      'OVERDUE',
+      'TODAY',
+      'THIS_WEEK',
+      'THIS_MONTH',
+      'NEXT_MONTH',
+      'FUTURE',
+      'PAST',
+    ];
+
+    return orderedKeys
+      .filter((period) => groups[period].length > 0)
+      .map((period) => ({
+        period,
+        label: labels[period],
+        transactions: groups[period].slice(0, limitPerGroup),
+        count: groups[period].length,
+        hasMore: groups[period].length > limitPerGroup,
+      }));
+  }
 }

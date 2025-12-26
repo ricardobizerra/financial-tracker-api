@@ -1,4 +1,12 @@
-import { Mutation, Query, Resolver, Args, Info } from '@nestjs/graphql';
+import {
+  Mutation,
+  Query,
+  Resolver,
+  Args,
+  Info,
+  ID,
+  Int,
+} from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { TransactionConnection, TransactionModel } from './transaction.model';
 import { Auth } from '@/auth/auth.decorator';
@@ -43,6 +51,7 @@ import {
   FinancialAgendaModel,
   FinancialAgendaArgs,
 } from './financial-agenda.model';
+import { TransactionGroupModel } from './transaction-group.model';
 
 @Resolver()
 export class TransactionResolver {
@@ -717,6 +726,25 @@ export class TransactionResolver {
       userId: user.id,
       accountId: args.accountId,
       daysAhead: args.daysAhead,
+    });
+  }
+
+  @Auth()
+  @Query(() => [TransactionGroupModel], { name: 'transactionsGroupedByPeriod' })
+  async getTransactionsGroupedByPeriod(
+    @Args('accountId', { type: () => ID, nullable: true }) accountId: string,
+    @Args('limitPerGroup', {
+      type: () => Int,
+      nullable: true,
+      defaultValue: 10,
+    })
+    limitPerGroup: number,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.transactionService.getTransactionsGroupedByPeriod({
+      userId: user.id,
+      accountId,
+      limitPerGroup,
     });
   }
 }
