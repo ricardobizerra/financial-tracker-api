@@ -292,8 +292,14 @@ export class TransactionResolver {
       existingTransaction.status === TransactionStatus.CANCELED;
     const isImmutable = isCompleted || isCanceled;
 
+    // Verificar se a transação pertence a uma fatura aberta (exceção à regra de imutabilidade)
+    const isPartOfOpenBilling =
+      existingTransaction.cardBilling &&
+      existingTransaction.cardBilling.status === CardBillingStatus.PENDING;
+
     // Para transações COMPLETED ou CANCELED, apenas a descrição pode ser editada
-    if (isImmutable) {
+    // EXCEÇÃO: transações de fatura aberta podem ser editadas completamente
+    if (isImmutable && !isPartOfOpenBilling) {
       // Verificar se está tentando editar algo além da descrição
       if (
         data.amount !== undefined ||
