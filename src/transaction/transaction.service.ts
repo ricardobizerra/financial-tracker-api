@@ -831,6 +831,24 @@ export class TransactionService {
       },
     });
 
+    // Quando filtrando por conta, transformar BETWEEN_ACCOUNTS para INCOME/EXPENSE
+    // baseado na perspectiva da conta
+    const transformedTransactions = accountId
+      ? transactions.map((tx) => {
+          if (tx.type === TransactionType.BETWEEN_ACCOUNTS) {
+            // Se a conta é destino, aparece como INCOME
+            if (tx.destinyAccountId === accountId) {
+              return { ...tx, type: TransactionType.INCOME };
+            }
+            // Se a conta é origem, aparece como EXPENSE
+            if (tx.sourceAccountId === accountId) {
+              return { ...tx, type: TransactionType.EXPENSE };
+            }
+          }
+          return tx;
+        })
+      : transactions;
+
     type PeriodKey =
       | 'OVERDUE'
       | 'TODAY'
@@ -860,7 +878,7 @@ export class TransactionService {
       PAST: 'Passadas',
     };
 
-    for (const tx of transactions) {
+    for (const tx of transformedTransactions) {
       const txDate = new Date(tx.date);
 
       if (tx.status === TransactionStatus.OVERDUE) {
