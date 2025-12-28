@@ -311,20 +311,36 @@ export class CardService {
     periodStart: Date;
     limit: Decimal;
   }): Promise<CardBilling> {
+    // Calcular o início correto do período baseado no dia de fechamento
+    // O período começa no dia seguinte ao fechamento do ciclo anterior
+    const calculatedPeriodStart = new Date(periodStart);
     const periodEnd = new Date(periodStart);
     const paymentDate = new Date(periodStart);
 
-    if (periodStart.getDate() > cardBillingCycleDay) {
+    // Se a data está antes ou no dia de fechamento, pertence ao ciclo atual
+    // Se está depois, pertence ao próximo ciclo
+    if (periodStart.getDate() <= cardBillingCycleDay) {
+      // A transação está no ciclo atual
+      // periodStart deve ser o dia após o fechamento do mês anterior
+      calculatedPeriodStart.setMonth(calculatedPeriodStart.getMonth() - 1);
+      calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
+
+      periodEnd.setDate(cardBillingCycleDay);
+      periodEnd.setHours(23 + 3, 59, 59, 999);
+    } else {
+      // A transação está no próximo ciclo
+      // periodStart é o dia após o fechamento do mês atual
+      calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
+
       periodEnd.setMonth(periodEnd.getMonth() + 1);
+      periodEnd.setDate(cardBillingCycleDay);
+      periodEnd.setHours(23 + 3, 59, 59, 999);
     }
 
-    periodEnd.setDate(cardBillingCycleDay);
-    periodEnd.setHours(23 + 3, 59, 59, 999);
-
+    // Calcular data de pagamento
     if (periodStart.getDate() > cardBillingPaymentDay) {
       paymentDate.setMonth(paymentDate.getMonth() + 1);
     }
-
     paymentDate.setDate(cardBillingPaymentDay);
     paymentDate.setHours(23 + 3, 59, 59, 999);
 
@@ -335,7 +351,7 @@ export class CardService {
             id: cardId,
           },
         },
-        periodStart,
+        periodStart: calculatedPeriodStart,
         periodEnd,
         paymentDate,
         status: CardBillingStatus.PENDING,

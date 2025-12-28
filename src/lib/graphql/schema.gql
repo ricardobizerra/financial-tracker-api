@@ -504,6 +504,7 @@ type RecurringTransactionAvgAggregate {
   estimatedAmount: Decimal
   dayOfMonth: Float
   monthOfYear: Float
+  totalInstallments: Float
 }
 
 type RecurringTransactionCountAggregate {
@@ -518,6 +519,8 @@ type RecurringTransactionCountAggregate {
   startDate: Int!
   endDate: Int!
   isActive: Int!
+  recurrenceType: Int!
+  totalInstallments: Int!
   sourceAccountId: Int!
   destinyAccountId: Int!
   userId: Int!
@@ -542,6 +545,8 @@ type RecurringTransactionMaxAggregate {
   startDate: DateTime
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   sourceAccountId: String
   destinyAccountId: String
   userId: String
@@ -568,6 +573,11 @@ enum RecurrenceFrequency {
   YEARLY
 }
 
+enum RecurrenceType {
+  PERIODIC
+  INSTALLMENT
+}
+
 type RecurringTransactionMinAggregate {
   id: String
   description: String
@@ -580,6 +590,8 @@ type RecurringTransactionMinAggregate {
   startDate: DateTime
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   sourceAccountId: String
   destinyAccountId: String
   userId: String
@@ -591,6 +603,7 @@ type RecurringTransactionSumAggregate {
   estimatedAmount: Decimal
   dayOfMonth: Int
   monthOfYear: Int
+  totalInstallments: Int
 }
 
 type RecurringTransaction {
@@ -605,6 +618,8 @@ type RecurringTransaction {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean!
+  recurrenceType: RecurrenceType!
+  totalInstallments: Int
   sourceAccountId: String
   destinyAccountId: String
   userId: String!
@@ -619,6 +634,8 @@ type RecurringTransaction {
 
 type TransactionAvgAggregate {
   amount: Decimal
+  installmentNumber: Float
+  totalInstallments: Float
 }
 
 type TransactionCountAggregate {
@@ -635,6 +652,8 @@ type TransactionCountAggregate {
   destinyAccountId: Int!
   cardBillingId: Int!
   recurringTransactionId: Int!
+  installmentNumber: Int!
+  totalInstallments: Int!
   userId: Int!
   createdAt: Int!
   updatedAt: Int!
@@ -655,6 +674,8 @@ type TransactionMaxAggregate {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -681,6 +702,8 @@ type TransactionMinAggregate {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -688,6 +711,8 @@ type TransactionMinAggregate {
 
 type TransactionSumAggregate {
   amount: Decimal
+  installmentNumber: Int
+  totalInstallments: Int
 }
 
 type Transaction {
@@ -704,6 +729,8 @@ type Transaction {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -962,6 +989,8 @@ type TransactionModel {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime!
   updatedAt: DateTime!
   sourceAccount: Account
@@ -1121,6 +1150,8 @@ type RecurringTransactionModel {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean!
+  recurrenceType: RecurrenceType!
+  totalInstallments: Int
   sourceAccountId: String
   destinyAccountId: String
   createdAt: DateTime!
@@ -1249,6 +1280,8 @@ enum OrdenationTransactionModel {
   destinyAccountId
   cardBillingId
   recurringTransactionId
+  installmentNumber
+  totalInstallments
   createdAt
   updatedAt
   sourceAccount
@@ -1291,6 +1324,8 @@ enum OrdenationRecurringTransactionModel {
   startDate
   endDate
   isActive
+  recurrenceType
+  totalInstallments
   sourceAccountId
   destinyAccountId
   createdAt
@@ -1842,6 +1877,8 @@ input TransactionWhereInput {
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
   recurringTransactionId: StringNullableFilter
+  installmentNumber: IntNullableFilter
+  totalInstallments: IntNullableFilter
   userId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -2057,6 +2094,8 @@ input RecurringTransactionWhereInput {
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
   isActive: BoolFilter
+  recurrenceType: EnumRecurrenceTypeFilter
+  totalInstallments: IntNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   userId: StringFilter
@@ -2080,6 +2119,20 @@ input NestedEnumRecurrenceFrequencyFilter {
   in: [RecurrenceFrequency!]
   notIn: [RecurrenceFrequency!]
   not: NestedEnumRecurrenceFrequencyFilter
+}
+
+input EnumRecurrenceTypeFilter {
+  equals: RecurrenceType
+  in: [RecurrenceType!]
+  notIn: [RecurrenceType!]
+  not: NestedEnumRecurrenceTypeFilter
+}
+
+input NestedEnumRecurrenceTypeFilter {
+  equals: RecurrenceType
+  in: [RecurrenceType!]
+  notIn: [RecurrenceType!]
+  not: NestedEnumRecurrenceTypeFilter
 }
 
 input RecurringTransactionListRelationFilter {
@@ -2153,6 +2206,8 @@ input TransactionCreateWithoutBillingPaymentInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2274,6 +2329,8 @@ input TransactionCreateWithoutSourceAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
@@ -2370,6 +2427,8 @@ input TransactionCreateWithoutUserInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2459,6 +2518,8 @@ input TransactionCreateWithoutDestinyAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2541,6 +2602,8 @@ input RecurringTransactionCreateWithoutUserInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
@@ -2695,6 +2758,8 @@ input RecurringTransactionCreateWithoutDestinyAccountInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
@@ -2773,6 +2838,8 @@ input TransactionCreateWithoutCardBillingInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2800,6 +2867,8 @@ input RecurringTransactionCreateWithoutTransactionsInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
@@ -2851,6 +2920,8 @@ input RecurringTransactionCreateWithoutSourceAccountInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput
@@ -2875,6 +2946,8 @@ input TransactionCreateWithoutRecurringTransactionInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2949,6 +3022,8 @@ input TransactionWhereUniqueInput {
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
   recurringTransactionId: StringNullableFilter
+  installmentNumber: IntNullableFilter
+  totalInstallments: IntNullableFilter
   userId: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -2978,6 +3053,8 @@ input TransactionCreateManyRecurringTransactionInput {
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String!
   createdAt: DateTime
   updatedAt: DateTime
@@ -3003,6 +3080,8 @@ input RecurringTransactionWhereUniqueInput {
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
   isActive: BoolFilter
+  recurrenceType: EnumRecurrenceTypeFilter
+  totalInstallments: IntNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   userId: StringFilter
@@ -3031,6 +3110,8 @@ input RecurringTransactionCreateManySourceAccountInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   destinyAccountId: String
   userId: String!
   createdAt: DateTime
@@ -3095,6 +3176,8 @@ input TransactionCreateManyCardBillingInput {
   sourceAccountId: String
   destinyAccountId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String!
   createdAt: DateTime
   updatedAt: DateTime
@@ -3188,6 +3271,8 @@ input RecurringTransactionCreateManyDestinyAccountInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   sourceAccountId: String
   userId: String!
   createdAt: DateTime
@@ -3221,6 +3306,8 @@ input RecurringTransactionCreateManyUserInput {
   startDate: DateTime!
   endDate: DateTime
   isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
   sourceAccountId: String
   destinyAccountId: String
   createdAt: DateTime
@@ -3277,6 +3364,8 @@ input TransactionCreateManyDestinyAccountInput {
   sourceAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String!
   createdAt: DateTime
   updatedAt: DateTime
@@ -3338,6 +3427,8 @@ input TransactionCreateManyUserInput {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -3467,6 +3558,8 @@ input TransactionCreateManySourceAccountInput {
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
+  installmentNumber: Int
+  totalInstallments: Int
   userId: String!
   createdAt: DateTime
   updatedAt: DateTime
@@ -3615,6 +3708,8 @@ input CreateTransactionInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
   billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
   status: TransactionStatus
@@ -3679,6 +3774,8 @@ input CreateRecurringTransactionInput {
   endDate: DateTime
   sourceAccountId: ID
   destinyAccountId: ID
+  recurrenceType: RecurrenceType = PERIODIC
+  totalInstallments: Int
 }
 
 input UpdateRecurringTransactionInput {

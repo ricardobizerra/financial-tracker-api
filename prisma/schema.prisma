@@ -206,6 +206,10 @@ model Transaction {
   recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
   recurringTransactionId String?
 
+  // Campos de parcelamento
+  installmentNumber Int? // Número da parcela atual (ex: 2 de 12)
+  totalInstallments Int? // Total de parcelas (ex: 12)
+
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
@@ -227,6 +231,10 @@ model RecurringTransaction {
   startDate DateTime
   endDate   DateTime? // null = generate up to practical limit (2 years)
   isActive  Boolean   @default(true)
+
+  // Tipo de recorrência
+  recurrenceType    RecurrenceType @default(PERIODIC)
+  totalInstallments Int? // Total de parcelas para INSTALLMENT
 
   sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "RecurringSource")
   sourceAccountId String?
@@ -314,4 +322,9 @@ enum TransactionType {
 enum RecurrenceFrequency {
   MONTHLY
   YEARLY
+}
+
+enum RecurrenceType {
+  PERIODIC // Recorrência baseada em período (infinita até endDate)
+  INSTALLMENT // Parcelamento com número fixo de parcelas
 }

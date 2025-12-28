@@ -3,6 +3,7 @@ import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
   Prisma,
   RecurrenceFrequency,
+  RecurrenceType,
   TransactionType,
   AccountType,
   TransactionStatus,
@@ -83,13 +84,19 @@ export class RecurringTransactionService {
     }
 
     // Calculate all occurrence dates
-    const occurrences = this.calculateOccurrences(
+    let occurrences = this.calculateOccurrences(
       data.startDate,
       data.endDate,
       data.frequency as RecurrenceFrequency,
       data.dayOfMonth,
       data.monthOfYear,
     );
+
+    // Para INSTALLMENT, limitar ao número de parcelas
+    const isInstallment = data.recurrenceType === 'INSTALLMENT';
+    if (isInstallment && data.totalInstallments) {
+      occurrences = occurrences.slice(0, data.totalInstallments);
+    }
 
     if (occurrences.length === 0) {
       throw new Error(
@@ -111,6 +118,9 @@ export class RecurringTransactionService {
         endDate: data.endDate,
         sourceAccountId: data.sourceAccountId,
         destinyAccountId: data.destinyAccountId,
+        recurrenceType:
+          (data.recurrenceType as RecurrenceType) || RecurrenceType.PERIODIC,
+        totalInstallments: isInstallment ? data.totalInstallments : null,
         userId,
       },
     });
@@ -122,11 +132,21 @@ export class RecurringTransactionService {
     );
 
     // Generate all transactions
-    for (const date of occurrences) {
+    // Para parcelamento, calcular valor de cada parcela
+    const installmentAmount =
+      isInstallment && data.totalInstallments
+        ? Number((data.estimatedAmount / data.totalInstallments).toFixed(2))
+        : data.estimatedAmount;
+
+    for (let i = 0; i < occurrences.length; i++) {
+      const date = occurrences[i];
+      const installmentNumber = isInstallment ? i + 1 : null;
+      const totalInstallments = isInstallment ? occurrences.length : null;
+
       const transaction = await this.prismaService.transaction.create({
         data: {
           description: data.description,
-          amount: data.estimatedAmount,
+          amount: installmentAmount,
           date,
           status: baseStatus,
           type: data.type as TransactionType,
@@ -134,6 +154,8 @@ export class RecurringTransactionService {
           sourceAccountId: data.sourceAccountId,
           destinyAccountId: data.destinyAccountId,
           recurringTransactionId: recurring.id,
+          installmentNumber,
+          totalInstallments,
           userId,
         },
       });

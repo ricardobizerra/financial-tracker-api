@@ -1,6 +1,7 @@
 import {
   PaymentMethod,
   RecurrenceFrequency,
+  RecurrenceType,
   TransactionType,
 } from '@/lib/graphql/prisma-client';
 import { Field, ID, InputType, Float, Int } from '@nestjs/graphql';
@@ -39,4 +40,11 @@ export class CreateRecurringTransactionInput {
 
   @Field(() => ID, { nullable: true })
   destinyAccountId?: string;
+
+  // Campos de parcelamento
+  @Field(() => RecurrenceType, { nullable: true, defaultValue: 'PERIODIC' })
+  recurrenceType?: keyof typeof RecurrenceType;
+
+  @Field(() => Int, { nullable: true })
+  totalInstallments?: number;
 }
