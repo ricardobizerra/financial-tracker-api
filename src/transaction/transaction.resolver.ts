@@ -489,6 +489,13 @@ export class TransactionResolver {
       status: TransactionStatus.CANCELED,
     });
 
+    // Recalcular saldo da fatura se a transação estava vinculada a uma
+    if (transaction.cardBillingId) {
+      await this.cardService.updatePaymentTransaction(
+        transaction.cardBillingId,
+      );
+    }
+
     return updatedTransaction;
   }
 
