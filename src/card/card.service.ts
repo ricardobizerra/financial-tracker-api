@@ -199,12 +199,39 @@ export class CardService {
     };
   }
 
-  async updatePaymentTransaction(billingId: string): Promise<Transaction> {
-    const billing = await this.findBilling({ id: billingId });
+  async updatePaymentTransaction(
+    billingId: string,
+  ): Promise<Transaction | null> {
+    const billing = await this.prisma.cardBilling.findUnique({
+      where: { id: billingId },
+      include: {
+        transactions: {
+          where: {
+            status: { not: TransactionStatus.CANCELED },
+          },
+        },
+        accountCard: {
+          include: {
+            account: {
+              include: {
+                institution: true,
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!billing) {
       throw new NotFoundException('Card billing not found');
     }
+
+    // Calcular total (apenas transações não canceladas)
+    const totalAmount = billing.transactions.reduce(
+      (acc, transaction) => acc.add(transaction.amount),
+      new Decimal(0),
+    );
 
     const existing = await this.prisma.transaction.findFirst({
       where: {
@@ -215,14 +242,60 @@ export class CardService {
       },
     });
 
-    if (!existing) {
-      throw new NotFoundException('Billing payment transaction not found');
+    // Se amount > 0 e transação não existe, criar
+    if (totalAmount.greaterThan(0) && !existing) {
+      return this.prisma.transaction.create({
+        data: {
+          amount: totalAmount,
+          date: billing.paymentDate,
+          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
+          status: TransactionStatus.PLANNED,
+          type: TransactionType.BETWEEN_ACCOUNTS,
+          paymentEnabled: false,
+          paymentLimit: billing.paymentDate,
+          destinyAccount: {
+            connect: {
+              id: billing.accountCard.account.id,
+            },
+          },
+          billingPayment: {
+            connect: {
+              id: billing.id,
+            },
+          },
+          user: {
+            connect: {
+              id: billing.accountCard.account.user.id,
+            },
+          },
+        },
+      });
     }
 
-    return this.prisma.transaction.update({
-      where: { id: existing.id },
-      data: { amount: billing.totalAmount },
-    });
+    // Se amount > 0 e transação existe, atualizar
+    if (totalAmount.greaterThan(0) && existing) {
+      return this.prisma.transaction.update({
+        where: { id: existing.id },
+        data: { amount: totalAmount },
+      });
+    }
+
+    // Se amount == 0 e transação existe, desassociar do billing e deletar
+    if (totalAmount.equals(0) && existing) {
+      // Primeiro desassociar do billingPayment
+      await this.prisma.transaction.update({
+        where: { id: existing.id },
+        data: { billingPayment: { disconnect: true } },
+      });
+      // Depois deletar
+      await this.prisma.transaction.delete({
+        where: { id: existing.id },
+      });
+      return null;
+    }
+
+    // Se amount == 0 e transação não existe, nada a fazer
+    return null;
   }
 
   async createBilling({
@@ -282,44 +355,19 @@ export class CardService {
       },
     });
 
-    await Promise.all([
-      this.prisma.cardBillingHistory.create({
-        data: {
-          cardBilling: {
-            connect: {
-              id: billing.id,
-            },
-          },
-          status: CardBillingStatus.PENDING,
-        },
-      }),
-      await this.prisma.transaction.create({
-        data: {
-          amount: 0,
-          date: paymentDate,
-          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
-          status: TransactionStatus.PLANNED,
-          type: TransactionType.BETWEEN_ACCOUNTS,
-          paymentEnabled: false,
-          paymentLimit: paymentDate,
-          destinyAccount: {
-            connect: {
-              id: billing.accountCard.account.id,
-            },
-          },
-          billingPayment: {
-            connect: {
-              id: billing.id,
-            },
-          },
-          user: {
-            connect: {
-              id: billing.accountCard.account.user.id,
-            },
+    // Criar apenas o histórico da fatura
+    // A transação de pagamento será criada automaticamente pelo updatePaymentTransaction
+    // quando a primeira despesa for adicionada à fatura
+    await this.prisma.cardBillingHistory.create({
+      data: {
+        cardBilling: {
+          connect: {
+            id: billing.id,
           },
         },
-      }),
-    ]);
+        status: CardBillingStatus.PENDING,
+      },
+    });
 
     return billing;
   }
@@ -401,16 +449,17 @@ export class CardService {
       });
     }
 
-    // Update payment transaction with correct amount
-    await this.prisma.transaction.update({
-      where: {
-        id: billing.paymentTransaction.id,
-      },
-      data: {
-        paymentEnabled: true,
-        amount: billingTotal,
-      },
-    });
+    // Garantir que a transação de pagamento existe e atualizar com o valor correto
+    // (updatePaymentTransaction cria se não existir)
+    const paymentTransaction = await this.updatePaymentTransaction(billingId);
+
+    // Se a transação existe, habilitar para pagamento
+    if (paymentTransaction) {
+      await this.prisma.transaction.update({
+        where: { id: paymentTransaction.id },
+        data: { paymentEnabled: true },
+      });
+    }
 
     // Close current billing with actual period end
     return this.prisma.cardBilling.update({
