@@ -449,7 +449,10 @@ export class TransactionResolver {
     // Buscar transação com cardBilling
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id },
-      include: { cardBilling: true },
+      include: {
+        cardBilling: { select: { status: true } },
+        sourceAccount: { select: { type: true } },
+      },
     });
 
     if (!transaction) {
@@ -463,10 +466,13 @@ export class TransactionResolver {
     // Validar status atual
     const allowedStatuses: TransactionStatus[] = [
       TransactionStatus.PLANNED,
-
       TransactionStatus.OVERDUE,
     ];
-    if (!allowedStatuses.includes(transaction.status)) {
+
+    if (
+      !allowedStatuses.includes(transaction.status) &&
+      transaction.sourceAccount.type !== AccountType.CREDIT_CARD
+    ) {
       throw new Error('Apenas transações pendentes podem ser canceladas');
     }
 
