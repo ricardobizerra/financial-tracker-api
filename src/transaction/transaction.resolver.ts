@@ -68,7 +68,29 @@ export class TransactionResolver {
     @Args('data') data: CreateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
-    if (data.status === TransactionStatus.OVERDUE) {
+    // Calcular status baseado na data se não foi informado
+    let calculatedStatus = data.status;
+    if (!calculatedStatus) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const transactionDate = new Date(data.date);
+      transactionDate.setHours(0, 0, 0, 0);
+
+      if (transactionDate > today) {
+        // Data futura -> PLANNED
+        calculatedStatus = TransactionStatus.PLANNED;
+      } else if (transactionDate < today) {
+        // Data passada -> COMPLETED
+        calculatedStatus = TransactionStatus.COMPLETED;
+      } else {
+        // Data é hoje -> depende do isCompleted
+        calculatedStatus = data.isCompleted
+          ? TransactionStatus.COMPLETED
+          : TransactionStatus.PLANNED;
+      }
+    }
+
+    if (calculatedStatus === TransactionStatus.OVERDUE) {
       throw new Error(
         'OVERDUE status cannot be set manually. It is calculated by the system.',
       );
@@ -132,10 +154,24 @@ export class TransactionResolver {
       }
     }
 
+    // Calcular paymentMethod se não foi informado
+    let calculatedPaymentMethod = data.paymentMethod;
+    if (!calculatedPaymentMethod) {
+      const relevantAccount = sourceAccount || destinyAccount;
+      if (relevantAccount?.type === AccountType.CREDIT_CARD) {
+        // Para contas de cartão, usar CREDIT_CARD como padrão
+        // Futuramente, buscar o tipo do cartão (credit/debit) para ser mais preciso
+        calculatedPaymentMethod = PaymentMethod.CREDIT_CARD;
+      } else {
+        // Para outras contas, usar PIX como padrão
+        calculatedPaymentMethod = PaymentMethod.PIX;
+      }
+    }
+
     // Validate payment method based on account type
     const isCardPaymentMethod =
-      data.paymentMethod === PaymentMethod.CREDIT_CARD ||
-      data.paymentMethod === PaymentMethod.DEBIT_CARD;
+      calculatedPaymentMethod === PaymentMethod.CREDIT_CARD ||
+      calculatedPaymentMethod === PaymentMethod.DEBIT_CARD;
 
     if (isCardPaymentMethod) {
       const relevantAccount = sourceAccount || destinyAccount;
@@ -221,9 +257,9 @@ export class TransactionResolver {
       amount: data.amount,
       description: data.description,
       date: data.date,
-      status: data.status,
+      status: calculatedStatus,
       type: data.type,
-      paymentMethod: data.paymentMethod,
+      paymentMethod: calculatedPaymentMethod,
       ...((data.type === TransactionType.EXPENSE ||
         data.type === TransactionType.BETWEEN_ACCOUNTS) && {
         sourceAccount: {

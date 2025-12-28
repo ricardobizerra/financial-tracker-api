@@ -3611,13 +3611,18 @@ input CreateTransactionInput {
   description: String!
   amount: Decimal!
   date: DateTime!
-  status: TransactionStatus!
   type: TransactionType!
-  paymentMethod: PaymentMethod!
+  paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
   billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  status: TransactionStatus
+
+  """
+  Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
+  """
+  isCompleted: Boolean
   sourceAccountId: ID
   destinyAccountId: ID
 }
@@ -3629,6 +3634,11 @@ input UpdateTransactionInput {
   date: DateTime
   paymentMethod: PaymentMethod
   status: TransactionStatus
+
+  """
+  Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
+  """
+  isCompleted: Boolean
 }
 
 input ConfirmTransactionInput {

@@ -20,4 +20,10 @@ export class UpdateTransactionInput {
 
   @Field(() => TransactionStatus, { nullable: true })
   status?: keyof typeof TransactionStatus;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    description: 'Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.',
+  })
+  isCompleted?: boolean;
 }
