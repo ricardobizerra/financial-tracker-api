@@ -785,10 +785,18 @@ export class TransactionService {
     userId,
     accountId,
     limitPerGroup = 10,
+    startDate,
+    endDate,
+    types,
+    statuses,
   }: {
     userId: string;
     accountId?: string;
     limitPerGroup?: number;
+    startDate?: Date;
+    endDate?: Date;
+    types?: TransactionType[];
+    statuses?: TransactionStatus[];
   }) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -808,14 +816,23 @@ export class TransactionService {
       0,
     );
 
-    // Buscar todas as transações não canceladas
+    // Definir filtro de status (excluir CANCELED a menos que explicitamente solicitado)
+    const statusFilter =
+      statuses && statuses.length > 0
+        ? { in: statuses }
+        : { not: TransactionStatus.CANCELED };
+
+    // Buscar transações com filtros aplicados
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
-        status: { not: TransactionStatus.CANCELED },
+        status: statusFilter,
         ...(accountId && {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
+        ...(startDate && { date: { gte: startDate } }),
+        ...(endDate && { date: { lte: endDate } }),
+        ...(types && types.length > 0 && { type: { in: types } }),
       },
       orderBy: { date: 'asc' },
       include: {

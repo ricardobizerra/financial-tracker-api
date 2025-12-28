@@ -781,12 +781,17 @@ export class TransactionResolver {
       defaultValue: 10,
     })
     limitPerGroup: number,
+    @Args() filterArgs: TransactionFilterArgs,
     @CurrentUser() user: UserModel,
   ) {
     return this.transactionService.getTransactionsGroupedByPeriod({
       userId: user.id,
       accountId,
       limitPerGroup,
+      startDate: filterArgs.startDate,
+      endDate: filterArgs.endDate,
+      types: filterArgs.types,
+      statuses: filterArgs.statuses,
     });
   }
 }

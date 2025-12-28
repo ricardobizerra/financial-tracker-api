@@ -1168,7 +1168,7 @@ type Query {
   ): BalanceForecastModel!
   transactionsCalendar(accountId: String, year: Int!, month: Int!): TransactionsCalendarModel!
   financialAgenda(accountId: String, daysAhead: Int! = 60): FinancialAgendaModel!
-  transactionsGroupedByPeriod(accountId: ID, limitPerGroup: Int = 10): [TransactionGroupModel!]!
+  transactionsGroupedByPeriod(accountId: ID, limitPerGroup: Int = 10, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): [TransactionGroupModel!]!
   institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
   institution(id: String!): InstitutionModel!
   recurringTransaction(id: String!): RecurringTransactionModel
