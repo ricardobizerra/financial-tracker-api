@@ -1002,6 +1002,7 @@ type TransactionModel {
   canCancel: Boolean
   cancelReason: String
   cancelWarningMessage: String
+  installmentStartDate: DateTime
 }
 
 type TransactionConnection {
@@ -1296,6 +1297,7 @@ enum OrdenationTransactionModel {
   canCancel
   cancelReason
   cancelWarningMessage
+  installmentStartDate
 }
 
 """Period presets for balance forecast"""

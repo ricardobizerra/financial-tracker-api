@@ -140,14 +140,18 @@ export class TransactionService {
       select: selectObject<Transaction, TransactionModel>(
         queriedFields.filter(
           (field) =>
-            !['canCancel', 'cancelReason', 'cancelWarningMessage'].includes(
-              field,
-            ),
+            ![
+              'canCancel',
+              'cancelReason',
+              'cancelWarningMessage',
+              'installmentStartDate',
+            ].includes(field),
         ) as (keyof TransactionModel)[],
         {
           canCancel: ['status'],
           cancelReason: ['status'],
           cancelWarningMessage: ['status'],
+          installmentStartDate: ['recurringTransactionId'],
         },
       ),
       where: whereClause,

@@ -1063,4 +1063,21 @@ export class TransactionResolver {
 
     return { canCancel: true, reason: null, warningMessage: null };
   }
+
+  @ResolveField(() => Date, { nullable: true })
+  async installmentStartDate(
+    @Parent() transaction: TransactionModel,
+  ): Promise<Date | null> {
+    // Só retorna se for uma transação de parcelamento
+    if (!transaction.recurringTransactionId || !transaction.installmentNumber) {
+      return null;
+    }
+
+    const recurring = await this.prismaService.recurringTransaction.findUnique({
+      where: { id: transaction.recurringTransactionId },
+      select: { startDate: true },
+    });
+
+    return recurring?.startDate ?? null;
+  }
 }

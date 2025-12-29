@@ -21,6 +21,9 @@ export class TransactionModel extends OmitType(Transaction, [
 
   @Field(() => String, { nullable: true })
   cancelWarningMessage?: string;
+
+  @Field(() => Date, { nullable: true })
+  installmentStartDate?: Date;
 }
 
 @ObjectType()
