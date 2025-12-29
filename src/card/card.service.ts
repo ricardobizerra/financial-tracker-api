@@ -89,7 +89,11 @@ export class CardService {
       },
     });
 
-    const totalAmount = billing?.transactions.reduce(
+    const activeTransactions = billing?.transactions.filter(
+      (t) => t.status !== TransactionStatus.CANCELED,
+    );
+
+    const totalAmount = activeTransactions?.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
     );
@@ -98,6 +102,7 @@ export class CardService {
       ...billing,
       totalAmount,
       usagePercentage: totalAmount.div(billing?.limit).mul(100).toNumber(),
+      transactionsCount: activeTransactions?.length ?? 0,
     };
   }
 
@@ -118,7 +123,7 @@ export class CardService {
       [] as (keyof CardBillingModel)[],
     );
 
-    const currentBilling = await this.prisma.cardBilling.findFirst({
+    let currentBilling = await this.prisma.cardBilling.findFirst({
       where: {
         ...(billingId
           ? { id: billingId }
@@ -136,11 +141,36 @@ export class CardService {
         ...selectObject<CardBilling, CardBillingModel>(billingQueriedFields, {
           totalAmount: [],
           usagePercentage: [],
+          transactionsCount: [],
         }),
         transactions: true,
       },
       orderBy: { periodStart: 'desc' },
     });
+
+    // Se billingId foi passado mas não encontrado, buscar a fatura corrente
+    if (!currentBilling && billingId) {
+      currentBilling = await this.prisma.cardBilling.findFirst({
+        where: {
+          periodStart: { lte: new Date() },
+          accountCard: {
+            account: {
+              id: accountId,
+              user: { id: userId },
+            },
+          },
+        },
+        select: {
+          ...selectObject<CardBilling, CardBillingModel>(billingQueriedFields, {
+            totalAmount: [],
+            usagePercentage: [],
+            transactionsCount: [],
+          }),
+          transactions: true,
+        },
+        orderBy: { periodStart: 'desc' },
+      });
+    }
 
     const previousBilling =
       queriedFields.includes('previousBillingId') && !!currentBilling
@@ -180,7 +210,11 @@ export class CardService {
           })
         : undefined;
 
-    const totalAmount = currentBilling?.transactions.reduce(
+    const activeTransactions = currentBilling?.transactions.filter(
+      (t) => t.status !== TransactionStatus.CANCELED,
+    );
+
+    const totalAmount = activeTransactions?.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
     );
@@ -193,6 +227,7 @@ export class CardService {
           .div(currentBilling?.limit)
           .mul(100)
           .toNumber(),
+        transactionsCount: activeTransactions?.length ?? 0,
       },
       nextBillingId: nextBilling?.id,
       previousBillingId: previousBilling?.id,
@@ -202,6 +237,11 @@ export class CardService {
   async updatePaymentTransaction(
     billingId: string,
   ): Promise<Transaction | null> {
+    console.log(
+      '[updatePaymentTransaction] Starting with billingId:',
+      billingId,
+    );
+
     const billing = await this.prisma.cardBilling.findUnique({
       where: { id: billingId },
       include: {
@@ -224,13 +264,29 @@ export class CardService {
     });
 
     if (!billing) {
+      console.log('[updatePaymentTransaction] Billing not found');
       throw new NotFoundException('Card billing not found');
     }
+
+    console.log('[updatePaymentTransaction] Billing found:', {
+      id: billing.id,
+      transactionsCount: billing.transactions.length,
+      transactions: billing.transactions.map((t) => ({
+        id: t.id,
+        amount: t.amount.toString(),
+        status: t.status,
+      })),
+    });
 
     // Calcular total (apenas transações não canceladas)
     const totalAmount = billing.transactions.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
+    );
+
+    console.log(
+      '[updatePaymentTransaction] Total amount:',
+      totalAmount.toString(),
     );
 
     const existing = await this.prisma.transaction.findFirst({
@@ -242,8 +298,16 @@ export class CardService {
       },
     });
 
+    console.log(
+      '[updatePaymentTransaction] Existing payment transaction:',
+      existing?.id || 'none',
+    );
+
     // Se amount > 0 e transação não existe, criar
     if (totalAmount.greaterThan(0) && !existing) {
+      console.log(
+        '[updatePaymentTransaction] Creating new payment transaction',
+      );
       return this.prisma.transaction.create({
         data: {
           amount: totalAmount,
@@ -274,6 +338,10 @@ export class CardService {
 
     // Se amount > 0 e transação existe, atualizar
     if (totalAmount.greaterThan(0) && existing) {
+      console.log(
+        '[updatePaymentTransaction] Updating existing transaction to amount:',
+        totalAmount.toString(),
+      );
       return this.prisma.transaction.update({
         where: { id: existing.id },
         data: { amount: totalAmount },
@@ -282,6 +350,9 @@ export class CardService {
 
     // Se amount == 0 e transação existe, desassociar do billing e deletar
     if (totalAmount.equals(0) && existing) {
+      console.log(
+        '[updatePaymentTransaction] Deleting payment transaction (amount is 0)',
+      );
       // Primeiro desassociar do billingPayment
       await this.prisma.transaction.update({
         where: { id: existing.id },
@@ -291,10 +362,54 @@ export class CardService {
       await this.prisma.transaction.delete({
         where: { id: existing.id },
       });
+    }
+
+    // Se amount == 0, verificar se a fatura pode ser deletada
+    if (totalAmount.equals(0)) {
+      // Buscar a fatura corrente (primeira com periodStart <= hoje)
+      const today = new Date();
+      const currentBilling = await this.prisma.cardBilling.findFirst({
+        where: {
+          accountCardId: billing.accountCard.id,
+          periodStart: { lte: today },
+        },
+        orderBy: { periodStart: 'desc' },
+        select: { id: true },
+      });
+
+      // Se não é a fatura corrente e não tem transações ativas, deletar
+      if (currentBilling?.id !== billing.id) {
+        // Verificar se realmente não tem transações ativas
+        const activeTransactionsCount = await this.prisma.transaction.count({
+          where: {
+            cardBillingId: billing.id,
+            status: { not: TransactionStatus.CANCELED },
+          },
+        });
+
+        if (activeTransactionsCount === 0) {
+          console.log(
+            '[updatePaymentTransaction] Deleting empty billing:',
+            billing.id,
+          );
+          await this.prisma.cardBilling.delete({
+            where: { id: billing.id },
+          });
+        }
+      } else {
+        console.log(
+          '[updatePaymentTransaction] Not deleting billing (is current):',
+          billing.id,
+        );
+      }
+
       return null;
     }
 
     // Se amount == 0 e transação não existe, nada a fazer
+    console.log(
+      '[updatePaymentTransaction] Nothing to do (amount 0 and no existing)',
+    );
     return null;
   }
 

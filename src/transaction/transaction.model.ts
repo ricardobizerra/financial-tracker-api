@@ -12,7 +12,16 @@ import { Ordenation } from '@/utils/args/ordenation.args';
 export class TransactionModel extends OmitType(Transaction, [
   'user',
   'userId',
-] as const) {}
+] as const) {
+  @Field(() => Boolean, { nullable: true })
+  canCancel?: boolean;
+
+  @Field(() => String, { nullable: true })
+  cancelReason?: string;
+
+  @Field(() => String, { nullable: true })
+  cancelWarningMessage?: string;
+}
 
 @ObjectType()
 export class TransactionConnection extends Connection(TransactionModel) {}

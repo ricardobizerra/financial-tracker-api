@@ -136,7 +136,20 @@ export class TransactionService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      select: selectObject<Transaction, TransactionModel>(queriedFields),
+      // Excluir campos virtuais que são resolvidos via ResolveField
+      select: selectObject<Transaction, TransactionModel>(
+        queriedFields.filter(
+          (field) =>
+            !['canCancel', 'cancelReason', 'cancelWarningMessage'].includes(
+              field,
+            ),
+        ) as (keyof TransactionModel)[],
+        {
+          canCancel: ['status'],
+          cancelReason: ['status'],
+          cancelWarningMessage: ['status'],
+        },
+      ),
       where: whereClause,
     });
 

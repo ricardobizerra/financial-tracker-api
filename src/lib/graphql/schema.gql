@@ -967,6 +967,7 @@ type CardBillingModel {
   statusHistory: [CardBillingHistory!]
   totalAmount: Decimal!
   usagePercentage: Float!
+  transactionsCount: Float!
 }
 
 type CardBillingOnDate {
@@ -998,6 +999,9 @@ type TransactionModel {
   billingPayment: CardBilling
   cardBilling: CardBilling
   recurringTransaction: RecurringTransaction
+  canCancel: Boolean
+  cancelReason: String
+  cancelWarningMessage: String
 }
 
 type TransactionConnection {
@@ -1289,6 +1293,9 @@ enum OrdenationTransactionModel {
   billingPayment
   cardBilling
   recurringTransaction
+  canCancel
+  cancelReason
+  cancelWarningMessage
 }
 
 """Period presets for balance forecast"""

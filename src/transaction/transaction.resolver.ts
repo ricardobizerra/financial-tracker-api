@@ -6,6 +6,8 @@ import {
   Info,
   ID,
   Int,
+  ResolveField,
+  Parent,
 } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { TransactionConnection, TransactionModel } from './transaction.model';
@@ -53,7 +55,7 @@ import {
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
 
-@Resolver()
+@Resolver(() => TransactionModel)
 export class TransactionResolver {
   constructor(
     private readonly transactionService: TransactionService,
@@ -446,13 +448,25 @@ export class TransactionResolver {
     @CurrentUser() user: UserModel,
     @Args('id') id: string,
   ): Promise<TransactionModel> {
-    // Buscar transação com cardBilling
+    console.log('[cancelTransaction] Starting with id:', id);
+
+    // Buscar transação com cardBilling e dados de parcela
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id },
       include: {
         cardBilling: { select: { status: true } },
         sourceAccount: { select: { type: true } },
       },
+    });
+
+    console.log('[cancelTransaction] Transaction found:', {
+      id: transaction?.id,
+      status: transaction?.status,
+      recurringTransactionId: transaction?.recurringTransactionId,
+      installmentNumber: transaction?.installmentNumber,
+      cardBillingId: transaction?.cardBillingId,
+      cardBillingStatus: transaction?.cardBilling?.status,
+      sourceAccountType: transaction?.sourceAccount?.type,
     });
 
     if (!transaction) {
@@ -463,7 +477,7 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
-    // Validar status atual
+    // Validar status atual (para transações não-cartão)
     const allowedStatuses: TransactionStatus[] = [
       TransactionStatus.PLANNED,
       TransactionStatus.OVERDUE,
@@ -473,8 +487,117 @@ export class TransactionResolver {
       !allowedStatuses.includes(transaction.status) &&
       transaction.sourceAccount.type !== AccountType.CREDIT_CARD
     ) {
+      console.log(
+        '[cancelTransaction] Blocked: status not allowed for non-credit-card',
+      );
       throw new Error('Apenas transações pendentes podem ser canceladas');
     }
+
+    // Se é uma parcela (tem recurringTransactionId e installmentNumber)
+    if (transaction.recurringTransactionId && transaction.installmentNumber) {
+      console.log(
+        '[cancelTransaction] Is installment, fetching all installments...',
+      );
+
+      // Buscar todas as parcelas desta recorrência
+      const allInstallments = await this.prismaService.transaction.findMany({
+        where: {
+          recurringTransactionId: transaction.recurringTransactionId,
+          installmentNumber: { not: null },
+        },
+        select: {
+          id: true,
+          status: true,
+          cardBillingId: true,
+          installmentNumber: true,
+          cardBilling: { select: { id: true, status: true } },
+        },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      console.log(
+        '[cancelTransaction] All installments:',
+        allInstallments.map((i) => ({
+          id: i.id,
+          installmentNumber: i.installmentNumber,
+          status: i.status,
+          cardBillingId: i.cardBillingId,
+          cardBillingStatus: i.cardBilling?.status,
+        })),
+      );
+
+      // Verificar se a primeira parcela está em fatura fechada
+      const firstInstallment = allInstallments.find(
+        (t) => t.installmentNumber === 1,
+      );
+      console.log('[cancelTransaction] First installment:', firstInstallment);
+
+      if (firstInstallment?.cardBilling) {
+        const closedStatuses: CardBillingStatus[] = [
+          CardBillingStatus.PAID,
+          CardBillingStatus.CLOSED,
+          CardBillingStatus.COMPLETED,
+        ];
+        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
+          console.log(
+            '[cancelTransaction] Blocked: first installment in closed billing',
+          );
+          throw new Error(
+            'Não é possível cancelar este parcelamento pois a primeira parcela está em uma fatura fechada ou paga',
+          );
+        }
+      }
+
+      // Cancelar todas as parcelas e recalcular faturas
+      const billingIdsToUpdate = new Set<string>();
+
+      const installmentsToCancel = allInstallments.filter(
+        (installment) => installment.status !== TransactionStatus.CANCELED,
+      );
+      console.log(
+        '[cancelTransaction] Installments to cancel:',
+        installmentsToCancel.length,
+      );
+
+      await Promise.all(
+        installmentsToCancel.map(async (installment) => {
+          console.log(
+            '[cancelTransaction] Canceling installment:',
+            installment.id,
+          );
+          await this.transactionService.update(installment.id, {
+            status: TransactionStatus.CANCELED,
+          });
+          if (installment.cardBillingId) {
+            billingIdsToUpdate.add(installment.cardBillingId);
+          }
+        }),
+      );
+
+      console.log(
+        '[cancelTransaction] Billing IDs to update:',
+        Array.from(billingIdsToUpdate),
+      );
+
+      // Recalcular saldo de todas as faturas afetadas
+      await Promise.all(
+        Array.from(billingIdsToUpdate).map(async (billingId) => {
+          console.log('[cancelTransaction] Updating billing:', billingId);
+          await this.cardService.updatePaymentTransaction(billingId);
+        }),
+      );
+
+      console.log(
+        '[cancelTransaction] Done with installments, returning transaction',
+      );
+      // Retornar a transação original atualizada
+      return this.prismaService.transaction.findUnique({
+        where: { id },
+      });
+    }
+
+    // Transação única (não-parcela)
+    console.log('[cancelTransaction] Single transaction (not installment)');
 
     // Validar cardBilling se existir
     if (transaction.cardBilling) {
@@ -484,6 +607,7 @@ export class TransactionResolver {
         CardBillingStatus.COMPLETED,
       ];
       if (closedStatuses.includes(transaction.cardBilling.status)) {
+        console.log('[cancelTransaction] Blocked: billing is closed');
         throw new Error(
           'Não é possível cancelar transação de fatura fechada ou paga',
         );
@@ -491,17 +615,23 @@ export class TransactionResolver {
     }
 
     // Atualizar transação
+    console.log('[cancelTransaction] Updating transaction status to CANCELED');
     const updatedTransaction = await this.transactionService.update(id, {
       status: TransactionStatus.CANCELED,
     });
 
     // Recalcular saldo da fatura se a transação estava vinculada a uma
     if (transaction.cardBillingId) {
+      console.log(
+        '[cancelTransaction] Updating billing:',
+        transaction.cardBillingId,
+      );
       await this.cardService.updatePaymentTransaction(
         transaction.cardBillingId,
       );
     }
 
+    console.log('[cancelTransaction] Done, returning updated transaction');
     return updatedTransaction;
   }
 
@@ -806,5 +936,131 @@ export class TransactionResolver {
       types: filterArgs.types,
       statuses: filterArgs.statuses,
     });
+  }
+
+  @ResolveField(() => Boolean, { nullable: true })
+  async canCancel(@Parent() transaction: TransactionModel): Promise<boolean> {
+    const cancelCheck = await this.getCancelCheckInfo(transaction);
+    return cancelCheck.canCancel;
+  }
+
+  @ResolveField(() => String, { nullable: true })
+  async cancelReason(
+    @Parent() transaction: TransactionModel,
+  ): Promise<string | null> {
+    const cancelCheck = await this.getCancelCheckInfo(transaction);
+    return cancelCheck.reason;
+  }
+
+  @ResolveField(() => String, { nullable: true })
+  async cancelWarningMessage(
+    @Parent() transaction: TransactionModel,
+  ): Promise<string | null> {
+    const cancelCheck = await this.getCancelCheckInfo(transaction);
+    return cancelCheck.warningMessage;
+  }
+
+  private async getCancelCheckInfo(transaction: TransactionModel): Promise<{
+    canCancel: boolean;
+    reason: string | null;
+    warningMessage: string | null;
+  }> {
+    // Se já está cancelada, não pode cancelar novamente
+    if (transaction.status === TransactionStatus.CANCELED) {
+      return {
+        canCancel: false,
+        reason: 'Transação já cancelada',
+        warningMessage: null,
+      };
+    }
+
+    // Se é uma parcela
+    if (transaction.recurringTransactionId && transaction.installmentNumber) {
+      const allInstallments = await this.prismaService.transaction.findMany({
+        where: {
+          recurringTransactionId: transaction.recurringTransactionId,
+          installmentNumber: { not: null },
+        },
+        include: {
+          cardBilling: { select: { status: true } },
+        },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      const firstInstallment = allInstallments.find(
+        (t) => t.installmentNumber === 1,
+      );
+
+      if (firstInstallment?.cardBilling) {
+        const closedStatuses: CardBillingStatus[] = [
+          CardBillingStatus.PAID,
+          CardBillingStatus.CLOSED,
+          CardBillingStatus.COMPLETED,
+        ];
+        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
+          return {
+            canCancel: false,
+            reason: 'A primeira parcela está em uma fatura fechada ou paga',
+            warningMessage: null,
+          };
+        }
+      }
+
+      return {
+        canCancel: true,
+        reason: null,
+        warningMessage: `Ao cancelar esta parcela, todas as ${allInstallments.length} parcelas serão canceladas.`,
+      };
+    }
+
+    // Transação única - verificar status e fatura
+    const fullTransaction = await this.prismaService.transaction.findUnique({
+      where: { id: transaction.id },
+      include: {
+        cardBilling: { select: { status: true } },
+        sourceAccount: { select: { type: true } },
+      },
+    });
+
+    if (!fullTransaction) {
+      return {
+        canCancel: false,
+        reason: 'Transação não encontrada',
+        warningMessage: null,
+      };
+    }
+
+    const allowedStatuses: TransactionStatus[] = [
+      TransactionStatus.PLANNED,
+      TransactionStatus.OVERDUE,
+    ];
+
+    if (
+      !allowedStatuses.includes(fullTransaction.status) &&
+      fullTransaction.sourceAccount?.type !== AccountType.CREDIT_CARD
+    ) {
+      return {
+        canCancel: false,
+        reason: 'Apenas transações pendentes podem ser canceladas',
+        warningMessage: null,
+      };
+    }
+
+    if (fullTransaction.cardBilling) {
+      const closedStatuses: CardBillingStatus[] = [
+        CardBillingStatus.PAID,
+        CardBillingStatus.CLOSED,
+        CardBillingStatus.COMPLETED,
+      ];
+      if (closedStatuses.includes(fullTransaction.cardBilling.status)) {
+        return {
+          canCancel: false,
+          reason: 'Transação está em uma fatura fechada ou paga',
+          warningMessage: null,
+        };
+      }
+    }
+
+    return { canCancel: true, reason: null, warningMessage: null };
   }
 }

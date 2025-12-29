@@ -12,6 +12,9 @@ export class CardBillingModel extends OmitType(CardBilling, [
 
   @Field(() => Number)
   usagePercentage: number;
+
+  @Field(() => Number)
+  transactionsCount: number;
 }
 
 @ObjectType()

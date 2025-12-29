@@ -83,19 +83,44 @@ export class RecurringTransactionService {
       }
     }
 
-    // Calculate all occurrence dates
-    let occurrences = this.calculateOccurrences(
-      data.startDate,
-      data.endDate,
-      data.frequency as RecurrenceFrequency,
-      data.dayOfMonth,
-      data.monthOfYear,
-    );
-
     // Para INSTALLMENT, limitar ao número de parcelas
     const isInstallment = data.recurrenceType === 'INSTALLMENT';
+
+    let occurrences: Date[];
+
     if (isInstallment && data.totalInstallments) {
-      occurrences = occurrences.slice(0, data.totalInstallments);
+      // Para parcelamento: primeira parcela no startDate, subsequentes no mesmo dia de cada mês
+      occurrences = [new Date(data.startDate)];
+      const baseYear = data.startDate.getFullYear();
+      const baseMonth = data.startDate.getMonth();
+      const targetDay = data.dayOfMonth;
+
+      for (let i = 1; i < data.totalInstallments; i++) {
+        // Calcular o mês alvo
+        const targetMonth = baseMonth + i;
+        const targetYear = baseYear + Math.floor(targetMonth / 12);
+        const actualMonth = targetMonth % 12;
+
+        // Criar data com dia 1 primeiro (evita transbordamento)
+        const nextDate = new Date(targetYear, actualMonth, 1);
+
+        // Calcular último dia do mês
+        const lastDayOfMonth = new Date(targetYear, actualMonth + 1, 0).getDate();
+
+        // Setar o dia correto (ou último dia se não existir)
+        nextDate.setDate(Math.min(targetDay, lastDayOfMonth));
+
+        occurrences.push(nextDate);
+      }
+    } else {
+      // Recorrência normal (PERIODIC)
+      occurrences = this.calculateOccurrences(
+        data.startDate,
+        data.endDate,
+        data.frequency as RecurrenceFrequency,
+        data.dayOfMonth,
+        data.monthOfYear,
+      );
     }
 
     if (occurrences.length === 0) {
