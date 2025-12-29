@@ -448,8 +448,6 @@ export class TransactionResolver {
     @CurrentUser() user: UserModel,
     @Args('id') id: string,
   ): Promise<TransactionModel> {
-    console.log('[cancelTransaction] Starting with id:', id);
-
     // Buscar transação com cardBilling e dados de parcela
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id },
@@ -457,16 +455,6 @@ export class TransactionResolver {
         cardBilling: { select: { status: true } },
         sourceAccount: { select: { type: true } },
       },
-    });
-
-    console.log('[cancelTransaction] Transaction found:', {
-      id: transaction?.id,
-      status: transaction?.status,
-      recurringTransactionId: transaction?.recurringTransactionId,
-      installmentNumber: transaction?.installmentNumber,
-      cardBillingId: transaction?.cardBillingId,
-      cardBillingStatus: transaction?.cardBilling?.status,
-      sourceAccountType: transaction?.sourceAccount?.type,
     });
 
     if (!transaction) {
@@ -487,18 +475,11 @@ export class TransactionResolver {
       !allowedStatuses.includes(transaction.status) &&
       transaction.sourceAccount.type !== AccountType.CREDIT_CARD
     ) {
-      console.log(
-        '[cancelTransaction] Blocked: status not allowed for non-credit-card',
-      );
       throw new Error('Apenas transações pendentes podem ser canceladas');
     }
 
     // Se é uma parcela (tem recurringTransactionId e installmentNumber)
     if (transaction.recurringTransactionId && transaction.installmentNumber) {
-      console.log(
-        '[cancelTransaction] Is installment, fetching all installments...',
-      );
-
       // Buscar todas as parcelas desta recorrência
       const allInstallments = await this.prismaService.transaction.findMany({
         where: {
@@ -515,22 +496,10 @@ export class TransactionResolver {
         orderBy: { installmentNumber: 'asc' },
       });
 
-      console.log(
-        '[cancelTransaction] All installments:',
-        allInstallments.map((i) => ({
-          id: i.id,
-          installmentNumber: i.installmentNumber,
-          status: i.status,
-          cardBillingId: i.cardBillingId,
-          cardBillingStatus: i.cardBilling?.status,
-        })),
-      );
-
       // Verificar se a primeira parcela está em fatura fechada
       const firstInstallment = allInstallments.find(
         (t) => t.installmentNumber === 1,
       );
-      console.log('[cancelTransaction] First installment:', firstInstallment);
 
       if (firstInstallment?.cardBilling) {
         const closedStatuses: CardBillingStatus[] = [
@@ -539,9 +508,6 @@ export class TransactionResolver {
           CardBillingStatus.COMPLETED,
         ];
         if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          console.log(
-            '[cancelTransaction] Blocked: first installment in closed billing',
-          );
           throw new Error(
             'Não é possível cancelar este parcelamento pois a primeira parcela está em uma fatura fechada ou paga',
           );
@@ -554,17 +520,9 @@ export class TransactionResolver {
       const installmentsToCancel = allInstallments.filter(
         (installment) => installment.status !== TransactionStatus.CANCELED,
       );
-      console.log(
-        '[cancelTransaction] Installments to cancel:',
-        installmentsToCancel.length,
-      );
 
       await Promise.all(
         installmentsToCancel.map(async (installment) => {
-          console.log(
-            '[cancelTransaction] Canceling installment:',
-            installment.id,
-          );
           await this.transactionService.update(installment.id, {
             status: TransactionStatus.CANCELED,
           });
@@ -574,22 +532,13 @@ export class TransactionResolver {
         }),
       );
 
-      console.log(
-        '[cancelTransaction] Billing IDs to update:',
-        Array.from(billingIdsToUpdate),
-      );
-
       // Recalcular saldo de todas as faturas afetadas
       await Promise.all(
         Array.from(billingIdsToUpdate).map(async (billingId) => {
-          console.log('[cancelTransaction] Updating billing:', billingId);
           await this.cardService.updatePaymentTransaction(billingId);
         }),
       );
 
-      console.log(
-        '[cancelTransaction] Done with installments, returning transaction',
-      );
       // Retornar a transação original atualizada
       return this.prismaService.transaction.findUnique({
         where: { id },
@@ -597,7 +546,6 @@ export class TransactionResolver {
     }
 
     // Transação única (não-parcela)
-    console.log('[cancelTransaction] Single transaction (not installment)');
 
     // Validar cardBilling se existir
     if (transaction.cardBilling) {
@@ -607,7 +555,6 @@ export class TransactionResolver {
         CardBillingStatus.COMPLETED,
       ];
       if (closedStatuses.includes(transaction.cardBilling.status)) {
-        console.log('[cancelTransaction] Blocked: billing is closed');
         throw new Error(
           'Não é possível cancelar transação de fatura fechada ou paga',
         );
@@ -615,23 +562,17 @@ export class TransactionResolver {
     }
 
     // Atualizar transação
-    console.log('[cancelTransaction] Updating transaction status to CANCELED');
     const updatedTransaction = await this.transactionService.update(id, {
       status: TransactionStatus.CANCELED,
     });
 
     // Recalcular saldo da fatura se a transação estava vinculada a uma
     if (transaction.cardBillingId) {
-      console.log(
-        '[cancelTransaction] Updating billing:',
-        transaction.cardBillingId,
-      );
       await this.cardService.updatePaymentTransaction(
         transaction.cardBillingId,
       );
     }
 
-    console.log('[cancelTransaction] Done, returning updated transaction');
     return updatedTransaction;
   }
 

@@ -237,11 +237,6 @@ export class CardService {
   async updatePaymentTransaction(
     billingId: string,
   ): Promise<Transaction | null> {
-    console.log(
-      '[updatePaymentTransaction] Starting with billingId:',
-      billingId,
-    );
-
     const billing = await this.prisma.cardBilling.findUnique({
       where: { id: billingId },
       include: {
@@ -264,29 +259,13 @@ export class CardService {
     });
 
     if (!billing) {
-      console.log('[updatePaymentTransaction] Billing not found');
       throw new NotFoundException('Card billing not found');
     }
-
-    console.log('[updatePaymentTransaction] Billing found:', {
-      id: billing.id,
-      transactionsCount: billing.transactions.length,
-      transactions: billing.transactions.map((t) => ({
-        id: t.id,
-        amount: t.amount.toString(),
-        status: t.status,
-      })),
-    });
 
     // Calcular total (apenas transações não canceladas)
     const totalAmount = billing.transactions.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
-    );
-
-    console.log(
-      '[updatePaymentTransaction] Total amount:',
-      totalAmount.toString(),
     );
 
     const existing = await this.prisma.transaction.findFirst({
@@ -298,16 +277,8 @@ export class CardService {
       },
     });
 
-    console.log(
-      '[updatePaymentTransaction] Existing payment transaction:',
-      existing?.id || 'none',
-    );
-
     // Se amount > 0 e transação não existe, criar
     if (totalAmount.greaterThan(0) && !existing) {
-      console.log(
-        '[updatePaymentTransaction] Creating new payment transaction',
-      );
       return this.prisma.transaction.create({
         data: {
           amount: totalAmount,
@@ -338,10 +309,6 @@ export class CardService {
 
     // Se amount > 0 e transação existe, atualizar
     if (totalAmount.greaterThan(0) && existing) {
-      console.log(
-        '[updatePaymentTransaction] Updating existing transaction to amount:',
-        totalAmount.toString(),
-      );
       return this.prisma.transaction.update({
         where: { id: existing.id },
         data: { amount: totalAmount },
@@ -350,9 +317,6 @@ export class CardService {
 
     // Se amount == 0 e transação existe, desassociar do billing e deletar
     if (totalAmount.equals(0) && existing) {
-      console.log(
-        '[updatePaymentTransaction] Deleting payment transaction (amount is 0)',
-      );
       // Primeiro desassociar do billingPayment
       await this.prisma.transaction.update({
         where: { id: existing.id },
@@ -388,28 +352,15 @@ export class CardService {
         });
 
         if (activeTransactionsCount === 0) {
-          console.log(
-            '[updatePaymentTransaction] Deleting empty billing:',
-            billing.id,
-          );
           await this.prisma.cardBilling.delete({
             where: { id: billing.id },
           });
         }
-      } else {
-        console.log(
-          '[updatePaymentTransaction] Not deleting billing (is current):',
-          billing.id,
-        );
       }
 
       return null;
     }
 
-    // Se amount == 0 e transação não existe, nada a fazer
-    console.log(
-      '[updatePaymentTransaction] Nothing to do (amount 0 and no existing)',
-    );
     return null;
   }
 
