@@ -5,6 +5,77 @@ const BACKUP_PATH = './scripts/output/backup.json';
 
 const prisma = new PrismaClient();
 
+// Maps model names to their FK fields that need to be converted to relations
+const RELATION_FIELDS: Record<string, Record<string, string>> = {
+  investment: {
+    userId: 'user',
+    accountId: 'account',
+  },
+  account: {
+    userId: 'user',
+    institutionId: 'institution',
+  },
+  accountCard: {
+    accountId: 'account',
+  },
+  cardBilling: {
+    accountCardId: 'accountCard',
+    paymentTransactionId: 'paymentTransaction',
+  },
+  cardBillingHistory: {
+    cardBillingId: 'cardBilling',
+    changedById: 'changedBy',
+  },
+  investmentTransaction: {
+    investmentId: 'investment',
+    accountId: 'account',
+  },
+  transaction: {
+    sourceAccountId: 'sourceAccount',
+    destinyAccountId: 'destinyAccount',
+    cardBillingId: 'cardBilling',
+    recurringTransactionId: 'recurringTransaction',
+    userId: 'user',
+  },
+  transactionInstallment: {
+    transactionId: 'transaction',
+    cardBillingId: 'cardBilling',
+  },
+  recurringTransaction: {
+    sourceAccountId: 'sourceAccount',
+    destinyAccountId: 'destinyAccount',
+    userId: 'user',
+  },
+};
+
+/**
+ * Converts FK fields to Prisma relation connect format
+ * e.g., { userId: "123" } -> { user: { connect: { id: "123" } } }
+ */
+function convertToRelationFormat(
+  model: string,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const relationMap = RELATION_FIELDS[model];
+  if (!relationMap) return data;
+
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    const relationName = relationMap[key];
+    if (relationName && value !== null && value !== undefined) {
+      // Convert FK to relation connect format
+      result[relationName] = { connect: { id: value } };
+    } else if (!relationMap[key]) {
+      // Keep non-FK fields as-is
+      result[key] = value;
+    }
+    // If FK is null/undefined, skip (don't add to result for optional relations)
+  }
+
+  return result;
+}
+
 function safeIdent(name: string) {
   if (!name) {
     throw new Error(`Invalid table name: ${name}`);
@@ -74,7 +145,8 @@ async function restore() {
         );
         for (const r of records) {
           try {
-            await prisma[model].create({ data: r });
+            const convertedData = convertToRelationFormat(model, r);
+            await prisma[model].create({ data: convertedData });
           } catch (err) {
             console.warn(`[${model}] insert failed:`, err.message);
           }
