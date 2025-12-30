@@ -15,6 +15,7 @@ import { NotFoundException } from '@nestjs/common';
 import { GraphQLResolveInfo } from 'graphql';
 import { getQueriedFields } from '@/utils/get-queried-fields';
 import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionModel } from '@/transaction/transaction.model';
 
 @Resolver(() => AccountCard)
 export class CardResolver {
@@ -58,6 +59,15 @@ export class CardResolver {
       user.id,
       id,
     );
+  }
+
+  @Auth()
+  @Query(() => [TransactionModel])
+  async billingTransactions(
+    @Args('billingId', { type: () => ID }) billingId: string,
+    @CurrentUser() user: User,
+  ): Promise<TransactionModel[]> {
+    return this.cardService.findBillingTransactions(billingId, user.id);
   }
 
   @Auth()

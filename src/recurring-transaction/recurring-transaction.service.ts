@@ -105,7 +105,11 @@ export class RecurringTransactionService {
         const nextDate = new Date(targetYear, actualMonth, 1);
 
         // Calcular último dia do mês
-        const lastDayOfMonth = new Date(targetYear, actualMonth + 1, 0).getDate();
+        const lastDayOfMonth = new Date(
+          targetYear,
+          actualMonth + 1,
+          0,
+        ).getDate();
 
         // Setar o dia correto (ou último dia se não existir)
         nextDate.setDate(Math.min(targetDay, lastDayOfMonth));
@@ -165,8 +169,6 @@ export class RecurringTransactionService {
 
     for (let i = 0; i < occurrences.length; i++) {
       const date = occurrences[i];
-      const installmentNumber = isInstallment ? i + 1 : null;
-      const totalInstallments = isInstallment ? occurrences.length : null;
 
       const transaction = await this.prismaService.transaction.create({
         data: {
@@ -179,8 +181,6 @@ export class RecurringTransactionService {
           sourceAccountId: data.sourceAccountId,
           destinyAccountId: data.destinyAccountId,
           recurringTransactionId: recurring.id,
-          installmentNumber,
-          totalInstallments,
           userId,
         },
       });

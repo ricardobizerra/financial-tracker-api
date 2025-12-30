@@ -3,9 +3,15 @@ import {
   TransactionType,
   TransactionStatus,
 } from '@/lib/graphql/prisma-client';
-import { Field, ID, ObjectType, OmitType } from '@nestjs/graphql';
+import {
+  Field,
+  ID,
+  Int,
+  ObjectType,
+  OmitType,
+  ArgsType,
+} from '@nestjs/graphql';
 import { Connection } from '@/utils/models/connection.model';
-import { ArgsType } from '@nestjs/graphql';
 import { Ordenation } from '@/utils/args/ordenation.args';
 
 @ObjectType()
@@ -24,6 +30,15 @@ export class TransactionModel extends OmitType(Transaction, [
 
   @Field(() => Date, { nullable: true })
   installmentStartDate?: Date;
+
+  @Field(() => Int, { nullable: true })
+  installmentNumber?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  totalInstallments?: number | null;
+
+  @Field(() => String, { nullable: true })
+  installmentId?: string | null;
 }
 
 @ObjectType()

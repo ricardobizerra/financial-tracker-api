@@ -23,7 +23,8 @@ export class UpdateTransactionInput {
 
   @Field(() => Boolean, {
     nullable: true,
-    description: 'Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.',
+    description:
+      'Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.',
   })
   isCompleted?: boolean;
 }

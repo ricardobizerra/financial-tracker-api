@@ -29,6 +29,7 @@ import {
   TransactionType,
 } from '@prisma/client';
 import { CreateTransactionInput } from './input/create-transaction.input';
+import { CreateInstallmentTransactionInput } from './input/create-installment-transaction.input';
 import { UpdateTransactionInput } from './input/update-transaction.input';
 import { ConfirmTransactionInput } from './input/confirm-transaction.input';
 import { RescheduleTransactionInput } from './input/reschedule-transaction.input';
@@ -54,6 +55,7 @@ import {
   FinancialAgendaArgs,
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
+import { TransactionInstallmentModel } from './transaction-installment.model';
 
 @Resolver(() => TransactionModel)
 export class TransactionResolver {
@@ -300,6 +302,114 @@ export class TransactionResolver {
   }
 
   @Auth()
+  @Mutation(() => TransactionModel, { name: 'createInstallmentTransaction' })
+  async createInstallmentTransaction(
+    @Args('data') data: CreateInstallmentTransactionInput,
+    @CurrentUser() user: UserModel,
+  ): Promise<TransactionModel> {
+    // Validar conta de origem (deve ser cartão de crédito)
+    const sourceAccount = await this.accountService.find({
+      id: data.sourceAccountId,
+    });
+
+    if (!sourceAccount) {
+      throw new Error('Conta de origem não encontrada');
+    }
+
+    if (sourceAccount.type !== AccountType.CREDIT_CARD) {
+      throw new Error(
+        'Transações parceladas só podem ser feitas com cartão de crédito',
+      );
+    }
+
+    // Buscar cartão
+    const card = await this.cardService.find({
+      accountId: sourceAccount.id,
+    });
+
+    if (!card) {
+      throw new Error('Cartão não encontrado');
+    }
+
+    // Calcular valor de cada parcela
+    const totalAmount = data.totalAmount;
+    const installmentAmount = Number(data.totalAmount) / data.totalInstallments;
+
+    // Criar a transação pai com status COMPLETED (compras parceladas são efetivadas)
+    const transaction = await this.transactionService.create({
+      amount: totalAmount,
+      description: data.description,
+      date: data.startDate,
+      status: TransactionStatus.COMPLETED,
+      type: TransactionType.EXPENSE,
+      paymentMethod: PaymentMethod.CREDIT_CARD,
+      sourceAccount: {
+        connect: { id: data.sourceAccountId },
+      },
+      user: {
+        connect: { id: user.id },
+      },
+    });
+
+    // Criar parcelas
+    const billingIdsToUpdate = new Set<string>();
+
+    for (let i = 0; i < data.totalInstallments; i++) {
+      const installmentNumber = i + 1;
+
+      // Calcular data da parcela
+      const installmentDate = new Date(data.startDate);
+      installmentDate.setMonth(installmentDate.getMonth() + i);
+
+      // Encontrar ou criar fatura para esta data
+      let billing = await this.prismaService.cardBilling.findFirst({
+        where: {
+          accountCardId: card.id,
+          periodStart: { lte: installmentDate },
+          OR: [{ periodEnd: { gte: installmentDate } }, { periodEnd: null }],
+        },
+      });
+
+      if (!billing) {
+        // Buscar última fatura para criar a próxima
+        const lastBilling = await this.prismaService.cardBilling.findFirst({
+          where: { accountCardId: card.id },
+          orderBy: { periodEnd: 'desc' },
+        });
+
+        billing = await this.cardService.createBilling({
+          cardId: card.id,
+          cardBillingCycleDay: card.billingCycleDay,
+          cardBillingPaymentDay: card.billingPaymentDay,
+          periodStart: lastBilling?.periodEnd ?? installmentDate,
+          limit: card.defaultLimit,
+        });
+      }
+
+      // Criar TransactionInstallment
+      await this.prismaService.transactionInstallment.create({
+        data: {
+          installmentNumber,
+          amount: installmentAmount,
+          transactionId: transaction.id,
+          cardBillingId: billing.id,
+        },
+      });
+
+      billingIdsToUpdate.add(billing.id);
+    }
+
+    // Recalcular saldo de todas as faturas afetadas
+    await Promise.all(
+      Array.from(billingIdsToUpdate).map(async (billingId) => {
+        await this.cardService.updatePaymentTransaction(billingId);
+      }),
+    );
+
+    return transaction;
+  }
+
+  @Auth()
   @Mutation(() => TransactionModel, { name: 'updateTransaction' })
   async updateTransaction(
     @Args('data') data: UpdateTransactionInput,
@@ -478,27 +588,18 @@ export class TransactionResolver {
       throw new Error('Apenas transações pendentes podem ser canceladas');
     }
 
-    // Se é uma parcela (tem recurringTransactionId e installmentNumber)
-    if (transaction.recurringTransactionId && transaction.installmentNumber) {
-      // Buscar todas as parcelas desta recorrência
-      const allInstallments = await this.prismaService.transaction.findMany({
-        where: {
-          recurringTransactionId: transaction.recurringTransactionId,
-          installmentNumber: { not: null },
-        },
-        select: {
-          id: true,
-          status: true,
-          cardBillingId: true,
-          installmentNumber: true,
-          cardBilling: { select: { id: true, status: true } },
-        },
+    // Se é uma transação parcelada (tem installments associados)
+    const installments =
+      await this.prismaService.transactionInstallment.findMany({
+        where: { transactionId: id },
+        include: { cardBilling: { select: { id: true, status: true } } },
         orderBy: { installmentNumber: 'asc' },
       });
 
+    if (installments.length > 0) {
       // Verificar se a primeira parcela está em fatura fechada
-      const firstInstallment = allInstallments.find(
-        (t) => t.installmentNumber === 1,
+      const firstInstallment = installments.find(
+        (i) => i.installmentNumber === 1,
       );
 
       if (firstInstallment?.cardBilling) {
@@ -514,23 +615,18 @@ export class TransactionResolver {
         }
       }
 
-      // Cancelar todas as parcelas e recalcular faturas
+      // Coletar billing IDs para recalcular
       const billingIdsToUpdate = new Set<string>();
+      installments.forEach((i) => {
+        if (i.cardBillingId) {
+          billingIdsToUpdate.add(i.cardBillingId);
+        }
+      });
 
-      const installmentsToCancel = allInstallments.filter(
-        (installment) => installment.status !== TransactionStatus.CANCELED,
-      );
-
-      await Promise.all(
-        installmentsToCancel.map(async (installment) => {
-          await this.transactionService.update(installment.id, {
-            status: TransactionStatus.CANCELED,
-          });
-          if (installment.cardBillingId) {
-            billingIdsToUpdate.add(installment.cardBillingId);
-          }
-        }),
-      );
+      // Cancelar a transação pai
+      await this.transactionService.update(id, {
+        status: TransactionStatus.CANCELED,
+      });
 
       // Recalcular saldo de todas as faturas afetadas
       await Promise.all(
@@ -539,7 +635,7 @@ export class TransactionResolver {
         }),
       );
 
-      // Retornar a transação original atualizada
+      // Retornar a transação atualizada
       return this.prismaService.transaction.findUnique({
         where: { id },
       });
@@ -915,21 +1011,17 @@ export class TransactionResolver {
       };
     }
 
-    // Se é uma parcela
-    if (transaction.recurringTransactionId && transaction.installmentNumber) {
-      const allInstallments = await this.prismaService.transaction.findMany({
-        where: {
-          recurringTransactionId: transaction.recurringTransactionId,
-          installmentNumber: { not: null },
-        },
-        include: {
-          cardBilling: { select: { status: true } },
-        },
+    // Se é uma transação parcelada (tem installments associados)
+    const installments =
+      await this.prismaService.transactionInstallment.findMany({
+        where: { transactionId: transaction.id },
+        include: { cardBilling: { select: { status: true } } },
         orderBy: { installmentNumber: 'asc' },
       });
 
-      const firstInstallment = allInstallments.find(
-        (t) => t.installmentNumber === 1,
+    if (installments.length > 0) {
+      const firstInstallment = installments.find(
+        (i) => i.installmentNumber === 1,
       );
 
       if (firstInstallment?.cardBilling) {
@@ -950,7 +1042,7 @@ export class TransactionResolver {
       return {
         canCancel: true,
         reason: null,
-        warningMessage: `Ao cancelar esta parcela, todas as ${allInstallments.length} parcelas serão canceladas.`,
+        warningMessage: `Ao cancelar esta transação, todas as ${installments.length} parcelas serão canceladas.`,
       };
     }
 
@@ -1005,20 +1097,32 @@ export class TransactionResolver {
     return { canCancel: true, reason: null, warningMessage: null };
   }
 
+  @ResolveField(() => [TransactionInstallmentModel], { nullable: true })
+  async installments(
+    @Parent() transaction: TransactionModel,
+  ): Promise<TransactionInstallmentModel[]> {
+    return this.prismaService.transactionInstallment.findMany({
+      where: { transactionId: transaction.id },
+      orderBy: { installmentNumber: 'asc' },
+    });
+  }
+
   @ResolveField(() => Date, { nullable: true })
   async installmentStartDate(
     @Parent() transaction: TransactionModel,
   ): Promise<Date | null> {
-    // Só retorna se for uma transação de parcelamento
-    if (!transaction.recurringTransactionId || !transaction.installmentNumber) {
+    // Verificar se tem installments associados
+    const firstInstallment =
+      await this.prismaService.transactionInstallment.findFirst({
+        where: { transactionId: transaction.id, installmentNumber: 1 },
+        include: { cardBilling: { select: { periodStart: true } } },
+      });
+
+    if (!firstInstallment) {
       return null;
     }
 
-    const recurring = await this.prismaService.recurringTransaction.findUnique({
-      where: { id: transaction.recurringTransactionId },
-      select: { startDate: true },
-    });
-
-    return recurring?.startDate ?? null;
+    // Retornar a data do período da primeira fatura ou a data da transação
+    return firstInstallment.cardBilling?.periodStart ?? transaction.date;
   }
 }

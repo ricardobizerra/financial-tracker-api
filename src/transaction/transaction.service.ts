@@ -152,6 +152,9 @@ export class TransactionService {
           cancelReason: ['status'],
           cancelWarningMessage: ['status'],
           installmentStartDate: ['recurringTransactionId'],
+          installmentNumber: ['installments'],
+          totalInstallments: ['installments'],
+          installmentId: ['installments'],
         },
       ),
       where: whereClause,
@@ -863,6 +866,7 @@ export class TransactionService {
           },
         },
         cardBilling: true,
+        installments: true,
       },
     });
 
@@ -873,16 +877,27 @@ export class TransactionService {
           if (tx.type === TransactionType.BETWEEN_ACCOUNTS) {
             // Se a conta é destino, aparece como INCOME
             if (tx.destinyAccountId === accountId) {
-              return { ...tx, type: TransactionType.INCOME };
+              return {
+                ...tx,
+                type: TransactionType.INCOME,
+                totalInstallments: tx.installments.length,
+              };
             }
             // Se a conta é origem, aparece como EXPENSE
             if (tx.sourceAccountId === accountId) {
-              return { ...tx, type: TransactionType.EXPENSE };
+              return {
+                ...tx,
+                type: TransactionType.EXPENSE,
+                totalInstallments: tx.installments.length,
+              };
             }
           }
-          return tx;
+          return { ...tx, totalInstallments: tx.installments.length };
         })
-      : transactions;
+      : transactions.map((tx) => ({
+          ...tx,
+          totalInstallments: tx.installments.length,
+        }));
 
     type PeriodKey =
       | 'OVERDUE'

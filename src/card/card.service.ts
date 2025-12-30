@@ -6,6 +6,7 @@ import {
   CardBilling,
   CardBillingCreateInput,
 } from '@/lib/graphql/prisma-client';
+import { TransactionModel } from '@/transaction/transaction.model';
 import {
   Account,
   CardBillingStatus,
@@ -77,6 +78,11 @@ export class CardService {
       where,
       include: {
         transactions: true,
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
         accountCard: {
           include: {
             account: {
@@ -93,16 +99,33 @@ export class CardService {
       (t) => t.status !== TransactionStatus.CANCELED,
     );
 
-    const totalAmount = activeTransactions?.reduce(
+    // Somar transações normais
+    const transactionsTotal = activeTransactions?.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
     );
+
+    // Somar installments (parcelas) - apenas de transações não canceladas
+    const installmentsTotal =
+      billing?.installments
+        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        .reduce(
+          (acc, installment) => acc.add(installment.amount),
+          new Decimal(0),
+        ) ?? new Decimal(0);
+
+    const totalAmount = transactionsTotal.add(installmentsTotal);
+
+    const installmentsCount =
+      billing?.installments?.filter(
+        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+      ).length ?? 0;
 
     return {
       ...billing,
       totalAmount,
       usagePercentage: totalAmount.div(billing?.limit).mul(100).toNumber(),
-      transactionsCount: activeTransactions?.length ?? 0,
+      transactionsCount: (activeTransactions?.length ?? 0) + installmentsCount,
     };
   }
 
@@ -144,6 +167,11 @@ export class CardService {
           transactionsCount: [],
         }),
         transactions: true,
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
       },
       orderBy: { periodStart: 'desc' },
     });
@@ -167,6 +195,11 @@ export class CardService {
             transactionsCount: [],
           }),
           transactions: true,
+          installments: {
+            include: {
+              transaction: true,
+            },
+          },
         },
         orderBy: { periodStart: 'desc' },
       });
@@ -214,10 +247,27 @@ export class CardService {
       (t) => t.status !== TransactionStatus.CANCELED,
     );
 
-    const totalAmount = activeTransactions?.reduce(
+    // Soma transações normais
+    const transactionsTotal = activeTransactions?.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
     );
+
+    // Soma installments (parcelas) - apenas de transações não canceladas
+    const installmentsTotal =
+      currentBilling?.installments
+        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        .reduce(
+          (acc, installment) => acc.add(installment.amount),
+          new Decimal(0),
+        ) ?? new Decimal(0);
+
+    const totalAmount = transactionsTotal.add(installmentsTotal);
+
+    const installmentsCount =
+      currentBilling?.installments?.filter(
+        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+      ).length ?? 0;
 
     return {
       billing: {
@@ -227,11 +277,99 @@ export class CardService {
           .div(currentBilling?.limit)
           .mul(100)
           .toNumber(),
-        transactionsCount: activeTransactions?.length ?? 0,
+        transactionsCount:
+          (activeTransactions?.length ?? 0) + installmentsCount,
       },
       nextBillingId: nextBilling?.id,
       previousBillingId: previousBilling?.id,
     };
+  }
+
+  async findBillingTransactions(
+    billingId: string,
+    userId: string,
+  ): Promise<TransactionModel[]> {
+    const billing = await this.prisma.cardBilling.findFirst({
+      where: {
+        id: billingId,
+        accountCard: {
+          account: {
+            userId,
+          },
+        },
+      },
+      include: {
+        // Transações normais (não-parceladas) vinculadas diretamente ao billing
+        transactions: {
+          include: {
+            sourceAccount: {
+              include: { institution: true },
+            },
+            destinyAccount: {
+              include: { institution: true },
+            },
+            cardBilling: true,
+          },
+        },
+        // Parcelas (installments) vinculadas ao billing
+        installments: {
+          include: {
+            transaction: {
+              include: {
+                sourceAccount: {
+                  include: { institution: true },
+                },
+                destinyAccount: {
+                  include: { institution: true },
+                },
+                cardBilling: true,
+                installments: true, // Para contar total de parcelas
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!billing) {
+      return [];
+    }
+
+    const result: TransactionModel[] = [];
+
+    // Adicionar transações normais (sem installments associados) com installment = null
+    for (const transaction of billing.transactions) {
+      result.push({
+        ...transaction,
+        installmentNumber: null,
+        totalInstallments: null,
+        installmentId: null,
+      });
+    }
+
+    // Adicionar transações parceladas via installments
+    for (const installment of billing.installments) {
+      if (!installment.transaction) continue;
+
+      const totalInstallments =
+        installment.transaction.installments?.length ?? 0;
+
+      result.push({
+        ...installment.transaction,
+        // Override amount com o valor da parcela específica
+        amount: installment.amount,
+        installmentNumber: installment.installmentNumber,
+        totalInstallments,
+        installmentId: installment.id,
+      });
+    }
+
+    // Ordenar por data
+    result.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+
+    return result;
   }
 
   async updatePaymentTransaction(
@@ -243,6 +381,11 @@ export class CardService {
         transactions: {
           where: {
             status: { not: TransactionStatus.CANCELED },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
           },
         },
         accountCard: {
@@ -262,11 +405,21 @@ export class CardService {
       throw new NotFoundException('Card billing not found');
     }
 
-    // Calcular total (apenas transações não canceladas)
-    const totalAmount = billing.transactions.reduce(
+    // Calcular total de transações normais (apenas não canceladas)
+    const transactionsTotal = billing.transactions.reduce(
       (acc, transaction) => acc.add(transaction.amount),
       new Decimal(0),
     );
+
+    // Calcular total de installments (parcelas) - apenas de transações não canceladas
+    const installmentsTotal = billing.installments
+      .filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+      .reduce(
+        (acc, installment) => acc.add(installment.amount),
+        new Decimal(0),
+      );
+
+    const totalAmount = transactionsTotal.add(installmentsTotal);
 
     const existing = await this.prisma.transaction.findFirst({
       where: {

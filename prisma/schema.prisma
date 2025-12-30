@@ -109,7 +109,8 @@ model CardBilling {
   paymentTransaction   Transaction? @relation(fields: [paymentTransactionId], references: [id], name: "BillingPayment")
   paymentTransactionId String?      @unique
 
-  transactions  Transaction[]        @relation(name: "BillingTransactions")
+  transactions  Transaction[]            @relation(name: "BillingTransactions")
+  installments  TransactionInstallment[]
   statusHistory CardBillingHistory[]
 
   createdAt DateTime @default(now())
@@ -206,12 +207,26 @@ model Transaction {
   recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
   recurringTransactionId String?
 
-  // Campos de parcelamento
-  installmentNumber Int? // Número da parcela atual (ex: 2 de 12)
-  totalInstallments Int? // Total de parcelas (ex: 12)
+  installments TransactionInstallment[]
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TransactionInstallment {
+  id String @id @default(uuid())
+
+  installmentNumber Int
+  amount            Decimal
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+
+  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull)
+  cardBillingId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
