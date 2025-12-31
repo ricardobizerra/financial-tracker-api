@@ -13,6 +13,17 @@ import {
 } from '@nestjs/graphql';
 import { Connection } from '@/utils/models/connection.model';
 import { Ordenation } from '@/utils/args/ordenation.args';
+import { TransactionInstallmentModel } from './transaction-installment.model';
+
+/**
+ * Informações pré-computadas sobre cancelamento de uma transação.
+ * Usado internamente no service para evitar N+1 queries.
+ */
+export interface CancelCheckInfo {
+  canCancel: boolean;
+  reason: string | null;
+  warningMessage: string | null;
+}
 
 @ObjectType()
 export class TransactionModel extends OmitType(Transaction, [

@@ -6,8 +6,6 @@ import {
   Info,
   ID,
   Int,
-  ResolveField,
-  Parent,
 } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { TransactionConnection, TransactionModel } from './transaction.model';
@@ -55,7 +53,6 @@ import {
   FinancialAgendaArgs,
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
-import { TransactionInstallmentModel } from './transaction-installment.model';
 
 @Resolver(() => TransactionModel)
 export class TransactionResolver {
@@ -973,156 +970,5 @@ export class TransactionResolver {
       types: filterArgs.types,
       statuses: filterArgs.statuses,
     });
-  }
-
-  @ResolveField(() => Boolean, { nullable: true })
-  async canCancel(@Parent() transaction: TransactionModel): Promise<boolean> {
-    const cancelCheck = await this.getCancelCheckInfo(transaction);
-    return cancelCheck.canCancel;
-  }
-
-  @ResolveField(() => String, { nullable: true })
-  async cancelReason(
-    @Parent() transaction: TransactionModel,
-  ): Promise<string | null> {
-    const cancelCheck = await this.getCancelCheckInfo(transaction);
-    return cancelCheck.reason;
-  }
-
-  @ResolveField(() => String, { nullable: true })
-  async cancelWarningMessage(
-    @Parent() transaction: TransactionModel,
-  ): Promise<string | null> {
-    const cancelCheck = await this.getCancelCheckInfo(transaction);
-    return cancelCheck.warningMessage;
-  }
-
-  private async getCancelCheckInfo(transaction: TransactionModel): Promise<{
-    canCancel: boolean;
-    reason: string | null;
-    warningMessage: string | null;
-  }> {
-    // Se já está cancelada, não pode cancelar novamente
-    if (transaction.status === TransactionStatus.CANCELED) {
-      return {
-        canCancel: false,
-        reason: 'Transação já cancelada',
-        warningMessage: null,
-      };
-    }
-
-    // Se é uma transação parcelada (tem installments associados)
-    const installments =
-      await this.prismaService.transactionInstallment.findMany({
-        where: { transactionId: transaction.id },
-        include: { cardBilling: { select: { status: true } } },
-        orderBy: { installmentNumber: 'asc' },
-      });
-
-    if (installments.length > 0) {
-      const firstInstallment = installments.find(
-        (i) => i.installmentNumber === 1,
-      );
-
-      if (firstInstallment?.cardBilling) {
-        const closedStatuses: CardBillingStatus[] = [
-          CardBillingStatus.PAID,
-          CardBillingStatus.CLOSED,
-          CardBillingStatus.COMPLETED,
-        ];
-        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          return {
-            canCancel: false,
-            reason: 'A primeira parcela está em uma fatura fechada ou paga',
-            warningMessage: null,
-          };
-        }
-      }
-
-      return {
-        canCancel: true,
-        reason: null,
-        warningMessage: `Ao cancelar esta transação, todas as ${installments.length} parcelas serão canceladas.`,
-      };
-    }
-
-    // Transação única - verificar status e fatura
-    const fullTransaction = await this.prismaService.transaction.findUnique({
-      where: { id: transaction.id },
-      include: {
-        cardBilling: { select: { status: true } },
-        sourceAccount: { select: { type: true } },
-      },
-    });
-
-    if (!fullTransaction) {
-      return {
-        canCancel: false,
-        reason: 'Transação não encontrada',
-        warningMessage: null,
-      };
-    }
-
-    const allowedStatuses: TransactionStatus[] = [
-      TransactionStatus.PLANNED,
-      TransactionStatus.OVERDUE,
-    ];
-
-    if (
-      !allowedStatuses.includes(fullTransaction.status) &&
-      fullTransaction.sourceAccount?.type !== AccountType.CREDIT_CARD
-    ) {
-      return {
-        canCancel: false,
-        reason: 'Apenas transações pendentes podem ser canceladas',
-        warningMessage: null,
-      };
-    }
-
-    if (fullTransaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(fullTransaction.cardBilling.status)) {
-        return {
-          canCancel: false,
-          reason: 'Transação está em uma fatura fechada ou paga',
-          warningMessage: null,
-        };
-      }
-    }
-
-    return { canCancel: true, reason: null, warningMessage: null };
-  }
-
-  @ResolveField(() => [TransactionInstallmentModel], { nullable: true })
-  async installments(
-    @Parent() transaction: TransactionModel,
-  ): Promise<TransactionInstallmentModel[]> {
-    return this.prismaService.transactionInstallment.findMany({
-      where: { transactionId: transaction.id },
-      orderBy: { installmentNumber: 'asc' },
-    });
-  }
-
-  @ResolveField(() => Date, { nullable: true })
-  async installmentStartDate(
-    @Parent() transaction: TransactionModel,
-  ): Promise<Date | null> {
-    // Verificar se tem installments associados
-    const firstInstallment =
-      await this.prismaService.transactionInstallment.findFirst({
-        where: { transactionId: transaction.id, installmentNumber: 1 },
-        include: { cardBilling: { select: { periodStart: true } } },
-      });
-
-    if (!firstInstallment) {
-      return null;
-    }
-
-    // Retornar a data do período da primeira fatura ou a data da transação
-    return firstInstallment.cardBilling?.periodStart ?? transaction.date;
   }
 }

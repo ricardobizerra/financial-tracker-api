@@ -4,11 +4,18 @@ import {
   Transaction,
   TransactionCreateInput,
 } from '@/lib/graphql/prisma-client';
-import { Prisma, TransactionType, TransactionStatus } from '@prisma/client';
+import {
+  Prisma,
+  TransactionType,
+  TransactionStatus,
+  CardBillingStatus,
+  AccountType,
+} from '@prisma/client';
 import {
   TransactionModel,
   OrdenationTransactionArgs,
   TransactionFilterArgs,
+  CancelCheckInfo,
 } from './transaction.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
@@ -108,6 +115,16 @@ export class TransactionService {
       ? Number(transactionsLengthQuery)
       : undefined;
 
+    // Determinar quais campos "computados" foram solicitados
+    const cancelFields = ['canCancel', 'cancelReason', 'cancelWarningMessage'];
+    const installmentFields = ['installments', 'installmentStartDate'];
+    const needsCancelInfo = queriedFields.some((f) =>
+      cancelFields.includes(f as string),
+    );
+    const needsInstallments = queriedFields.some((f) =>
+      installmentFields.includes(f as string),
+    );
+
     const transactions = await this.prismaService.transaction.findMany({
       take: last
         ? unbufferedCursor
@@ -136,27 +153,47 @@ export class TransactionService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      // Excluir campos virtuais que são resolvidos via ResolveField
-      select: selectObject<Transaction, TransactionModel>(
-        queriedFields.filter(
-          (field) =>
-            ![
-              'canCancel',
-              'cancelReason',
-              'cancelWarningMessage',
-              'installmentStartDate',
-            ].includes(field),
-        ) as (keyof TransactionModel)[],
-        {
-          canCancel: ['status'],
-          cancelReason: ['status'],
-          cancelWarningMessage: ['status'],
-          installmentStartDate: ['recurringTransactionId'],
-          installmentNumber: ['installments'],
-          totalInstallments: ['installments'],
-          installmentId: ['installments'],
-        },
-      ),
+      // Excluir campos virtuais que são computados no service
+      select: {
+        ...selectObject<Transaction, TransactionModel>(
+          queriedFields.filter(
+            (field) =>
+              ![
+                'canCancel',
+                'cancelReason',
+                'cancelWarningMessage',
+                'installmentStartDate',
+                'installments',
+              ].includes(field as string),
+          ) as (keyof TransactionModel)[],
+          {
+            canCancel: ['status'],
+            cancelReason: ['status'],
+            cancelWarningMessage: ['status'],
+            installmentStartDate: ['recurringTransactionId'],
+            installmentNumber: ['installments'],
+            totalInstallments: ['installments'],
+            installmentId: ['installments'],
+          },
+        ),
+        // Sempre incluir id e status para cancelInfo
+        id: true,
+        status: true,
+        // Incluir relações necessárias para cancelInfo
+        ...(needsCancelInfo && {
+          cardBilling: { select: { status: true } },
+          sourceAccount: { select: { type: true } },
+        }),
+        // Incluir installments se necessário (evita N+1)
+        ...((needsInstallments || needsCancelInfo) && {
+          installments: {
+            include: {
+              cardBilling: { select: { status: true, periodStart: true } },
+            },
+            orderBy: { installmentNumber: 'asc' as const },
+          },
+        }),
+      },
       where: whereClause,
     });
 
@@ -176,7 +213,37 @@ export class TransactionService {
       };
     }
 
-    const edges = transactions.map((transaction, index) => {
+    // Processar transações e anexar dados computados
+    const processedTransactions = transactions.map((transaction: any) => {
+      const txWithExtras = transaction;
+      const installments = transaction.installments || [];
+
+      // Computar installmentStartDate se solicitado
+      if (needsInstallments) {
+        const firstInstallment = installments.find(
+          (i: any) => i.installmentNumber === 1,
+        );
+        if (firstInstallment) {
+          txWithExtras.installmentStartDate =
+            firstInstallment.cardBilling?.periodStart ?? transaction.date;
+        }
+      }
+
+      // Computar cancelInfo e popular campos diretamente
+      if (needsCancelInfo) {
+        const cancelInfo = this.computeCancelInfo(
+          transaction as any,
+          installments,
+        );
+        txWithExtras.canCancel = cancelInfo.canCancel;
+        txWithExtras.cancelReason = cancelInfo.reason;
+        txWithExtras.cancelWarningMessage = cancelInfo.warningMessage;
+      }
+
+      return txWithExtras as TransactionModel;
+    });
+
+    const edges = processedTransactions.map((transaction, index) => {
       const cursorIndex =
         index +
         1 +
@@ -333,6 +400,94 @@ export class TransactionService {
       forecastExpense,
       forecastBalance: forecastIncome - forecastExpense,
     };
+  }
+
+  /**
+   * Computa informações de cancelamento para uma transação.
+   * Usa dados pré-carregados (installments, cardBilling, sourceAccount) para evitar N+1.
+   */
+  computeCancelInfo(
+    transaction: {
+      id: string;
+      status: TransactionStatus;
+      cardBilling?: { status: CardBillingStatus } | null;
+      sourceAccount?: { type: AccountType } | null;
+    },
+    installments: Array<{
+      installmentNumber: number;
+      cardBilling?: { status: CardBillingStatus } | null;
+    }>,
+  ): CancelCheckInfo {
+    // Se já está cancelada, não pode cancelar novamente
+    if (transaction.status === TransactionStatus.CANCELED) {
+      return {
+        canCancel: false,
+        reason: 'Transação já cancelada',
+        warningMessage: null,
+      };
+    }
+
+    // Se é uma transação parcelada (tem installments associados)
+    if (installments.length > 0) {
+      const firstInstallment = installments.find(
+        (i) => i.installmentNumber === 1,
+      );
+
+      if (firstInstallment?.cardBilling) {
+        const closedStatuses: CardBillingStatus[] = [
+          CardBillingStatus.PAID,
+          CardBillingStatus.CLOSED,
+          CardBillingStatus.COMPLETED,
+        ];
+        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
+          return {
+            canCancel: false,
+            reason: 'A primeira parcela está em uma fatura fechada ou paga',
+            warningMessage: null,
+          };
+        }
+      }
+
+      return {
+        canCancel: true,
+        reason: null,
+        warningMessage: `Ao cancelar esta transação, todas as ${installments.length} parcelas serão canceladas.`,
+      };
+    }
+
+    // Transação única - verificar status e fatura
+    const allowedStatuses: TransactionStatus[] = [
+      TransactionStatus.PLANNED,
+      TransactionStatus.OVERDUE,
+    ];
+
+    if (
+      !allowedStatuses.includes(transaction.status) &&
+      transaction.sourceAccount?.type !== AccountType.CREDIT_CARD
+    ) {
+      return {
+        canCancel: false,
+        reason: 'Apenas transações pendentes podem ser canceladas',
+        warningMessage: null,
+      };
+    }
+
+    if (transaction.cardBilling) {
+      const closedStatuses: CardBillingStatus[] = [
+        CardBillingStatus.PAID,
+        CardBillingStatus.CLOSED,
+        CardBillingStatus.COMPLETED,
+      ];
+      if (closedStatuses.includes(transaction.cardBilling.status)) {
+        return {
+          canCancel: false,
+          reason: 'Transação está em uma fatura fechada ou paga',
+          warningMessage: null,
+        };
+      }
+    }
+
+    return { canCancel: true, reason: null, warningMessage: null };
   }
 
   async find(
