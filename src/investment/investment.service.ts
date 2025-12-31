@@ -551,8 +551,12 @@ export class InvestmentService {
       };
     });
 
-    const startCursor = regimeSummaries[0].cursor;
-    const endCursor = regimeSummaries[regimeSummaries.length - 1].cursor;
+    const startCursor = regimeSummaries?.length
+      ? regimeSummaries[0].cursor
+      : null;
+    const endCursor = regimeSummaries?.length
+      ? regimeSummaries[regimeSummaries.length - 1].cursor
+      : null;
 
     return {
       edges: regimeSummaries,
@@ -574,9 +578,9 @@ export class InvestmentService {
   }): Promise<TotalInvestmentsModel> {
     const {
       _sum: {
-        amount: totalInitialAmount,
-        correctedAmount: totalCurrentAmount,
-        taxedAmount: totalTaxedAmount,
+        amount: rawTotalInitialAmount,
+        correctedAmount: rawTotalCurrentAmount,
+        taxedAmount: rawTotalTaxedAmount,
       },
     } = await this.prismaService.investment.aggregate({
       _sum: {
@@ -586,6 +590,11 @@ export class InvestmentService {
       },
       where: { userId },
     });
+
+    // Default to 0 when there are no investments
+    const totalInitialAmount = rawTotalInitialAmount ?? 0;
+    const totalCurrentAmount = rawTotalCurrentAmount ?? 0;
+    const totalTaxedAmount = rawTotalTaxedAmount ?? 0;
 
     const currentVariation =
       queriedFields.includes('currentVariation') && totalInitialAmount > 0
