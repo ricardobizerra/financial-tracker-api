@@ -426,7 +426,7 @@ export class CardService {
         billingPayment: {
           id: billingId,
         },
-        type: TransactionType.BETWEEN_ACCOUNTS,
+        type: TransactionType.EXPENSE,
       },
     });
 
@@ -438,7 +438,7 @@ export class CardService {
           date: billing.paymentDate,
           description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
           status: TransactionStatus.PLANNED,
-          type: TransactionType.BETWEEN_ACCOUNTS,
+          type: TransactionType.EXPENSE,
           paymentEnabled: false,
           paymentLimit: billing.paymentDate,
           destinyAccount: {
