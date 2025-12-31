@@ -1020,7 +1020,11 @@ export class TransactionService {
             },
           },
         },
-        cardBilling: true,
+        cardBilling: {
+          include: {
+            paymentTransaction: true,
+          },
+        },
         installments: true,
       },
     });
