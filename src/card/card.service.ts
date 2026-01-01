@@ -545,7 +545,7 @@ export class CardService {
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23 + 3, 59, 59, 999);
+      periodEnd.setHours(23, 59, 59, 999);
     } else {
       // A transação está no próximo ciclo
       // periodStart é o dia após o fechamento do mês atual
@@ -553,15 +553,24 @@ export class CardService {
 
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23 + 3, 59, 59, 999);
+      periodEnd.setHours(23, 59, 59, 999);
     }
 
-    // Calcular data de pagamento
-    if (periodStart.getDate() > cardBillingPaymentDay) {
-      paymentDate.setMonth(paymentDate.getMonth() + 1);
+    // Calcular data de pagamento - deve ser baseada em periodEnd, não periodStart
+    // O pagamento ocorre após o fechamento da fatura (periodEnd)
+    // Se o dia de pagamento é maior que o dia de fechamento, pagamento é no mesmo mês
+    // Se o dia de pagamento é menor ou igual ao dia de fechamento, pagamento é no próximo mês
+    if (cardBillingPaymentDay <= cardBillingCycleDay) {
+      // Pagamento é no mês seguinte ao fechamento
+      paymentDate.setFullYear(periodEnd.getFullYear());
+      paymentDate.setMonth(periodEnd.getMonth() + 1);
+    } else {
+      // Pagamento é no mesmo mês do fechamento
+      paymentDate.setFullYear(periodEnd.getFullYear());
+      paymentDate.setMonth(periodEnd.getMonth());
     }
     paymentDate.setDate(cardBillingPaymentDay);
-    paymentDate.setHours(23 + 3, 59, 59, 999);
+    paymentDate.setHours(23, 59, 59, 999);
 
     const billing = await this.prisma.cardBilling.create({
       data: {

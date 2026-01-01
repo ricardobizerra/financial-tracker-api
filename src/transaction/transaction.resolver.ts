@@ -374,11 +374,19 @@ export class TransactionResolver {
           orderBy: { periodEnd: 'desc' },
         });
 
+        // Para criar o próximo billing, usar o dia seguinte ao periodEnd do último billing
+        // Isso garante que o novo billing seja para o próximo ciclo
+        let nextBillingStartDate = installmentDate;
+        if (lastBilling?.periodEnd) {
+          nextBillingStartDate = new Date(lastBilling.periodEnd);
+          nextBillingStartDate.setDate(nextBillingStartDate.getDate() + 1);
+        }
+
         billing = await this.cardService.createBilling({
           cardId: card.id,
           cardBillingCycleDay: card.billingCycleDay,
           cardBillingPaymentDay: card.billingPaymentDay,
-          periodStart: lastBilling?.periodEnd ?? installmentDate,
+          periodStart: nextBillingStartDate,
           limit: card.defaultLimit,
         });
       }
