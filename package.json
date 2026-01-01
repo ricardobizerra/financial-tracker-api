@@ -54,7 +54,7 @@
     "prisma-graphql-type-decimal": "^3.0.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.2",
-    "zod": "^3.23.8"
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
