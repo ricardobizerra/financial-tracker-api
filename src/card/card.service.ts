@@ -809,13 +809,44 @@ export class CardService {
     });
   }
 
-  // Daily at midnight - check for overdue billings
+  // Daily at midnight - check for overdue billings and auto-pay completed billings
   @Cron('0 0 0 * * *')
-  async checkOverdueBillings(): Promise<void> {
+  async checkBillingStatuses(): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find CLOSED billings with paymentDate in the past
+    // 1. Find billings where payment transaction is COMPLETED -> mark as PAID
+    const billingsToPay = await this.prisma.cardBilling.findMany({
+      where: {
+        status: { in: [CardBillingStatus.CLOSED, CardBillingStatus.OVERDUE] },
+        paymentTransaction: {
+          status: TransactionStatus.COMPLETED,
+        },
+      },
+      include: {
+        paymentTransaction: true,
+      },
+    });
+
+    // Update to PAID and create history entries
+    await Promise.all(
+      billingsToPay.map((billing) =>
+        this.prisma.$transaction([
+          this.prisma.cardBilling.update({
+            where: { id: billing.id },
+            data: { status: CardBillingStatus.PAID },
+          }),
+          this.prisma.cardBillingHistory.create({
+            data: {
+              cardBilling: { connect: { id: billing.id } },
+              status: CardBillingStatus.PAID,
+            },
+          }),
+        ]),
+      ),
+    );
+
+    // 2. Find CLOSED billings with paymentDate in the past -> mark as OVERDUE
     const overdueBillings = await this.prisma.cardBilling.findMany({
       where: {
         status: CardBillingStatus.CLOSED,
