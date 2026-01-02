@@ -310,6 +310,11 @@ export class CardService {
             },
             cardBilling: true,
           },
+          where: {
+            status: {
+              not: TransactionStatus.CANCELED,
+            },
+          },
         },
         // Parcelas (installments) vinculadas ao billing
         installments: {
@@ -324,6 +329,13 @@ export class CardService {
                 },
                 cardBilling: true,
                 installments: true, // Para contar total de parcelas
+              },
+            },
+          },
+          where: {
+            transaction: {
+              status: {
+                not: TransactionStatus.CANCELED,
               },
             },
           },
