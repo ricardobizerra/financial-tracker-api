@@ -29,7 +29,6 @@ import {
 import { CreateTransactionInput } from './input/create-transaction.input';
 import { CreateInstallmentTransactionInput } from './input/create-installment-transaction.input';
 import { UpdateTransactionInput } from './input/update-transaction.input';
-import { ConfirmTransactionInput } from './input/confirm-transaction.input';
 import { RescheduleTransactionInput } from './input/reschedule-transaction.input';
 import {
   UpdateRecurringTransactionsInput,
@@ -420,12 +419,18 @@ export class TransactionResolver {
     @Args('data') data: UpdateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
-    // Buscar transação existente
+    // Buscar transação existente com installments
     const existingTransaction = await this.prismaService.transaction.findUnique(
       {
         where: { id: data.id },
         include: {
           cardBilling: true,
+          installments: {
+            include: {
+              cardBilling: { select: { id: true, status: true } },
+            },
+            orderBy: { installmentNumber: 'asc' },
+          },
         },
       },
     );
@@ -439,21 +444,12 @@ export class TransactionResolver {
       throw new Error('Transaction does not belong to user');
     }
 
-    const isCompleted =
-      existingTransaction.status === TransactionStatus.COMPLETED;
     const isCanceled =
       existingTransaction.status === TransactionStatus.CANCELED;
-    const isImmutable = isCompleted || isCanceled;
+    const hasInstallments = existingTransaction.installments.length > 0;
 
-    // Verificar se a transação pertence a uma fatura aberta (exceção à regra de imutabilidade)
-    const isPartOfOpenBilling =
-      existingTransaction.cardBilling &&
-      existingTransaction.cardBilling.status === CardBillingStatus.PENDING;
-
-    // Para transações COMPLETED ou CANCELED, apenas a descrição pode ser editada
-    // EXCEÇÃO: transações de fatura aberta podem ser editadas completamente
-    if (isImmutable && !isPartOfOpenBilling) {
-      // Verificar se está tentando editar algo além da descrição
+    // Única regra de bloqueio: transações CANCELED só podem ter descrição editada
+    if (isCanceled) {
       if (
         data.amount !== undefined ||
         data.date !== undefined ||
@@ -461,11 +457,10 @@ export class TransactionResolver {
         data.status !== undefined
       ) {
         throw new Error(
-          'Transações finalizadas ou canceladas só podem ter a descrição editada',
+          'Transações canceladas só podem ter a descrição editada',
         );
       }
 
-      // Atualizar apenas descrição
       const updatedTransaction = await this.transactionService.update(data.id, {
         ...(data.description !== undefined && {
           description: data.description,
@@ -475,15 +470,33 @@ export class TransactionResolver {
       return updatedTransaction;
     }
 
-    // Validar: não editar transação de fatura fechada/paga
-    if (existingTransaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(existingTransaction.cardBilling.status)) {
-        throw new Error('Cannot edit transactions from closed or paid billing');
+    // Calcular novo status baseado na data (transição automática)
+    let newStatus: TransactionStatus | undefined = data.status as
+      | TransactionStatus
+      | undefined;
+    const newDate = data.date ?? existingTransaction.date;
+
+    // Normalizar datas para comparação (apenas data, sem horário)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const transactionDate = new Date(newDate);
+    transactionDate.setHours(0, 0, 0, 0);
+
+    // Transição automática de status se a data for alterada
+    if (data.date !== undefined) {
+      if (transactionDate <= today) {
+        // Data passada ou hoje -> COMPLETED
+        if (
+          existingTransaction.status === TransactionStatus.PLANNED ||
+          existingTransaction.status === TransactionStatus.OVERDUE
+        ) {
+          newStatus = TransactionStatus.COMPLETED;
+        }
+      } else {
+        // Data futura -> PLANNED
+        if (existingTransaction.status === TransactionStatus.COMPLETED) {
+          newStatus = TransactionStatus.PLANNED;
+        }
       }
     }
 
@@ -495,64 +508,53 @@ export class TransactionResolver {
       ...(data.paymentMethod !== undefined && {
         paymentMethod: data.paymentMethod as PaymentMethod,
       }),
-      ...(data.status !== undefined && {
-        status: data.status as TransactionStatus,
+      ...(newStatus !== undefined && {
+        status: newStatus,
       }),
     });
 
-    return updatedTransaction;
-  }
+    // Coletar billings para recalcular
+    const billingIdsToUpdate = new Set<string>();
 
-  @Auth()
-  @Mutation(() => TransactionModel, { name: 'confirmTransaction' })
-  async confirmTransaction(
-    @CurrentUser() user: UserModel,
-    @Args('data') data: ConfirmTransactionInput,
-  ): Promise<TransactionModel> {
-    // Buscar transação com cardBilling
-    const transaction = await this.prismaService.transaction.findUnique({
-      where: { id: data.id },
-      include: { cardBilling: true },
-    });
+    // Se o valor foi alterado e há parcelas, recalcular os valores das parcelas
+    if (
+      data.amount !== undefined &&
+      hasInstallments &&
+      Number(data.amount) !== Number(existingTransaction.amount)
+    ) {
+      const newInstallmentAmount =
+        Number(data.amount) / existingTransaction.installments.length;
 
-    if (!transaction) {
-      throw new Error('Transação não encontrada');
-    }
+      // Atualizar cada parcela
+      for (const installment of existingTransaction.installments) {
+        await this.prismaService.transactionInstallment.update({
+          where: { id: installment.id },
+          data: { amount: newInstallmentAmount },
+        });
 
-    if (transaction.userId !== user.id) {
-      throw new Error('Transação não pertence ao usuário');
-    }
-
-    // Validar status atual
-    const allowedStatuses: TransactionStatus[] = [
-      TransactionStatus.PLANNED,
-
-      TransactionStatus.OVERDUE,
-    ];
-    if (!allowedStatuses.includes(transaction.status)) {
-      throw new Error('Apenas transações pendentes podem ser confirmadas');
-    }
-
-    // Validar cardBilling se existir
-    if (transaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(transaction.cardBilling.status)) {
-        throw new Error(
-          'Não é possível confirmar transação de fatura fechada ou paga',
-        );
+        if (installment.cardBillingId) {
+          billingIdsToUpdate.add(installment.cardBillingId);
+        }
       }
     }
 
-    // Atualizar transação
-    const updatedTransaction = await this.transactionService.update(data.id, {
-      status: TransactionStatus.COMPLETED,
-      ...(data.amount !== undefined && { amount: data.amount }),
-      ...(data.date !== undefined && { date: data.date }),
-    });
+    // Se o valor foi alterado e tem cardBilling direto, adicionar para recálculo
+    if (
+      data.amount !== undefined &&
+      existingTransaction.cardBillingId &&
+      Number(data.amount) !== Number(existingTransaction.amount)
+    ) {
+      billingIdsToUpdate.add(existingTransaction.cardBillingId);
+    }
+
+    // Recalcular saldo de todas as faturas afetadas
+    if (billingIdsToUpdate.size > 0) {
+      await Promise.all(
+        Array.from(billingIdsToUpdate).map(async (billingId) => {
+          await this.cardService.updatePaymentTransaction(billingId);
+        }),
+      );
+    }
 
     return updatedTransaction;
   }

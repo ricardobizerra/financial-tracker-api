@@ -1414,7 +1414,6 @@ type Mutation {
   createTransaction(data: CreateTransactionInput!): TransactionModel!
   createInstallmentTransaction(data: CreateInstallmentTransactionInput!): TransactionModel!
   updateTransaction(data: UpdateTransactionInput!): TransactionModel!
-  confirmTransaction(data: ConfirmTransactionInput!): TransactionModel!
   cancelTransaction(id: String!): TransactionModel!
   rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
   updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
@@ -3973,12 +3972,6 @@ input UpdateTransactionInput {
   Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
   """
   isCompleted: Boolean
-}
-
-input ConfirmTransactionInput {
-  id: ID!
-  amount: Float
-  date: DateTime
 }
 
 input RescheduleTransactionInput {

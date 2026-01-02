@@ -1025,38 +1025,50 @@ export class TransactionService {
             paymentTransaction: true,
           },
         },
-        installments: true,
+        installments: {
+          include: {
+            cardBilling: { select: { status: true } },
+          },
+          orderBy: { installmentNumber: 'asc' as const },
+        },
       },
     });
 
     // Quando filtrando por conta, transformar BETWEEN_ACCOUNTS para INCOME/EXPENSE
     // baseado na perspectiva da conta
-    const transformedTransactions = accountId
-      ? transactions.map((tx) => {
-          if (tx.type === TransactionType.BETWEEN_ACCOUNTS) {
-            // Se a conta é destino, aparece como INCOME
-            if (tx.destinyAccountId === accountId) {
-              return {
-                ...tx,
-                type: TransactionType.INCOME,
-                totalInstallments: tx.installments.length,
-              };
-            }
-            // Se a conta é origem, aparece como EXPENSE
-            if (tx.sourceAccountId === accountId) {
-              return {
-                ...tx,
-                type: TransactionType.EXPENSE,
-                totalInstallments: tx.installments.length,
-              };
-            }
-          }
-          return { ...tx, totalInstallments: tx.installments.length };
-        })
-      : transactions.map((tx) => ({
-          ...tx,
-          totalInstallments: tx.installments.length,
-        }));
+    // Também computar cancelInfo para cada transação
+    const transformedTransactions = transactions.map((tx) => {
+      const cancelInfo = this.computeCancelInfo(
+        {
+          id: tx.id,
+          status: tx.status,
+          cardBilling: tx.cardBilling,
+          sourceAccount: tx.sourceAccount,
+        },
+        tx.installments,
+      );
+
+      let transformedType = tx.type;
+      if (accountId && tx.type === TransactionType.BETWEEN_ACCOUNTS) {
+        // Se a conta é destino, aparece como INCOME
+        if (tx.destinyAccountId === accountId) {
+          transformedType = TransactionType.INCOME;
+        }
+        // Se a conta é origem, aparece como EXPENSE
+        if (tx.sourceAccountId === accountId) {
+          transformedType = TransactionType.EXPENSE;
+        }
+      }
+
+      return {
+        ...tx,
+        type: transformedType,
+        totalInstallments: tx.installments.length,
+        canCancel: cancelInfo.canCancel,
+        cancelReason: cancelInfo.reason,
+        cancelWarningMessage: cancelInfo.warningMessage,
+      };
+    });
 
     type PeriodKey =
       | 'OVERDUE'
