@@ -137,6 +137,17 @@ export class TransactionResolver {
           'Income transactions cannot be assigned to credit card accounts',
         );
       }
+
+      // Prevent income transactions to investment or savings accounts
+      if (
+        data.type === TransactionType.INCOME &&
+        (destinyAccount.type === AccountType.INVESTMENT ||
+          destinyAccount.type === AccountType.SAVINGS)
+      ) {
+        throw new Error(
+          'Contas de investimento e poupança não podem receber receitas. Use uma transferência entre contas.',
+        );
+      }
     }
 
     let sourceAccount: Account | null = null;
@@ -151,6 +162,17 @@ export class TransactionResolver {
 
       if (!sourceAccount) {
         throw new Error('Source account not found');
+      }
+
+      // Prevent expense transactions from investment or savings accounts
+      if (
+        data.type === TransactionType.EXPENSE &&
+        (sourceAccount.type === AccountType.INVESTMENT ||
+          sourceAccount.type === AccountType.SAVINGS)
+      ) {
+        throw new Error(
+          'Contas de investimento e poupança não podem ter despesas. Use uma transferência entre contas.',
+        );
       }
     }
 
