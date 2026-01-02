@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
   Transaction,
@@ -1145,5 +1146,33 @@ export class TransactionService {
         count: groups[period].length,
         hasMore: groups[period].length > limitPerGroup,
       }));
+  }
+
+  private readonly logger = new Logger(TransactionService.name);
+
+  /**
+   * Cron job que roda diariamente à meia-noite para atualizar status de transações.
+   * Transações PLANNED com data no passado são marcadas como COMPLETED.
+   */
+  @Cron('0 0 0 * * *') // Every day at midnight
+  async updateTransactionStatuses(): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await this.prismaService.transaction.updateMany({
+      where: {
+        status: TransactionStatus.PLANNED,
+        date: { lt: today },
+      },
+      data: {
+        status: TransactionStatus.COMPLETED,
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(
+        `Updated ${result.count} transactions from PLANNED to COMPLETED`,
+      );
+    }
   }
 }
