@@ -604,17 +604,9 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
-    // Validar status atual (para transações não-cartão)
-    const allowedStatuses: TransactionStatus[] = [
-      TransactionStatus.PLANNED,
-      TransactionStatus.OVERDUE,
-    ];
-
-    if (
-      !allowedStatuses.includes(transaction.status) &&
-      transaction.sourceAccount.type !== AccountType.CREDIT_CARD
-    ) {
-      throw new Error('Apenas transações pendentes podem ser canceladas');
+    // Não permite cancelar transação já cancelada
+    if (transaction.status === TransactionStatus.CANCELED) {
+      throw new Error('Transação já está cancelada');
     }
 
     // Se é uma transação parcelada (tem installments associados)

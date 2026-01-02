@@ -456,23 +456,6 @@ export class TransactionService {
       };
     }
 
-    // Transação única - verificar status e fatura
-    const allowedStatuses: TransactionStatus[] = [
-      TransactionStatus.PLANNED,
-      TransactionStatus.OVERDUE,
-    ];
-
-    if (
-      !allowedStatuses.includes(transaction.status) &&
-      transaction.sourceAccount?.type !== AccountType.CREDIT_CARD
-    ) {
-      return {
-        canCancel: false,
-        reason: 'Apenas transações pendentes podem ser canceladas',
-        warningMessage: null,
-      };
-    }
-
     if (transaction.cardBilling) {
       const closedStatuses: CardBillingStatus[] = [
         CardBillingStatus.PAID,
