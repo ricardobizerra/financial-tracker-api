@@ -372,12 +372,32 @@ export class TransactionResolver {
     // Criar parcelas
     const billingIdsToUpdate = new Set<string>();
 
+    // Buscar a primeira fatura existente no banco para este cartão
+    const firstBilling = await this.prismaService.cardBilling.findFirst({
+      where: { accountCardId: card.id },
+      orderBy: { periodStart: 'asc' },
+    });
+
     for (let i = 0; i < data.totalInstallments; i++) {
       const installmentNumber = i + 1;
 
       // Calcular data da parcela
       const installmentDate = new Date(data.startDate);
       installmentDate.setMonth(installmentDate.getMonth() + i);
+
+      // Se a data da parcela é anterior à primeira fatura existente, não atribuir a nenhuma fatura
+      if (firstBilling && installmentDate < firstBilling.periodStart) {
+        // Criar TransactionInstallment sem fatura
+        await this.prismaService.transactionInstallment.create({
+          data: {
+            installmentNumber,
+            amount: installmentAmount,
+            transactionId: transaction.id,
+            cardBillingId: null,
+          },
+        });
+        continue;
+      }
 
       // Encontrar ou criar fatura para esta data
       let billing = await this.prismaService.cardBilling.findFirst({
