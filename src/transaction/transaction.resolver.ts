@@ -201,6 +201,12 @@ export class TransactionResolver {
       }
     }
 
+    // Validar tipo de transação para cartões de débito
+    // Cartões de débito só podem ter despesas (não receitas ou transferências)
+    if (isDebitCard && data.type !== TransactionType.EXPENSE) {
+      throw new Error('Cartões de débito só podem ser usados para despesas.');
+    }
+
     // Validate payment method based on account type
     const isCardPaymentMethod =
       calculatedPaymentMethod === PaymentMethod.CREDIT_CARD ||
