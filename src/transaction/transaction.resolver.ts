@@ -175,6 +175,20 @@ export class TransactionResolver {
           'Contas de investimento e poupança não podem ter despesas. Use uma transferência entre contas.',
         );
       }
+
+      // Prevent card accounts from between-accounts transactions
+      if (data.type === TransactionType.BETWEEN_ACCOUNTS) {
+        if (sourceAccount.type === AccountType.CREDIT_CARD) {
+          throw new Error(
+            'Contas de cartão não podem participar de transferências entre contas.',
+          );
+        }
+        if (destinyAccount?.type === AccountType.CREDIT_CARD) {
+          throw new Error(
+            'Contas de cartão não podem participar de transferências entre contas.',
+          );
+        }
+      }
     }
 
     // Calcular paymentMethod se não foi informado
