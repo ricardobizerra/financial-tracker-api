@@ -22,6 +22,7 @@ import {
   Account,
   AccountType,
   CardBillingStatus,
+  CardType,
   PaymentMethod,
   TransactionStatus,
   TransactionType,
@@ -178,12 +179,22 @@ export class TransactionResolver {
 
     // Calcular paymentMethod se não foi informado
     let calculatedPaymentMethod = data.paymentMethod;
+    let isDebitCard = false;
+
     if (!calculatedPaymentMethod) {
       const relevantAccount = sourceAccount || destinyAccount;
       if (relevantAccount?.type === AccountType.CREDIT_CARD) {
-        // Para contas de cartão, usar CREDIT_CARD como padrão
-        // Futuramente, buscar o tipo do cartão (credit/debit) para ser mais preciso
-        calculatedPaymentMethod = PaymentMethod.CREDIT_CARD;
+        // Para contas de cartão, buscar o tipo do cartão (credit/debit)
+        const card = await this.cardService.find({
+          accountId: relevantAccount.id,
+        });
+
+        if (card?.type === CardType.DEBIT) {
+          calculatedPaymentMethod = PaymentMethod.DEBIT_CARD;
+          isDebitCard = true;
+        } else {
+          calculatedPaymentMethod = PaymentMethod.CREDIT_CARD;
+        }
       } else {
         // Para outras contas, usar PIX como padrão
         calculatedPaymentMethod = PaymentMethod.PIX;
@@ -206,9 +217,11 @@ export class TransactionResolver {
 
     let cardBillingId: string | null = null;
 
+    // Cartões de débito não usam billing/fatura - débito é imediato na conta
     if (
       data.type === TransactionType.EXPENSE &&
-      sourceAccount.type === AccountType.CREDIT_CARD
+      sourceAccount.type === AccountType.CREDIT_CARD &&
+      !isDebitCard
     ) {
       const card = await this.cardService.find({
         accountId: sourceAccount.id,
@@ -347,6 +360,13 @@ export class TransactionResolver {
 
     if (!card) {
       throw new Error('Cartão não encontrado');
+    }
+
+    // Cartões de débito não podem ter parcelamento
+    if (card.type === CardType.DEBIT) {
+      throw new Error(
+        'Transações parceladas não são permitidas para cartões de débito',
+      );
     }
 
     // Calcular valor de cada parcela

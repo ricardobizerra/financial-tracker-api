@@ -72,12 +72,18 @@ export function selectObject<
       const [relation, ...subFields] = (field as string).split('.');
       const subField = subFields.join('.');
 
+      // Se a relation não existe, cria como objeto com select
       if (!acc[relation]) {
         acc[relation] = { select: {} };
       }
 
-      if (!('select' in acc[relation])) {
-        acc[relation].select = {};
+      // Se a relation existe mas é true (não é objeto), converte para objeto com select
+      if (
+        acc[relation] === true ||
+        typeof acc[relation] !== 'object' ||
+        !('select' in acc[relation])
+      ) {
+        acc[relation] = { select: {} };
       }
 
       if (subField.includes('.')) {

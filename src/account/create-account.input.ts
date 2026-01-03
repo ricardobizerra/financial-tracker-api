@@ -8,14 +8,15 @@ class CreateAccountCardInfos {
   @Field(() => CardType)
   type: CardType;
 
-  @Field(() => Number)
-  billingCycleDay: number;
+  // Campos opcionais - apenas para cartões de crédito
+  @Field(() => Number, { nullable: true })
+  billingCycleDay?: number;
 
-  @Field(() => Number)
-  billingPaymentDay: number;
+  @Field(() => Number, { nullable: true })
+  billingPaymentDay?: number;
 
-  @Field(() => GraphQLDecimal)
-  defaultLimit: Decimal;
+  @Field(() => GraphQLDecimal, { nullable: true })
+  defaultLimit?: Decimal;
 }
 
 @InputType()

@@ -3916,9 +3916,9 @@ input CreateAccountInput {
 
 input CreateAccountCardInfos {
   type: CardType!
-  billingCycleDay: Float!
-  billingPaymentDay: Float!
-  defaultLimit: Decimal!
+  billingCycleDay: Float
+  billingPaymentDay: Float
+  defaultLimit: Decimal
 }
 
 input CreateTransactionInput {
