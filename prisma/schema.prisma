@@ -240,8 +240,11 @@ model RecurringTransaction {
   paymentMethod   PaymentMethod?
 
   frequency   RecurrenceFrequency
-  dayOfMonth  Int // 1-28 to avoid month-end issues
-  monthOfYear Int? // For YEARLY: 1-12, null for MONTHLY
+  dayMode     DayMode             @default(SPECIFIC_DAY)
+  dayOfMonth  Int? // 1-28 for SPECIFIC_DAY mode
+  dayOfWeek   Int? // 0-6 (Sun-Sat) for WEEKLY/BI_WEEKLY
+  weekOfMonth Int? // 1-5 for NTH_WEEKDAY mode
+  monthOfYear Int? // For YEARLY: 1-12, null for other frequencies
 
   startDate DateTime
   endDate   DateTime? // null = generate up to practical limit (2 years)
@@ -335,8 +338,18 @@ enum TransactionType {
 }
 
 enum RecurrenceFrequency {
+  WEEKLY
+  BI_WEEKLY
   MONTHLY
   YEARLY
+}
+
+enum DayMode {
+  SPECIFIC_DAY // Use dayOfMonth or dayOfWeek as-is
+  LAST_DAY // Last day of period (month/year)
+  LAST_BUSINESS_DAY // Last business day (excluding weekends)
+  FIRST_BUSINESS_DAY // First business day
+  NTH_WEEKDAY // e.g., "2nd Tuesday of month"
 }
 
 enum RecurrenceType {

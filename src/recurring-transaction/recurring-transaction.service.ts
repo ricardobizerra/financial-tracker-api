@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
+  DayMode,
   Prisma,
   RecurrenceFrequency,
   RecurrenceType,
@@ -38,13 +39,56 @@ export class RecurringTransactionService {
     data: CreateRecurringTransactionInput,
     userId: string,
   ) {
-    // Validate dayOfMonth range
-    if (data.dayOfMonth < 1 || data.dayOfMonth > 28) {
-      throw new Error('Day of month must be between 1 and 28');
+    const dayMode = (data.dayMode as DayMode) || DayMode.SPECIFIC_DAY;
+    const frequency = data.frequency as RecurrenceFrequency;
+
+    // Validate based on frequency and dayMode
+    if (
+      frequency === RecurrenceFrequency.WEEKLY ||
+      frequency === RecurrenceFrequency.BI_WEEKLY
+    ) {
+      // Weekly/Bi-weekly requires dayOfWeek
+      if (
+        data.dayOfWeek === undefined ||
+        data.dayOfWeek < 0 ||
+        data.dayOfWeek > 6
+      ) {
+        throw new Error(
+          'Day of week (0-6) is required for weekly/bi-weekly recurrence',
+        );
+      }
+    } else if (
+      frequency === RecurrenceFrequency.MONTHLY ||
+      frequency === RecurrenceFrequency.YEARLY
+    ) {
+      // Monthly/Yearly with SPECIFIC_DAY requires dayOfMonth
+      if (dayMode === DayMode.SPECIFIC_DAY) {
+        if (!data.dayOfMonth || data.dayOfMonth < 1 || data.dayOfMonth > 28) {
+          throw new Error(
+            'Day of month (1-28) is required for specific day mode',
+          );
+        }
+      }
+
+      // NTH_WEEKDAY requires dayOfWeek and weekOfMonth
+      if (dayMode === DayMode.NTH_WEEKDAY) {
+        if (
+          data.dayOfWeek === undefined ||
+          data.dayOfWeek < 0 ||
+          data.dayOfWeek > 6
+        ) {
+          throw new Error('Day of week (0-6) is required for nth weekday mode');
+        }
+        if (!data.weekOfMonth || data.weekOfMonth < 1 || data.weekOfMonth > 5) {
+          throw new Error(
+            'Week of month (1-5) is required for nth weekday mode',
+          );
+        }
+      }
     }
 
     // Validate monthOfYear for yearly frequency
-    if (data.frequency === RecurrenceFrequency.YEARLY && !data.monthOfYear) {
+    if (frequency === RecurrenceFrequency.YEARLY && !data.monthOfYear) {
       throw new Error('Month of year is required for yearly recurrence');
     }
 
@@ -93,7 +137,7 @@ export class RecurringTransactionService {
       occurrences = [new Date(data.startDate)];
       const baseYear = data.startDate.getFullYear();
       const baseMonth = data.startDate.getMonth();
-      const targetDay = data.dayOfMonth;
+      const targetDay = data.dayOfMonth || data.startDate.getDate();
 
       for (let i = 1; i < data.totalInstallments; i++) {
         // Calcular o mês alvo
@@ -121,8 +165,11 @@ export class RecurringTransactionService {
       occurrences = this.calculateOccurrences(
         data.startDate,
         data.endDate,
-        data.frequency as RecurrenceFrequency,
+        frequency,
+        dayMode,
         data.dayOfMonth,
+        data.dayOfWeek,
+        data.weekOfMonth,
         data.monthOfYear,
       );
     }
@@ -140,8 +187,11 @@ export class RecurringTransactionService {
         estimatedAmount: data.estimatedAmount,
         type: data.type as TransactionType,
         paymentMethod: data.paymentMethod as PaymentMethod | undefined,
-        frequency: data.frequency as RecurrenceFrequency,
+        frequency,
+        dayMode,
         dayOfMonth: data.dayOfMonth,
+        dayOfWeek: data.dayOfWeek,
+        weekOfMonth: data.weekOfMonth,
         monthOfYear: data.monthOfYear,
         startDate: data.startDate,
         endDate: data.endDate,
@@ -278,63 +328,140 @@ export class RecurringTransactionService {
     startDate: Date,
     endDate: Date | null | undefined,
     frequency: RecurrenceFrequency,
-    dayOfMonth: number,
+    dayMode: DayMode,
+    dayOfMonth?: number | null,
+    dayOfWeek?: number | null,
+    weekOfMonth?: number | null,
     monthOfYear?: number | null,
   ): Date[] {
     const dates: Date[] = [];
     const maxDate =
       endDate || this.addYears(new Date(), this.MAX_GENERATION_YEARS);
 
-    // Get the first occurrence
-    let currentDate = this.getFirstOccurrence(
-      startDate,
-      frequency,
-      dayOfMonth,
-      monthOfYear,
-    );
+    // Handle weekly/bi-weekly frequency
+    if (
+      frequency === RecurrenceFrequency.WEEKLY ||
+      frequency === RecurrenceFrequency.BI_WEEKLY
+    ) {
+      const weekInterval = frequency === RecurrenceFrequency.BI_WEEKLY ? 2 : 1;
+      let currentDate = this.getNextWeekday(startDate, dayOfWeek ?? 0);
 
-    while (currentDate <= maxDate) {
-      dates.push(new Date(currentDate));
-
-      if (frequency === RecurrenceFrequency.MONTHLY) {
-        currentDate = this.addMonths(currentDate, 1);
-      } else {
-        currentDate = this.addYears(currentDate, 1);
+      // If starting weekday is same as startDate, use startDate
+      if (startDate.getDay() === dayOfWeek) {
+        currentDate = new Date(startDate);
       }
+
+      while (currentDate <= maxDate) {
+        dates.push(new Date(currentDate));
+        currentDate = this.addWeeks(currentDate, weekInterval);
+      }
+      return dates;
+    }
+
+    // Handle monthly frequency
+    if (frequency === RecurrenceFrequency.MONTHLY) {
+      let year = startDate.getFullYear();
+      let month = startDate.getMonth();
+
+      while (true) {
+        const occurrenceDate = this.getDateForDayMode(
+          year,
+          month,
+          dayMode,
+          dayOfMonth,
+          dayOfWeek,
+          weekOfMonth,
+        );
+
+        if (
+          occurrenceDate &&
+          occurrenceDate >= startDate &&
+          occurrenceDate <= maxDate
+        ) {
+          dates.push(occurrenceDate);
+        }
+
+        // Move to next month
+        month++;
+        if (month > 11) {
+          month = 0;
+          year++;
+        }
+
+        // Check if we've passed the max date
+        const checkDate = new Date(year, month, 1);
+        if (checkDate > maxDate) break;
+      }
+      return dates;
+    }
+
+    // Handle yearly frequency
+    if (frequency === RecurrenceFrequency.YEARLY) {
+      let year = startDate.getFullYear();
+      const targetMonth = (monthOfYear ?? 1) - 1; // Convert 1-12 to 0-11
+
+      while (true) {
+        const occurrenceDate = this.getDateForDayMode(
+          year,
+          targetMonth,
+          dayMode,
+          dayOfMonth,
+          dayOfWeek,
+          weekOfMonth,
+        );
+
+        if (
+          occurrenceDate &&
+          occurrenceDate >= startDate &&
+          occurrenceDate <= maxDate
+        ) {
+          dates.push(occurrenceDate);
+        }
+
+        year++;
+        if (new Date(year, targetMonth, 1) > maxDate) break;
+      }
+      return dates;
     }
 
     return dates;
   }
 
   /**
-   * Calculates the first occurrence based on start date and recurrence settings
+   * Gets the correct date for a given month/year based on the DayMode
    */
-  private getFirstOccurrence(
-    startDate: Date,
-    frequency: RecurrenceFrequency,
-    dayOfMonth: number,
-    monthOfYear?: number | null,
-  ): Date {
-    const start = new Date(startDate);
-    const year = start.getFullYear();
-    let month = start.getMonth();
+  private getDateForDayMode(
+    year: number,
+    month: number,
+    dayMode: DayMode,
+    dayOfMonth?: number | null,
+    dayOfWeek?: number | null,
+    weekOfMonth?: number | null,
+  ): Date | null {
+    switch (dayMode) {
+      case DayMode.SPECIFIC_DAY:
+        return new Date(year, month, dayOfMonth ?? 1);
 
-    if (frequency === RecurrenceFrequency.YEARLY && monthOfYear) {
-      month = monthOfYear - 1; // Convert 1-12 to 0-11
+      case DayMode.LAST_DAY:
+        return this.getLastDayOfMonth(year, month);
+
+      case DayMode.LAST_BUSINESS_DAY:
+        return this.getLastBusinessDayOfMonth(year, month);
+
+      case DayMode.FIRST_BUSINESS_DAY:
+        return this.getFirstBusinessDayOfMonth(year, month);
+
+      case DayMode.NTH_WEEKDAY:
+        return this.getNthWeekdayOfMonth(
+          year,
+          month,
+          dayOfWeek ?? 0,
+          weekOfMonth ?? 1,
+        );
+
+      default:
+        return new Date(year, month, dayOfMonth ?? 1);
     }
-
-    let firstOccurrence = new Date(year, month, dayOfMonth);
-
-    // If the calculated date is before start date, move to next period
-    if (firstOccurrence < start) {
-      if (frequency === RecurrenceFrequency.MONTHLY) {
-        firstOccurrence = this.addMonths(firstOccurrence, 1);
-      } else {
-        firstOccurrence = this.addYears(firstOccurrence, 1);
-      }
-    }
-
-    return firstOccurrence;
   }
 
   /**
@@ -413,7 +540,10 @@ export class RecurringTransactionService {
       endDate: Date | null;
       startDate: Date;
       frequency: RecurrenceFrequency;
-      dayOfMonth: number;
+      dayMode: DayMode;
+      dayOfMonth: number | null;
+      dayOfWeek: number | null;
+      weekOfMonth: number | null;
       monthOfYear: number | null;
       description: string;
       estimatedAmount: Prisma.Decimal;
@@ -446,7 +576,10 @@ export class RecurringTransactionService {
           ),
           newMaxDate,
           recurring.frequency,
+          recurring.dayMode,
           recurring.dayOfMonth,
+          recurring.dayOfWeek,
+          recurring.weekOfMonth,
           recurring.monthOfYear,
         ).filter((d) => d > lastTransaction.date);
 
@@ -486,7 +619,10 @@ export class RecurringTransactionService {
         oldEndDate,
         newEndDate,
         recurring.frequency,
+        recurring.dayMode,
         recurring.dayOfMonth,
+        recurring.dayOfWeek,
+        recurring.weekOfMonth,
         recurring.monthOfYear,
       ).filter((d) => d > oldEndDate);
 
@@ -679,6 +815,108 @@ export class RecurringTransactionService {
   private addYears(date: Date, years: number): Date {
     const result = new Date(date);
     result.setFullYear(result.getFullYear() + years);
+    return result;
+  }
+
+  private addWeeks(date: Date, weeks: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + weeks * 7);
+    return result;
+  }
+
+  private isWeekend(date: Date): boolean {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  }
+
+  private isBusinessDay(date: Date): boolean {
+    return !this.isWeekend(date);
+  }
+
+  private getLastDayOfMonth(year: number, month: number): Date {
+    // month is 0-indexed, so new Date(year, month + 1, 0) gives last day of month
+    return new Date(year, month + 1, 0);
+  }
+
+  private getLastBusinessDayOfMonth(year: number, month: number): Date {
+    const lastDay = this.getLastDayOfMonth(year, month);
+    while (this.isWeekend(lastDay)) {
+      lastDay.setDate(lastDay.getDate() - 1);
+    }
+    return lastDay;
+  }
+
+  private getFirstBusinessDayOfMonth(year: number, month: number): Date {
+    const firstDay = new Date(year, month, 1);
+    while (this.isWeekend(firstDay)) {
+      firstDay.setDate(firstDay.getDate() + 1);
+    }
+    return firstDay;
+  }
+
+  private getLastDayOfYear(year: number): Date {
+    return new Date(year, 11, 31); // December 31
+  }
+
+  private getLastBusinessDayOfYear(year: number): Date {
+    const lastDay = this.getLastDayOfYear(year);
+    while (this.isWeekend(lastDay)) {
+      lastDay.setDate(lastDay.getDate() - 1);
+    }
+    return lastDay;
+  }
+
+  private getFirstBusinessDayOfYear(year: number): Date {
+    const firstDay = new Date(year, 0, 1); // January 1
+    while (this.isWeekend(firstDay)) {
+      firstDay.setDate(firstDay.getDate() + 1);
+    }
+    return firstDay;
+  }
+
+  /**
+   * Gets the Nth occurrence of a specific weekday in a month
+   * @param year - Year
+   * @param month - Month (0-indexed)
+   * @param dayOfWeek - Day of week (0=Sunday, 6=Saturday)
+   * @param nth - Which occurrence (1=first, 2=second, etc.)
+   */
+  private getNthWeekdayOfMonth(
+    year: number,
+    month: number,
+    dayOfWeek: number,
+    nth: number,
+  ): Date | null {
+    const firstDay = new Date(year, month, 1);
+    const firstDayOfWeek = firstDay.getDay();
+
+    // Calculate the first occurrence of the desired day
+    let daysToAdd = dayOfWeek - firstDayOfWeek;
+    if (daysToAdd < 0) daysToAdd += 7;
+
+    const firstOccurrence = new Date(year, month, 1 + daysToAdd);
+
+    // Add weeks for nth occurrence
+    const result = new Date(firstOccurrence);
+    result.setDate(result.getDate() + (nth - 1) * 7);
+
+    // Verify it's still in the same month
+    if (result.getMonth() !== month) {
+      return null; // nth occurrence doesn't exist in this month
+    }
+
+    return result;
+  }
+
+  /**
+   * Gets date for a specific day of week in a given week
+   */
+  private getNextWeekday(startDate: Date, dayOfWeek: number): Date {
+    const result = new Date(startDate);
+    const currentDay = result.getDay();
+    let daysToAdd = dayOfWeek - currentDay;
+    if (daysToAdd <= 0) daysToAdd += 7;
+    result.setDate(result.getDate() + daysToAdd);
     return result;
   }
 }

@@ -505,6 +505,8 @@ type InvestmentTransaction {
 type RecurringTransactionAvgAggregate {
   estimatedAmount: Decimal
   dayOfMonth: Float
+  dayOfWeek: Float
+  weekOfMonth: Float
   monthOfYear: Float
   totalInstallments: Float
 }
@@ -516,7 +518,10 @@ type RecurringTransactionCountAggregate {
   type: Int!
   paymentMethod: Int!
   frequency: Int!
+  dayMode: Int!
   dayOfMonth: Int!
+  dayOfWeek: Int!
+  weekOfMonth: Int!
   monthOfYear: Int!
   startDate: Int!
   endDate: Int!
@@ -542,7 +547,10 @@ type RecurringTransactionMaxAggregate {
   type: TransactionType
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency
+  dayMode: DayMode
   dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime
   endDate: DateTime
@@ -571,8 +579,18 @@ enum PaymentMethod {
 }
 
 enum RecurrenceFrequency {
+  WEEKLY
+  BI_WEEKLY
   MONTHLY
   YEARLY
+}
+
+enum DayMode {
+  SPECIFIC_DAY
+  LAST_DAY
+  LAST_BUSINESS_DAY
+  FIRST_BUSINESS_DAY
+  NTH_WEEKDAY
 }
 
 enum RecurrenceType {
@@ -587,7 +605,10 @@ type RecurringTransactionMinAggregate {
   type: TransactionType
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency
+  dayMode: DayMode
   dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime
   endDate: DateTime
@@ -604,6 +625,8 @@ type RecurringTransactionMinAggregate {
 type RecurringTransactionSumAggregate {
   estimatedAmount: Decimal
   dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   totalInstallments: Int
 }
@@ -615,7 +638,10 @@ type RecurringTransaction {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode!
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -1203,7 +1229,10 @@ type RecurringTransactionModel {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode!
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -1385,7 +1414,10 @@ enum OrdenationRecurringTransactionModel {
   type
   paymentMethod
   frequency
+  dayMode
   dayOfMonth
+  dayOfWeek
+  weekOfMonth
   monthOfYear
   startDate
   endDate
@@ -2180,7 +2212,10 @@ input RecurringTransactionWhereInput {
   type: EnumTransactionTypeFilter
   paymentMethod: EnumPaymentMethodNullableFilter
   frequency: EnumRecurrenceFrequencyFilter
-  dayOfMonth: IntFilter
+  dayMode: EnumDayModeFilter
+  dayOfMonth: IntNullableFilter
+  dayOfWeek: IntNullableFilter
+  weekOfMonth: IntNullableFilter
   monthOfYear: IntNullableFilter
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
@@ -2210,6 +2245,20 @@ input NestedEnumRecurrenceFrequencyFilter {
   in: [RecurrenceFrequency!]
   notIn: [RecurrenceFrequency!]
   not: NestedEnumRecurrenceFrequencyFilter
+}
+
+input EnumDayModeFilter {
+  equals: DayMode
+  in: [DayMode!]
+  notIn: [DayMode!]
+  not: NestedEnumDayModeFilter
+}
+
+input NestedEnumDayModeFilter {
+  equals: DayMode
+  in: [DayMode!]
+  notIn: [DayMode!]
+  not: NestedEnumDayModeFilter
 }
 
 input EnumRecurrenceTypeFilter {
@@ -2694,7 +2743,10 @@ input RecurringTransactionCreateWithoutTransactionsInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -2850,7 +2902,10 @@ input RecurringTransactionCreateWithoutDestinyAccountInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3031,7 +3086,10 @@ input RecurringTransactionCreateWithoutUserInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3084,7 +3142,10 @@ input RecurringTransactionCreateWithoutSourceAccountInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3240,7 +3301,10 @@ input RecurringTransactionWhereUniqueInput {
   type: EnumTransactionTypeFilter
   paymentMethod: EnumPaymentMethodNullableFilter
   frequency: EnumRecurrenceFrequencyFilter
-  dayOfMonth: IntFilter
+  dayMode: EnumDayModeFilter
+  dayOfMonth: IntNullableFilter
+  dayOfWeek: IntNullableFilter
+  weekOfMonth: IntNullableFilter
   monthOfYear: IntNullableFilter
   startDate: DateTimeFilter
   endDate: DateTimeNullableFilter
@@ -3270,7 +3334,10 @@ input RecurringTransactionCreateManySourceAccountInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3330,7 +3397,10 @@ input RecurringTransactionCreateManyUserInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3516,7 +3586,10 @@ input RecurringTransactionCreateManyDestinyAccountInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
@@ -3999,7 +4072,10 @@ input CreateRecurringTransactionInput {
   type: TransactionType!
   paymentMethod: PaymentMethod
   frequency: RecurrenceFrequency!
-  dayOfMonth: Int!
+  dayMode: DayMode = SPECIFIC_DAY
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
   monthOfYear: Int
   startDate: DateTime!
   endDate: DateTime
