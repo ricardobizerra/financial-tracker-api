@@ -33,10 +33,9 @@ export class AuthController {
       (req.user as Pick<User, 'id'>)?.id,
     );
 
-    this.authService.setTokenCookie(res, accessToken);
-
+    const frontendUrl = this.configService.get('FRONTEND_URL', { infer: true });
     return res.redirect(
-      this.configService.get('FRONTEND_URL', { infer: true }),
+      `${frontendUrl}/api/auth/callback?token=${accessToken}`,
     );
   }
 }
