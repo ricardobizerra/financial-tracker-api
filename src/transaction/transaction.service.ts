@@ -511,6 +511,7 @@ export class TransactionService {
     today.setHours(0, 0, 0, 0);
 
     // Buscar todas as transações no período
+    // Inclui cardBillingId e sourceAccount.type para filtrar transações de cartão de crédito
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
@@ -534,6 +535,12 @@ export class TransactionService {
         description: true,
         sourceAccountId: true,
         destinyAccountId: true,
+        cardBillingId: true,
+        sourceAccount: {
+          select: {
+            type: true,
+          },
+        },
       },
       orderBy: {
         date: 'asc',
@@ -589,6 +596,20 @@ export class TransactionService {
       }[] = [];
 
       dayTransactions.forEach((tx) => {
+        // Pular transações que fazem parte de faturas de cartão de crédito
+        // Essas transações afetam o fluxo de caixa apenas quando a fatura é paga
+        // (via transação de pagamento da fatura)
+        if (tx.cardBillingId) return;
+
+        // Pular despesas de cartão de crédito que ainda não foram associadas a uma fatura
+        // (também serão capturadas via transação de pagamento da fatura)
+        if (
+          tx.type === TransactionType.EXPENSE &&
+          tx.sourceAccount?.type === AccountType.CREDIT_CARD
+        ) {
+          return;
+        }
+
         // Para projeções, incluir apenas transações agendadas
         if (isProjected && tx.status === 'COMPLETED') return;
         // Para histórico, incluir apenas transações completadas
