@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 generator nestgraphql {
@@ -7,6 +8,11 @@ generator nestgraphql {
   output     = "../src/lib/graphql/prisma-client"
   reExport   = None
   emitSingle = true
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output   = "../prisma/dbml"
 }
 
 datasource db {
@@ -22,11 +28,119 @@ model User {
 
   role Role
 
-  investments       Investment[]
-  authUserProviders AuthUserProvider[]
+  accounts                   Account[]
+  investments                Investment[]
+  authUserProviders          AuthUserProvider[]
+  transactions               Transaction[]
+  cardBillingStatusHistories CardBillingHistory[]
+  recurringTransactions      RecurringTransaction[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Institution {
+  id      String        @id @default(uuid())
+  code    String
+  name    String
+  logoUrl String?
+  color   String?
+  types   AccountType[]
+
+  accounts Account[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id             String      @id @default(uuid())
+  name           String
+  type           AccountType
+  initialBalance Decimal     @default(0)
+  description    String?
+  isActive       Boolean     @default(true)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institutionId String
+
+  accountCard AccountCard?
+
+  sourceTransactions     Transaction[]           @relation("SourceAccount")
+  destinyTransactions    Transaction[]           @relation("DestinyAccount")
+  investments            Investment[]
+  investmentTransactions InvestmentTransaction[]
+
+  sourceRecurringTransactions  RecurringTransaction[] @relation("RecurringSource")
+  destinyRecurringTransactions RecurringTransaction[] @relation("RecurringDestiny")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AccountCard {
+  id String @id @default(uuid())
+
+  lastFourDigits    String?
+  billingCycleDay   Int
+  billingPaymentDay Int
+  type              CardType
+  defaultLimit      Decimal
+
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String  @unique
+
+  billings CardBilling[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CardBilling {
+  id String @id @default(uuid())
+
+  periodStart DateTime
+  periodEnd   DateTime?
+  paymentDate DateTime?
+  limit       Decimal
+
+  status CardBillingStatus
+
+  accountCard   AccountCard @relation(fields: [accountCardId], references: [id], onDelete: Cascade)
+  accountCardId String
+
+  paymentTransaction   Transaction? @relation(fields: [paymentTransactionId], references: [id], name: "BillingPayment")
+  paymentTransactionId String?      @unique
+
+  transactions  Transaction[]            @relation(name: "BillingTransactions")
+  installments  TransactionInstallment[]
+  statusHistory CardBillingHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([accountCardId, periodStart])
+  @@index([accountCardId])
+  @@index([paymentDate])
+}
+
+model CardBillingHistory {
+  id        String            @id @default(uuid())
+  status    CardBillingStatus
+  changedAt DateTime          @default(now())
+
+  cardBilling   CardBilling @relation(fields: [cardBillingId], references: [id], onDelete: Cascade)
+  cardBillingId String
+
+  changedBy   User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedById String?
+
+  @@index([cardBillingId])
+  @@index([changedById])
+  @@index([changedAt])
 }
 
 model AuthUserProvider {
@@ -54,14 +168,164 @@ model Investment {
   finishedAt      DateTime?
   lastCorrectedAt DateTime?
 
+  status InvestmentStatus @default(OPEN)
+
   regimeName       Regime
   regimePercentage Float? @default(100)
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+
+  transactions InvestmentTransaction[]
+
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InvestmentTransaction {
+  id     String                    @id @default(uuid())
+  role   InvestmentTransactionRole
+  amount Decimal
+
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  investmentId String
+
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([investmentId])
+  @@index([accountId])
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  description    String
+  amount         Decimal
+  date           DateTime
+  status         TransactionStatus
+  type           TransactionType
+  paymentMethod  PaymentMethod?
+  paymentEnabled Boolean           @default(true)
+  paymentLimit   DateTime?
+
+  sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "SourceAccount")
+  sourceAccountId String?
+
+  destinyAccount   Account? @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "DestinyAccount")
+  destinyAccountId String?
+
+  billingPayment CardBilling? @relation(name: "BillingPayment")
+
+  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull, name: "BillingTransactions")
+  cardBillingId String?
+
+  recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
+  recurringTransactionId String?
+
+  installments TransactionInstallment[]
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TransactionInstallment {
+  id String @id @default(uuid())
+
+  installmentNumber Int
+  amount            Decimal
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+
+  cardBilling   CardBilling? @relation(fields: [cardBillingId], references: [id], onDelete: SetNull)
+  cardBillingId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RecurringTransaction {
+  id              String          @id @default(uuid())
+  description     String
+  estimatedAmount Decimal
+  type            TransactionType
+  paymentMethod   PaymentMethod?
+
+  frequency   RecurrenceFrequency
+  dayMode     DayMode             @default(SPECIFIC_DAY)
+  dayOfMonth  Int? // 1-28 for SPECIFIC_DAY mode
+  dayOfWeek   Int? // 0-6 (Sun-Sat) for WEEKLY/BI_WEEKLY
+  weekOfMonth Int? // 1-5 for NTH_WEEKDAY mode
+  monthOfYear Int? // For YEARLY: 1-12, null for other frequencies
+
+  startDate DateTime
+  endDate   DateTime? // null = generate up to practical limit (2 years)
+  isActive  Boolean   @default(true)
+
+  // Tipo de recorrência
+  recurrenceType    RecurrenceType @default(PERIODIC)
+  totalInstallments Int? // Total de parcelas para INSTALLMENT
+
+  sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "RecurringSource")
+  sourceAccountId String?
+
+  destinyAccount   Account? @relation(fields: [destinyAccountId], references: [id], onDelete: Cascade, name: "RecurringDestiny")
+  destinyAccountId String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+enum AccountType {
+  WALLET // Carteira física
+  CHECKING // Conta corrente
+  SAVINGS // Poupança
+  INVESTMENT // Investimentos
+  CREDIT_CARD // Cartão de crédito
+  OTHER // Outros tipos
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+enum CardBillingStatus {
+  PENDING
+  CLOSED
+  PAID
+  OVERDUE
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BOLETO
+}
+
+enum InvestmentStatus {
+  OPEN
+  CLOSED
 }
 
 enum AuthProviderName {
@@ -76,4 +340,44 @@ enum Role {
 enum Regime {
   CDI
   POUPANCA
+}
+
+enum InvestmentTransactionRole {
+  FUNDING
+  REDEMPTION
+  INCOME
+  FEE
+}
+
+enum TransactionStatus {
+  PLANNED
+  COMPLETED
+  CANCELED
+  OVERDUE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  BETWEEN_ACCOUNTS
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum DayMode {
+  SPECIFIC_DAY // Use dayOfMonth or dayOfWeek as-is
+  LAST_DAY // Last day of period (month/year)
+  LAST_BUSINESS_DAY // Last business day (excluding weekends)
+  FIRST_BUSINESS_DAY // First business day
+  NTH_WEEKDAY // e.g., "2nd Tuesday of month"
+}
+
+enum RecurrenceType {
+  PERIODIC // Recorrência baseada em período (infinita até endDate)
+  INSTALLMENT // Parcelamento com número fixo de parcelas
 }
