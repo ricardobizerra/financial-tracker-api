@@ -1,0 +1,43 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  email String [unique, not null]
+  password String [not null]
+  name String [not null]
+  role Role [not null]
+  investments Investment [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+}
+
+Table Investment {
+  id String [pk]
+  amount Float [not null]
+  correctedAmount Float
+  taxedAmount Float
+  startDate DateTime [not null]
+  duration Int
+  finishedAt DateTime
+  lastCorrectedAt DateTime
+  regimeName Regime [not null]
+  regimePercentage Float [default: 100]
+  user User [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+}
+
+Enum Role {
+  ADMIN
+  USER
+}
+
+Enum Regime {
+  CDI
+  POUPANCA
+}
+
+Ref: Investment.userId > User.id [delete: Cascade]
