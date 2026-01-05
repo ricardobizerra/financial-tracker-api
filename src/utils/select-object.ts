@@ -1,3 +1,5 @@
+import { Decimal } from '@prisma/client/runtime/library';
+
 type ExtraModelFields<TDatabase, TModel> = Exclude<
   keyof TModel,
   keyof TDatabase
@@ -25,7 +27,24 @@ type SelectObjectParams<TDatabase, TModel> =
         hashDifferentFields: RequiredHashFields<TDatabase, TModel>,
       ];
 
-type SelectObjectReturn<TDatabase> = Partial<Record<keyof TDatabase, true>>;
+type ScalarFields<T> = {
+  [K in keyof T]: T[K] extends object | undefined | null
+    ? T[K] extends Date | Decimal | Array<string>
+      ? K
+      : never
+    : K;
+}[keyof T];
+
+type RelationFields<T> = Exclude<keyof T, ScalarFields<T>>;
+
+type SelectObjectReturn<TDatabase> = Partial<{
+  [K in ScalarFields<TDatabase>]: boolean;
+}> &
+  Partial<{
+    [K in RelationFields<TDatabase>]:
+      | boolean
+      | { select: SelectObjectReturn<any> };
+  }>;
 
 export function selectObject<
   TDatabase extends Record<string, any>,
@@ -33,10 +52,7 @@ export function selectObject<
 >(
   ...args: SelectObjectParams<TDatabase, TModel>
 ): SelectObjectReturn<TDatabase> {
-  const [queriedFields, hashDifferentFields] = args as SelectObjectParams<
-    TDatabase,
-    TModel
-  >;
+  const [queriedFields, hashDifferentFields] = args;
 
   const processFields = (fields: (keyof TDatabase)[]) =>
     selectObject<TDatabase, TDatabase>(fields);
@@ -51,6 +67,33 @@ export function selectObject<
       ] as (keyof TDatabase)[];
       return { ...acc, ...processFields(hashedFields) };
     }
+
+    if ((field as string).includes('.')) {
+      const [relation, ...subFields] = (field as string).split('.');
+      const subField = subFields.join('.');
+
+      // Se a relation não existe, cria como objeto com select
+      if (!acc[relation]) {
+        acc[relation] = { select: {} };
+      }
+
+      // Se a relation existe mas é true (não é objeto), converte para objeto com select
+      if (
+        acc[relation] === true ||
+        typeof acc[relation] !== 'object' ||
+        !('select' in acc[relation])
+      ) {
+        acc[relation] = { select: {} };
+      }
+
+      if (subField.includes('.')) {
+        reduceFields(acc[relation].select, subField);
+      } else {
+        acc[relation].select[subField] = true;
+      }
+      return acc;
+    }
+
     return { ...acc, [field]: true };
   };
 
@@ -63,8 +106,7 @@ export function selectObject<
     return reducedFields;
   }
 
-  const defaultFields = processFields(
-    hashDifferentFields.DEFAULT as (keyof TDatabase)[],
-  );
+  const defaultFields = processFields(hashDifferentFields.DEFAULT);
+
   return { ...reducedFields, ...defaultFields };
 }

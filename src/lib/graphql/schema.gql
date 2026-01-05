@@ -2,6 +2,341 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AccountAvgAggregate {
+  initialBalance: Decimal
+}
+
+"""An arbitrary-precision Decimal type"""
+scalar Decimal
+
+type AccountCountAggregate {
+  id: Int!
+  name: Int!
+  type: Int!
+  initialBalance: Int!
+  description: Int!
+  isActive: Int!
+  userId: Int!
+  institutionId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type AccountCount {
+  sourceTransactions: Int!
+  destinyTransactions: Int!
+  investments: Int!
+  investmentTransactions: Int!
+  sourceRecurringTransactions: Int!
+  destinyRecurringTransactions: Int!
+}
+
+type AccountMaxAggregate {
+  id: String
+  name: String
+  type: AccountType
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  userId: String
+  institutionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum AccountType {
+  WALLET
+  CHECKING
+  SAVINGS
+  INVESTMENT
+  CREDIT_CARD
+  OTHER
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type AccountMinAggregate {
+  id: String
+  name: String
+  type: AccountType
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  userId: String
+  institutionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AccountSumAggregate {
+  initialBalance: Decimal
+}
+
+type Account {
+  id: ID!
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal!
+  description: String
+  isActive: Boolean!
+  userId: String!
+  institutionId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+  institution: Institution!
+  accountCard: AccountCard
+  sourceTransactions: [Transaction!]
+  destinyTransactions: [Transaction!]
+  investments: [Investment!]
+  investmentTransactions: [InvestmentTransaction!]
+  sourceRecurringTransactions: [RecurringTransaction!]
+  destinyRecurringTransactions: [RecurringTransaction!]
+  _count: AccountCount!
+}
+
+type AccountCardAvgAggregate {
+  billingCycleDay: Float
+  billingPaymentDay: Float
+  defaultLimit: Decimal
+}
+
+type AccountCardCountAggregate {
+  id: Int!
+  lastFourDigits: Int!
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
+  type: Int!
+  defaultLimit: Int!
+  accountId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type AccountCardCount {
+  billings: Int!
+}
+
+type AccountCardMaxAggregate {
+  id: String
+  lastFourDigits: String
+  billingCycleDay: Int
+  billingPaymentDay: Int
+  type: CardType
+  defaultLimit: Decimal
+  accountId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+type AccountCardMinAggregate {
+  id: String
+  lastFourDigits: String
+  billingCycleDay: Int
+  billingPaymentDay: Int
+  type: CardType
+  defaultLimit: Decimal
+  accountId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AccountCardSumAggregate {
+  billingCycleDay: Int
+  billingPaymentDay: Int
+  defaultLimit: Decimal
+}
+
+type AccountCard {
+  id: ID!
+  lastFourDigits: String
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
+  type: CardType!
+  defaultLimit: Decimal!
+  accountId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  account: Account!
+  billings: [CardBilling!]
+  _count: AccountCardCount!
+}
+
+type CardBillingAvgAggregate {
+  limit: Decimal
+}
+
+type CardBillingCountAggregate {
+  id: Int!
+  periodStart: Int!
+  periodEnd: Int!
+  paymentDate: Int!
+  limit: Int!
+  status: Int!
+  accountCardId: Int!
+  paymentTransactionId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type CardBillingCount {
+  transactions: Int!
+  installments: Int!
+  statusHistory: Int!
+}
+
+type CardBillingMaxAggregate {
+  id: String
+  periodStart: DateTime
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal
+  status: CardBillingStatus
+  accountCardId: String
+  paymentTransactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum CardBillingStatus {
+  PENDING
+  CLOSED
+  PAID
+  OVERDUE
+  COMPLETED
+}
+
+type CardBillingMinAggregate {
+  id: String
+  periodStart: DateTime
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal
+  status: CardBillingStatus
+  accountCardId: String
+  paymentTransactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CardBillingSumAggregate {
+  limit: Decimal
+}
+
+type CardBilling {
+  id: ID!
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  accountCardId: String!
+  paymentTransactionId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accountCard: AccountCard!
+  paymentTransaction: Transaction
+  transactions: [Transaction!]
+  installments: [TransactionInstallment!]
+  statusHistory: [CardBillingHistory!]
+  _count: CardBillingCount!
+}
+
+type CardBillingHistoryCountAggregate {
+  id: Int!
+  status: Int!
+  changedAt: Int!
+  cardBillingId: Int!
+  changedById: Int!
+  _all: Int!
+}
+
+type CardBillingHistoryMaxAggregate {
+  id: String
+  status: CardBillingStatus
+  changedAt: DateTime
+  cardBillingId: String
+  changedById: String
+}
+
+type CardBillingHistoryMinAggregate {
+  id: String
+  status: CardBillingStatus
+  changedAt: DateTime
+  cardBillingId: String
+  changedById: String
+}
+
+type CardBillingHistory {
+  id: ID!
+  status: CardBillingStatus!
+  changedAt: DateTime!
+  cardBillingId: String!
+  changedById: String
+  cardBilling: CardBilling!
+  changedBy: User
+}
+
+type InstitutionCountAggregate {
+  id: Int!
+  code: Int!
+  name: Int!
+  logoUrl: Int!
+  color: Int!
+  types: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type InstitutionCount {
+  accounts: Int!
+}
+
+type InstitutionMaxAggregate {
+  id: String
+  code: String
+  name: String
+  logoUrl: String
+  color: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type InstitutionMinAggregate {
+  id: String
+  code: String
+  name: String
+  logoUrl: String
+  color: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Institution {
+  id: ID!
+  code: String!
+  name: String!
+  logoUrl: String
+  color: String
+  types: [AccountType!]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accounts: [Account!]
+  _count: InstitutionCount!
+}
+
 type InvestmentAvgAggregate {
   amount: Float
   correctedAmount: Float
@@ -19,12 +354,18 @@ type InvestmentCountAggregate {
   duration: Int!
   finishedAt: Int!
   lastCorrectedAt: Int!
+  status: Int!
   regimeName: Int!
   regimePercentage: Int!
   userId: Int!
+  accountId: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
+}
+
+type InvestmentCount {
+  transactions: Int!
 }
 
 type InvestmentMaxAggregate {
@@ -36,17 +377,19 @@ type InvestmentMaxAggregate {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime
   regimePercentage: Float
   userId: String
+  accountId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
 
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
+enum InvestmentStatus {
+  OPEN
+  CLOSED
+}
 
 enum Regime {
   CDI
@@ -62,9 +405,11 @@ type InvestmentMinAggregate {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime
   regimePercentage: Float
   userId: String
+  accountId: String
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -86,12 +431,390 @@ type Investment {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus!
   regimeName: Regime!
   regimePercentage: Float
   userId: String!
+  accountId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   user: User!
+  account: Account!
+  transactions: [InvestmentTransaction!]
+  _count: InvestmentCount!
+}
+
+type InvestmentTransactionAvgAggregate {
+  amount: Decimal
+}
+
+type InvestmentTransactionCountAggregate {
+  id: Int!
+  role: Int!
+  amount: Int!
+  investmentId: Int!
+  accountId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type InvestmentTransactionMaxAggregate {
+  id: String
+  role: InvestmentTransactionRole
+  amount: Decimal
+  investmentId: String
+  accountId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum InvestmentTransactionRole {
+  FUNDING
+  REDEMPTION
+  INCOME
+  FEE
+}
+
+type InvestmentTransactionMinAggregate {
+  id: String
+  role: InvestmentTransactionRole
+  amount: Decimal
+  investmentId: String
+  accountId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type InvestmentTransactionSumAggregate {
+  amount: Decimal
+}
+
+type InvestmentTransaction {
+  id: ID!
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  investmentId: String!
+  accountId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  investment: Investment!
+  account: Account!
+}
+
+type RecurringTransactionAvgAggregate {
+  estimatedAmount: Decimal
+  dayOfMonth: Float
+  dayOfWeek: Float
+  weekOfMonth: Float
+  monthOfYear: Float
+  totalInstallments: Float
+}
+
+type RecurringTransactionCountAggregate {
+  id: Int!
+  description: Int!
+  estimatedAmount: Int!
+  type: Int!
+  paymentMethod: Int!
+  frequency: Int!
+  dayMode: Int!
+  dayOfMonth: Int!
+  dayOfWeek: Int!
+  weekOfMonth: Int!
+  monthOfYear: Int!
+  startDate: Int!
+  endDate: Int!
+  isActive: Int!
+  recurrenceType: Int!
+  totalInstallments: Int!
+  sourceAccountId: Int!
+  destinyAccountId: Int!
+  userId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type RecurringTransactionCount {
+  transactions: Int!
+}
+
+type RecurringTransactionMaxAggregate {
+  id: String
+  description: String
+  estimatedAmount: Decimal
+  type: TransactionType
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  sourceAccountId: String
+  destinyAccountId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  BETWEEN_ACCOUNTS
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BOLETO
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum DayMode {
+  SPECIFIC_DAY
+  LAST_DAY
+  LAST_BUSINESS_DAY
+  FIRST_BUSINESS_DAY
+  NTH_WEEKDAY
+}
+
+enum RecurrenceType {
+  PERIODIC
+  INSTALLMENT
+}
+
+type RecurringTransactionMinAggregate {
+  id: String
+  description: String
+  estimatedAmount: Decimal
+  type: TransactionType
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  sourceAccountId: String
+  destinyAccountId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type RecurringTransactionSumAggregate {
+  estimatedAmount: Decimal
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  totalInstallments: Int
+}
+
+type RecurringTransaction {
+  id: ID!
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode!
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean!
+  recurrenceType: RecurrenceType!
+  totalInstallments: Int
+  sourceAccountId: String
+  destinyAccountId: String
+  userId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  sourceAccount: Account
+  destinyAccount: Account
+  user: User!
+  transactions: [Transaction!]
+  _count: RecurringTransactionCount!
+}
+
+type TransactionAvgAggregate {
+  amount: Decimal
+}
+
+type TransactionCountAggregate {
+  id: Int!
+  description: Int!
+  amount: Int!
+  date: Int!
+  status: Int!
+  type: Int!
+  paymentMethod: Int!
+  paymentEnabled: Int!
+  paymentLimit: Int!
+  sourceAccountId: Int!
+  destinyAccountId: Int!
+  cardBillingId: Int!
+  recurringTransactionId: Int!
+  userId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type TransactionCount {
+  installments: Int!
+}
+
+type TransactionMaxAggregate {
+  id: String
+  description: String
+  amount: Decimal
+  date: DateTime
+  status: TransactionStatus
+  type: TransactionType
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum TransactionStatus {
+  PLANNED
+  COMPLETED
+  CANCELED
+  OVERDUE
+}
+
+type TransactionMinAggregate {
+  id: String
+  description: String
+  amount: Decimal
+  date: DateTime
+  status: TransactionStatus
+  type: TransactionType
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type TransactionSumAggregate {
+  amount: Decimal
+}
+
+type Transaction {
+  id: ID!
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean!
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  userId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  sourceAccount: Account
+  destinyAccount: Account
+  billingPayment: CardBilling
+  cardBilling: CardBilling
+  recurringTransaction: RecurringTransaction
+  installments: [TransactionInstallment!]
+  user: User!
+  _count: TransactionCount!
+}
+
+type TransactionInstallmentAvgAggregate {
+  installmentNumber: Float
+  amount: Decimal
+}
+
+type TransactionInstallmentCountAggregate {
+  id: Int!
+  installmentNumber: Int!
+  amount: Int!
+  transactionId: Int!
+  cardBillingId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type TransactionInstallmentMaxAggregate {
+  id: String
+  installmentNumber: Int
+  amount: Decimal
+  transactionId: String
+  cardBillingId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type TransactionInstallmentMinAggregate {
+  id: String
+  installmentNumber: Int
+  amount: Decimal
+  transactionId: String
+  cardBillingId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type TransactionInstallmentSumAggregate {
+  installmentNumber: Int
+  amount: Decimal
+}
+
+type TransactionInstallment {
+  id: ID!
+  installmentNumber: Int!
+  amount: Decimal!
+  transactionId: String!
+  cardBillingId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  transaction: Transaction!
+  cardBilling: CardBilling
 }
 
 type UserCountAggregate {
@@ -106,7 +829,11 @@ type UserCountAggregate {
 }
 
 type UserCount {
+  accounts: Int!
   investments: Int!
+  transactions: Int!
+  cardBillingStatusHistories: Int!
+  recurringTransactions: Int!
 }
 
 type UserMaxAggregate {
@@ -142,7 +869,11 @@ type User {
   role: Role!
   createdAt: DateTime!
   updatedAt: DateTime!
+  accounts: [Account!]
   investments: [Investment!]
+  transactions: [Transaction!]
+  cardBillingStatusHistories: [CardBillingHistory!]
+  recurringTransactions: [RecurringTransaction!]
   _count: UserCount!
 }
 
@@ -184,10 +915,14 @@ type InvestmentModel {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus!
   regimeName: Regime!
   regimePercentage: Float
+  accountId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
+  account: Account!
+  transactions: [InvestmentTransaction!]
   currentVariation: String!
   taxPercentage: String!
   taxedVariation: String!
@@ -231,13 +966,332 @@ type InvestmentRegimeSummaryEdge {
   node: InvestmentRegimeSummary!
 }
 
+type AccountWithInvestmentCount {
+  id: String!
+  name: String!
+  institutionName: String
+  institutionLogoUrl: String
+  investmentCount: Int!
+}
+
+type InvestmentEvolutionPointModel {
+  date: DateTime!
+  invested: Float!
+  currentAmount: Float!
+  taxedAmount: Float!
+  profit: Float!
+}
+
+type InvestmentEvolutionModel {
+  dataPoints: [InvestmentEvolutionPointModel!]!
+  totalInvested: Float!
+  totalCurrentAmount: Float!
+  totalTaxedAmount: Float!
+  totalProfit: String!
+  totalProfitPercentage: String!
+}
+
+type AccountModel {
+  id: ID!
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal!
+  description: String
+  isActive: Boolean!
+  institutionId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  institution: Institution!
+  accountCard: AccountCard
+  sourceTransactions: [Transaction!]
+  destinyTransactions: [Transaction!]
+  investments: [Investment!]
+  investmentTransactions: [InvestmentTransaction!]
+  sourceRecurringTransactions: [RecurringTransaction!]
+  destinyRecurringTransactions: [RecurringTransaction!]
+  _count: AccountCount!
+  balance: Decimal
+  currentBillingAmount: Decimal
+  totalInvested: Decimal
+}
+
+type AccountConnection {
+  edges: [AccountModelEdge!]
+  pageInfo: PageInfo
+}
+
+type AccountModelEdge {
+  cursor: String!
+  node: AccountModel!
+}
+
+type CardBillingModel {
+  id: ID!
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  accountCardId: String!
+  paymentTransactionId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accountCard: AccountCard!
+  paymentTransaction: Transaction
+  transactions: [Transaction!]
+  installments: [TransactionInstallment!]
+  statusHistory: [CardBillingHistory!]
+  totalAmount: Decimal!
+  usagePercentage: Float!
+  transactionsCount: Float!
+}
+
+type CardBillingOnDate {
+  billing: CardBillingModel
+  nextBillingId: String
+  previousBillingId: String
+}
+
+type TransactionModel {
+  id: ID!
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean!
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  sourceAccount: Account
+  destinyAccount: Account
+  billingPayment: CardBilling
+  cardBilling: CardBilling
+  recurringTransaction: RecurringTransaction
+  installments: [TransactionInstallment!]
+  _count: TransactionCount!
+  canCancel: Boolean
+  cancelReason: String
+  cancelWarningMessage: String
+  installmentStartDate: DateTime
+  installmentNumber: Int
+  totalInstallments: Int
+  installmentId: String
+}
+
+type TransactionConnection {
+  edges: [TransactionModelEdge!]
+  pageInfo: PageInfo
+}
+
+type TransactionModelEdge {
+  cursor: String!
+  node: TransactionModel!
+}
+
+type TransactionsSummaryModel {
+  totalIncome: Decimal!
+  totalExpense: Decimal!
+  balance: Decimal!
+  transactionCount: Int!
+  realizedIncome: Decimal!
+  realizedExpense: Decimal!
+  realizedBalance: Decimal!
+  forecastIncome: Decimal!
+  forecastExpense: Decimal!
+  forecastBalance: Decimal!
+}
+
+type BalanceForecastTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  isIncome: Boolean!
+}
+
+type BalanceForecastPointModel {
+  date: DateTime!
+  balance: Float!
+  isProjected: Boolean!
+  incomeAmount: Float!
+  expenseAmount: Float!
+  transactionCount: Float!
+  transactions: [BalanceForecastTransactionModel!]!
+}
+
+type BalanceForecastModel {
+  dataPoints: [BalanceForecastPointModel!]!
+  currentBalance: Float!
+  projectedBalance: Float!
+  balanceTrend: Float!
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+type CalendarDayTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  status: String!
+}
+
+type CalendarDayModel {
+  date: DateTime!
+  totalIncome: Float!
+  totalExpense: Float!
+  transactionCount: Int!
+  transactions: [CalendarDayTransactionModel!]!
+}
+
+type TransactionsCalendarModel {
+  days: [CalendarDayModel!]!
+  monthTotalIncome: Float!
+  monthTotalExpense: Float!
+  monthBalance: Float!
+}
+
+type AgendaTransactionModel {
+  id: String!
+  description: String!
+  amount: Float!
+  type: String!
+  status: String!
+  date: DateTime!
+  daysUntilDue: Int!
+  isOverdue: Boolean!
+}
+
+type AgendaGroupModel {
+  label: String!
+  transactions: [AgendaTransactionModel!]!
+}
+
+type FinancialAgendaModel {
+  groups: [AgendaGroupModel!]!
+  totalIncome: Float!
+  totalExpense: Float!
+  balance: Float!
+  pendingCount: Int!
+}
+
+type TransactionGroupModel {
+  period: TransactionPeriod!
+  label: String!
+  transactions: [TransactionModel!]!
+  count: Int!
+  hasMore: Boolean!
+}
+
+"""Período temporal para agrupamento de transações"""
+enum TransactionPeriod {
+  OVERDUE
+  TODAY
+  THIS_WEEK
+  THIS_MONTH
+  NEXT_MONTH
+  FUTURE
+  PAST
+}
+
+type InstitutionModel {
+  id: ID!
+  code: String!
+  name: String!
+  logoUrl: String
+  color: String
+  types: [AccountType!]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accounts: [Account!]
+}
+
+type InstitutionConnection {
+  edges: [InstitutionModelEdge!]
+  pageInfo: PageInfo
+}
+
+type InstitutionModelEdge {
+  cursor: String!
+  node: InstitutionModel!
+}
+
+type RecurringTransactionModel {
+  id: ID!
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode!
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean!
+  recurrenceType: RecurrenceType!
+  totalInstallments: Int
+  sourceAccountId: String
+  destinyAccountId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  sourceAccount: Account
+  destinyAccount: Account
+  transactions: [Transaction!]
+  _count: RecurringTransactionCount!
+}
+
+type RecurringTransactionConnection {
+  edges: [RecurringTransactionModelEdge!]
+  pageInfo: PageInfo
+}
+
+type RecurringTransactionModelEdge {
+  cursor: String!
+  node: RecurringTransactionModel!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
-  investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime): InvestmentConnection!
+  investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime, accountIds: [String!]): InvestmentConnection!
   totalInvestments: TotalInvestmentsModel!
-  investmentRegimes: InvestmentRegimeSummaryConnection!
+  investmentRegimes(accountId: String): InvestmentRegimeSummaryConnection!
+  investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
+  investmentAccounts(regime: Regime!): [AccountWithInvestmentCount!]!
+  accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection, types: [AccountType!]): AccountConnection!
+  account(id: ID!): AccountModel!
+  accountCard(id: String!): AccountCard
+  billing(accountId: ID!, id: ID): CardBillingOnDate!
+  billingTransactions(billingId: ID!): [TransactionModel!]!
+  transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionConnection!
+  transactionsSummary(search: String, accountId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionsSummaryModel!
+  balanceForecast(
+    accountId: String
+    period: BalanceForecastPeriod! = THREE_MONTHS
+
+    """Custom start date (only used when period is CUSTOM)"""
+    startDate: DateTime
+
+    """Custom end date (only used when period is CUSTOM)"""
+    endDate: DateTime
+  ): BalanceForecastModel!
+  transactionsCalendar(accountId: String, year: Int!, month: Int!): TransactionsCalendarModel!
+  financialAgenda(accountId: String, daysAhead: Int! = 60): FinancialAgendaModel!
+  transactionsGroupedByPeriod(accountId: ID, limitPerGroup: Int = 10, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): [TransactionGroupModel!]!
+  institutions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationInstitutionModel, orderDirection: OrderDirection, types: [AccountType!]): InstitutionConnection!
+  institution(id: String!): InstitutionModel!
+  recurringTransaction(id: String!): RecurringTransactionModel
+  recurringTransactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationRecurringTransactionModel, orderDirection: OrderDirection, accountId: ID, isActive: Boolean): RecurringTransactionConnection!
 }
 
 enum OrdenationUserModel {
@@ -261,17 +1315,145 @@ enum OrdenationInvestmentModel {
   duration
   finishedAt
   lastCorrectedAt
+  status
   regimeName
   regimePercentage
+  accountId
   createdAt
   updatedAt
+  account
+  transactions
+}
+
+enum InvestmentEvolutionPeriod {
+  MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  YEAR
+  ALL
+}
+
+enum OrdenationAccountModel {
+  name
+  type
+  initialBalance
+  isActive
+  institutionId
+  createdAt
+  updatedAt
+  institution
+  accountCard
+  sourceTransactions
+  destinyTransactions
+  investments
+  investmentTransactions
+  sourceRecurringTransactions
+  destinyRecurringTransactions
+  _count
+  balance
+  currentBillingAmount
+  totalInvested
+}
+
+enum OrdenationTransactionModel {
+  description
+  amount
+  date
+  status
+  type
+  paymentMethod
+  paymentEnabled
+  paymentLimit
+  sourceAccountId
+  destinyAccountId
+  cardBillingId
+  recurringTransactionId
+  createdAt
+  updatedAt
+  sourceAccount
+  destinyAccount
+  billingPayment
+  cardBilling
+  recurringTransaction
+  installments
+  _count
+  canCancel
+  cancelReason
+  cancelWarningMessage
+  installmentStartDate
+  installmentNumber
+  totalInstallments
+  installmentId
+}
+
+"""Period presets for balance forecast"""
+enum BalanceForecastPeriod {
+  WEEK
+  MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  YEAR
+  CUSTOM
+}
+
+enum OrdenationInstitutionModel {
+  id
+  code
+  name
+  logoUrl
+  color
+  types
+  createdAt
+  updatedAt
+  accounts
+}
+
+enum OrdenationRecurringTransactionModel {
+  description
+  estimatedAmount
+  type
+  paymentMethod
+  frequency
+  dayMode
+  dayOfMonth
+  dayOfWeek
+  weekOfMonth
+  monthOfYear
+  startDate
+  endDate
+  isActive
+  recurrenceType
+  totalInstallments
+  sourceAccountId
+  destinyAccountId
+  createdAt
+  updatedAt
+  sourceAccount
+  destinyAccount
+  transactions
+  _count
 }
 
 type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
-  createInvestment(data: InvestmentCreateWithoutUserInput!): Investment!
+  createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
+  createAccount(data: CreateAccountInput!): AccountModel!
+  closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
+  updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): AccountCard!
+  createTransaction(data: CreateTransactionInput!): TransactionModel!
+  createInstallmentTransaction(data: CreateInstallmentTransactionInput!): TransactionModel!
+  updateTransaction(data: UpdateTransactionInput!): TransactionModel!
+  cancelTransaction(id: String!): TransactionModel!
+  rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
+  updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
+  createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
+  updateRecurringTransactionFromDate(id: String!, fromDate: DateTime!, data: UpdateRecurringTransactionInput!): RecurringTransactionModel!
+  pauseRecurringTransaction(id: String!): RecurringTransactionModel!
+  resumeRecurringTransaction(id: String!): RecurringTransactionModel!
+  endRecurringTransaction(id: String!, endDate: DateTime!): RecurringTransactionModel!
+  deleteRecurringTransaction(id: String!): RecurringTransactionModel!
 }
 
 input UserCreateInput {
@@ -282,74 +1464,93 @@ input UserCreateInput {
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
+  recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
 }
 
-input InvestmentCreateNestedManyWithoutUserInput {
-  create: [InvestmentCreateWithoutUserInput!]
-  connectOrCreate: [InvestmentCreateOrConnectWithoutUserInput!]
-  createMany: InvestmentCreateManyUserInputEnvelope
-  connect: [InvestmentWhereUniqueInput!]
+input AccountCreateNestedManyWithoutUserInput {
+  create: [AccountCreateWithoutUserInput!]
+  connectOrCreate: [AccountCreateOrConnectWithoutUserInput!]
+  createMany: AccountCreateManyUserInputEnvelope
+  connect: [AccountWhereUniqueInput!]
 }
 
-input InvestmentCreateWithoutUserInput {
+input AccountCreateWithoutUserInput {
   id: String
-  amount: Float!
-  correctedAmount: Float
-  taxedAmount: Float
-  startDate: DateTime!
-  duration: Int
-  finishedAt: DateTime
-  lastCorrectedAt: DateTime
-  regimeName: Regime!
-  regimePercentage: Float
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input InstitutionCreateNestedOneWithoutAccountsInput {
+  create: InstitutionCreateWithoutAccountsInput
+  connectOrCreate: InstitutionCreateOrConnectWithoutAccountsInput
+  connect: InstitutionWhereUniqueInput
+}
+
+input InstitutionCreateWithoutAccountsInput {
+  id: String
+  code: String!
+  name: String!
+  logoUrl: String
+  color: String
+  types: InstitutionCreatetypesInput
   createdAt: DateTime
   updatedAt: DateTime
 }
 
-input InvestmentCreateOrConnectWithoutUserInput {
-  where: InvestmentWhereUniqueInput!
-  create: InvestmentCreateWithoutUserInput!
+input InstitutionCreatetypesInput {
+  set: [AccountType!]!
 }
 
-input InvestmentWhereUniqueInput {
+input InstitutionCreateOrConnectWithoutAccountsInput {
+  where: InstitutionWhereUniqueInput!
+  create: InstitutionCreateWithoutAccountsInput!
+}
+
+input InstitutionWhereUniqueInput {
   id: String
-  AND: [InvestmentWhereInput!]
-  OR: [InvestmentWhereInput!]
-  NOT: [InvestmentWhereInput!]
-  amount: FloatFilter
-  correctedAmount: FloatNullableFilter
-  taxedAmount: FloatNullableFilter
-  startDate: DateTimeFilter
-  duration: IntNullableFilter
-  finishedAt: DateTimeNullableFilter
-  lastCorrectedAt: DateTimeNullableFilter
-  regimeName: EnumRegimeFilter
-  regimePercentage: FloatNullableFilter
-  userId: StringFilter
+  AND: [InstitutionWhereInput!]
+  OR: [InstitutionWhereInput!]
+  NOT: [InstitutionWhereInput!]
+  code: StringFilter
+  name: StringFilter
+  logoUrl: StringNullableFilter
+  color: StringNullableFilter
+  types: EnumAccountTypeNullableListFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
-  user: UserRelationFilter
+  accounts: AccountListRelationFilter
 }
 
-input InvestmentWhereInput {
-  AND: [InvestmentWhereInput!]
-  OR: [InvestmentWhereInput!]
-  NOT: [InvestmentWhereInput!]
+input InstitutionWhereInput {
+  AND: [InstitutionWhereInput!]
+  OR: [InstitutionWhereInput!]
+  NOT: [InstitutionWhereInput!]
   id: StringFilter
-  amount: FloatFilter
-  correctedAmount: FloatNullableFilter
-  taxedAmount: FloatNullableFilter
-  startDate: DateTimeFilter
-  duration: IntNullableFilter
-  finishedAt: DateTimeNullableFilter
-  lastCorrectedAt: DateTimeNullableFilter
-  regimeName: EnumRegimeFilter
-  regimePercentage: FloatNullableFilter
-  userId: StringFilter
+  code: StringFilter
+  name: StringFilter
+  logoUrl: StringNullableFilter
+  color: StringNullableFilter
+  types: EnumAccountTypeNullableListFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
-  user: UserRelationFilter
+  accounts: AccountListRelationFilter
 }
 
 input StringFilter {
@@ -384,6 +1585,209 @@ input NestedStringFilter {
   startsWith: String
   endsWith: String
   not: NestedStringFilter
+}
+
+input StringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  mode: QueryMode
+  not: NestedStringNullableFilter
+}
+
+input NestedStringNullableFilter {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: NestedStringNullableFilter
+}
+
+input EnumAccountTypeNullableListFilter {
+  equals: [AccountType!]
+  has: AccountType
+  hasEvery: [AccountType!]
+  hasSome: [AccountType!]
+  isEmpty: Boolean
+}
+
+input DateTimeFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeFilter
+}
+
+input NestedDateTimeFilter {
+  equals: DateTime
+  in: [DateTime!]
+  notIn: [DateTime!]
+  lt: DateTime
+  lte: DateTime
+  gt: DateTime
+  gte: DateTime
+  not: NestedDateTimeFilter
+}
+
+input AccountListRelationFilter {
+  every: AccountWhereInput
+  some: AccountWhereInput
+  none: AccountWhereInput
+}
+
+input AccountWhereInput {
+  AND: [AccountWhereInput!]
+  OR: [AccountWhereInput!]
+  NOT: [AccountWhereInput!]
+  id: StringFilter
+  name: StringFilter
+  type: EnumAccountTypeFilter
+  initialBalance: DecimalFilter
+  description: StringNullableFilter
+  isActive: BoolFilter
+  userId: StringFilter
+  institutionId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  institution: InstitutionRelationFilter
+  accountCard: AccountCardNullableRelationFilter
+  sourceTransactions: TransactionListRelationFilter
+  destinyTransactions: TransactionListRelationFilter
+  investments: InvestmentListRelationFilter
+  investmentTransactions: InvestmentTransactionListRelationFilter
+  sourceRecurringTransactions: RecurringTransactionListRelationFilter
+  destinyRecurringTransactions: RecurringTransactionListRelationFilter
+}
+
+input EnumAccountTypeFilter {
+  equals: AccountType
+  in: [AccountType!]
+  notIn: [AccountType!]
+  not: NestedEnumAccountTypeFilter
+}
+
+input NestedEnumAccountTypeFilter {
+  equals: AccountType
+  in: [AccountType!]
+  notIn: [AccountType!]
+  not: NestedEnumAccountTypeFilter
+}
+
+input DecimalFilter {
+  equals: Decimal
+  in: [Decimal!]
+  notIn: [Decimal!]
+  lt: Decimal
+  lte: Decimal
+  gt: Decimal
+  gte: Decimal
+  not: NestedDecimalFilter
+}
+
+input NestedDecimalFilter {
+  equals: Decimal
+  in: [Decimal!]
+  notIn: [Decimal!]
+  lt: Decimal
+  lte: Decimal
+  gt: Decimal
+  gte: Decimal
+  not: NestedDecimalFilter
+}
+
+input BoolFilter {
+  equals: Boolean
+  not: NestedBoolFilter
+}
+
+input NestedBoolFilter {
+  equals: Boolean
+  not: NestedBoolFilter
+}
+
+input UserRelationFilter {
+  is: UserWhereInput
+  isNot: UserWhereInput
+}
+
+input UserWhereInput {
+  AND: [UserWhereInput!]
+  OR: [UserWhereInput!]
+  NOT: [UserWhereInput!]
+  id: StringFilter
+  email: StringFilter
+  password: StringFilter
+  name: StringFilter
+  role: EnumRoleFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  accounts: AccountListRelationFilter
+  investments: InvestmentListRelationFilter
+  transactions: TransactionListRelationFilter
+  cardBillingStatusHistories: CardBillingHistoryListRelationFilter
+  recurringTransactions: RecurringTransactionListRelationFilter
+}
+
+input EnumRoleFilter {
+  equals: Role
+  in: [Role!]
+  notIn: [Role!]
+  not: NestedEnumRoleFilter
+}
+
+input NestedEnumRoleFilter {
+  equals: Role
+  in: [Role!]
+  notIn: [Role!]
+  not: NestedEnumRoleFilter
+}
+
+input InvestmentListRelationFilter {
+  every: InvestmentWhereInput
+  some: InvestmentWhereInput
+  none: InvestmentWhereInput
+}
+
+input InvestmentWhereInput {
+  AND: [InvestmentWhereInput!]
+  OR: [InvestmentWhereInput!]
+  NOT: [InvestmentWhereInput!]
+  id: StringFilter
+  amount: FloatFilter
+  correctedAmount: FloatNullableFilter
+  taxedAmount: FloatNullableFilter
+  startDate: DateTimeFilter
+  duration: IntNullableFilter
+  finishedAt: DateTimeNullableFilter
+  lastCorrectedAt: DateTimeNullableFilter
+  status: EnumInvestmentStatusFilter
+  regimeName: EnumRegimeFilter
+  regimePercentage: FloatNullableFilter
+  userId: StringFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  account: AccountRelationFilter
+  transactions: InvestmentTransactionListRelationFilter
 }
 
 input FloatFilter {
@@ -430,28 +1834,6 @@ input NestedFloatNullableFilter {
   not: NestedFloatNullableFilter
 }
 
-input DateTimeFilter {
-  equals: DateTime
-  in: [DateTime!]
-  notIn: [DateTime!]
-  lt: DateTime
-  lte: DateTime
-  gt: DateTime
-  gte: DateTime
-  not: NestedDateTimeFilter
-}
-
-input NestedDateTimeFilter {
-  equals: DateTime
-  in: [DateTime!]
-  notIn: [DateTime!]
-  lt: DateTime
-  lte: DateTime
-  gt: DateTime
-  gte: DateTime
-  not: NestedDateTimeFilter
-}
-
 input IntNullableFilter {
   equals: Int
   in: [Int!]
@@ -496,6 +1878,20 @@ input NestedDateTimeNullableFilter {
   not: NestedDateTimeNullableFilter
 }
 
+input EnumInvestmentStatusFilter {
+  equals: InvestmentStatus
+  in: [InvestmentStatus!]
+  notIn: [InvestmentStatus!]
+  not: NestedEnumInvestmentStatusFilter
+}
+
+input NestedEnumInvestmentStatusFilter {
+  equals: InvestmentStatus
+  in: [InvestmentStatus!]
+  notIn: [InvestmentStatus!]
+  not: NestedEnumInvestmentStatusFilter
+}
+
 input EnumRegimeFilter {
   equals: Regime
   in: [Regime!]
@@ -510,43 +1906,1967 @@ input NestedEnumRegimeFilter {
   not: NestedEnumRegimeFilter
 }
 
-input UserRelationFilter {
+input AccountRelationFilter {
+  is: AccountWhereInput
+  isNot: AccountWhereInput
+}
+
+input InvestmentTransactionListRelationFilter {
+  every: InvestmentTransactionWhereInput
+  some: InvestmentTransactionWhereInput
+  none: InvestmentTransactionWhereInput
+}
+
+input InvestmentTransactionWhereInput {
+  AND: [InvestmentTransactionWhereInput!]
+  OR: [InvestmentTransactionWhereInput!]
+  NOT: [InvestmentTransactionWhereInput!]
+  id: StringFilter
+  role: EnumInvestmentTransactionRoleFilter
+  amount: DecimalFilter
+  investmentId: StringFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  investment: InvestmentRelationFilter
+  account: AccountRelationFilter
+}
+
+input EnumInvestmentTransactionRoleFilter {
+  equals: InvestmentTransactionRole
+  in: [InvestmentTransactionRole!]
+  notIn: [InvestmentTransactionRole!]
+  not: NestedEnumInvestmentTransactionRoleFilter
+}
+
+input NestedEnumInvestmentTransactionRoleFilter {
+  equals: InvestmentTransactionRole
+  in: [InvestmentTransactionRole!]
+  notIn: [InvestmentTransactionRole!]
+  not: NestedEnumInvestmentTransactionRoleFilter
+}
+
+input InvestmentRelationFilter {
+  is: InvestmentWhereInput
+  isNot: InvestmentWhereInput
+}
+
+input TransactionListRelationFilter {
+  every: TransactionWhereInput
+  some: TransactionWhereInput
+  none: TransactionWhereInput
+}
+
+input TransactionWhereInput {
+  AND: [TransactionWhereInput!]
+  OR: [TransactionWhereInput!]
+  NOT: [TransactionWhereInput!]
+  id: StringFilter
+  description: StringFilter
+  amount: DecimalFilter
+  date: DateTimeFilter
+  status: EnumTransactionStatusFilter
+  type: EnumTransactionTypeFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  paymentEnabled: BoolFilter
+  paymentLimit: DateTimeNullableFilter
+  sourceAccountId: StringNullableFilter
+  destinyAccountId: StringNullableFilter
+  cardBillingId: StringNullableFilter
+  recurringTransactionId: StringNullableFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  sourceAccount: AccountNullableRelationFilter
+  destinyAccount: AccountNullableRelationFilter
+  billingPayment: CardBillingNullableRelationFilter
+  cardBilling: CardBillingNullableRelationFilter
+  recurringTransaction: RecurringTransactionNullableRelationFilter
+  installments: TransactionInstallmentListRelationFilter
+  user: UserRelationFilter
+}
+
+input EnumTransactionStatusFilter {
+  equals: TransactionStatus
+  in: [TransactionStatus!]
+  notIn: [TransactionStatus!]
+  not: NestedEnumTransactionStatusFilter
+}
+
+input NestedEnumTransactionStatusFilter {
+  equals: TransactionStatus
+  in: [TransactionStatus!]
+  notIn: [TransactionStatus!]
+  not: NestedEnumTransactionStatusFilter
+}
+
+input EnumTransactionTypeFilter {
+  equals: TransactionType
+  in: [TransactionType!]
+  notIn: [TransactionType!]
+  not: NestedEnumTransactionTypeFilter
+}
+
+input NestedEnumTransactionTypeFilter {
+  equals: TransactionType
+  in: [TransactionType!]
+  notIn: [TransactionType!]
+  not: NestedEnumTransactionTypeFilter
+}
+
+input EnumPaymentMethodNullableFilter {
+  equals: PaymentMethod
+  in: [PaymentMethod!]
+  notIn: [PaymentMethod!]
+  not: NestedEnumPaymentMethodNullableFilter
+}
+
+input NestedEnumPaymentMethodNullableFilter {
+  equals: PaymentMethod
+  in: [PaymentMethod!]
+  notIn: [PaymentMethod!]
+  not: NestedEnumPaymentMethodNullableFilter
+}
+
+input AccountNullableRelationFilter {
+  is: AccountWhereInput
+  isNot: AccountWhereInput
+}
+
+input CardBillingNullableRelationFilter {
+  is: CardBillingWhereInput
+  isNot: CardBillingWhereInput
+}
+
+input CardBillingWhereInput {
+  AND: [CardBillingWhereInput!]
+  OR: [CardBillingWhereInput!]
+  NOT: [CardBillingWhereInput!]
+  id: StringFilter
+  periodStart: DateTimeFilter
+  periodEnd: DateTimeNullableFilter
+  paymentDate: DateTimeNullableFilter
+  limit: DecimalFilter
+  status: EnumCardBillingStatusFilter
+  accountCardId: StringFilter
+  paymentTransactionId: StringNullableFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  accountCard: AccountCardRelationFilter
+  paymentTransaction: TransactionNullableRelationFilter
+  transactions: TransactionListRelationFilter
+  installments: TransactionInstallmentListRelationFilter
+  statusHistory: CardBillingHistoryListRelationFilter
+}
+
+input EnumCardBillingStatusFilter {
+  equals: CardBillingStatus
+  in: [CardBillingStatus!]
+  notIn: [CardBillingStatus!]
+  not: NestedEnumCardBillingStatusFilter
+}
+
+input NestedEnumCardBillingStatusFilter {
+  equals: CardBillingStatus
+  in: [CardBillingStatus!]
+  notIn: [CardBillingStatus!]
+  not: NestedEnumCardBillingStatusFilter
+}
+
+input AccountCardRelationFilter {
+  is: AccountCardWhereInput
+  isNot: AccountCardWhereInput
+}
+
+input AccountCardWhereInput {
+  AND: [AccountCardWhereInput!]
+  OR: [AccountCardWhereInput!]
+  NOT: [AccountCardWhereInput!]
+  id: StringFilter
+  lastFourDigits: StringNullableFilter
+  billingCycleDay: IntFilter
+  billingPaymentDay: IntFilter
+  type: EnumCardTypeFilter
+  defaultLimit: DecimalFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  account: AccountRelationFilter
+  billings: CardBillingListRelationFilter
+}
+
+input IntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
+input NestedIntFilter {
+  equals: Int
+  in: [Int!]
+  notIn: [Int!]
+  lt: Int
+  lte: Int
+  gt: Int
+  gte: Int
+  not: NestedIntFilter
+}
+
+input EnumCardTypeFilter {
+  equals: CardType
+  in: [CardType!]
+  notIn: [CardType!]
+  not: NestedEnumCardTypeFilter
+}
+
+input NestedEnumCardTypeFilter {
+  equals: CardType
+  in: [CardType!]
+  notIn: [CardType!]
+  not: NestedEnumCardTypeFilter
+}
+
+input CardBillingListRelationFilter {
+  every: CardBillingWhereInput
+  some: CardBillingWhereInput
+  none: CardBillingWhereInput
+}
+
+input TransactionNullableRelationFilter {
+  is: TransactionWhereInput
+  isNot: TransactionWhereInput
+}
+
+input TransactionInstallmentListRelationFilter {
+  every: TransactionInstallmentWhereInput
+  some: TransactionInstallmentWhereInput
+  none: TransactionInstallmentWhereInput
+}
+
+input TransactionInstallmentWhereInput {
+  AND: [TransactionInstallmentWhereInput!]
+  OR: [TransactionInstallmentWhereInput!]
+  NOT: [TransactionInstallmentWhereInput!]
+  id: StringFilter
+  installmentNumber: IntFilter
+  amount: DecimalFilter
+  transactionId: StringFilter
+  cardBillingId: StringNullableFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  transaction: TransactionRelationFilter
+  cardBilling: CardBillingNullableRelationFilter
+}
+
+input TransactionRelationFilter {
+  is: TransactionWhereInput
+  isNot: TransactionWhereInput
+}
+
+input CardBillingHistoryListRelationFilter {
+  every: CardBillingHistoryWhereInput
+  some: CardBillingHistoryWhereInput
+  none: CardBillingHistoryWhereInput
+}
+
+input CardBillingHistoryWhereInput {
+  AND: [CardBillingHistoryWhereInput!]
+  OR: [CardBillingHistoryWhereInput!]
+  NOT: [CardBillingHistoryWhereInput!]
+  id: StringFilter
+  status: EnumCardBillingStatusFilter
+  changedAt: DateTimeFilter
+  cardBillingId: StringFilter
+  changedById: StringNullableFilter
+  cardBilling: CardBillingRelationFilter
+  changedBy: UserNullableRelationFilter
+}
+
+input CardBillingRelationFilter {
+  is: CardBillingWhereInput
+  isNot: CardBillingWhereInput
+}
+
+input UserNullableRelationFilter {
   is: UserWhereInput
   isNot: UserWhereInput
 }
 
-input UserWhereInput {
+input RecurringTransactionNullableRelationFilter {
+  is: RecurringTransactionWhereInput
+  isNot: RecurringTransactionWhereInput
+}
+
+input RecurringTransactionWhereInput {
+  AND: [RecurringTransactionWhereInput!]
+  OR: [RecurringTransactionWhereInput!]
+  NOT: [RecurringTransactionWhereInput!]
+  id: StringFilter
+  description: StringFilter
+  estimatedAmount: DecimalFilter
+  type: EnumTransactionTypeFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  frequency: EnumRecurrenceFrequencyFilter
+  dayMode: EnumDayModeFilter
+  dayOfMonth: IntNullableFilter
+  dayOfWeek: IntNullableFilter
+  weekOfMonth: IntNullableFilter
+  monthOfYear: IntNullableFilter
+  startDate: DateTimeFilter
+  endDate: DateTimeNullableFilter
+  isActive: BoolFilter
+  recurrenceType: EnumRecurrenceTypeFilter
+  totalInstallments: IntNullableFilter
+  sourceAccountId: StringNullableFilter
+  destinyAccountId: StringNullableFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  sourceAccount: AccountNullableRelationFilter
+  destinyAccount: AccountNullableRelationFilter
+  user: UserRelationFilter
+  transactions: TransactionListRelationFilter
+}
+
+input EnumRecurrenceFrequencyFilter {
+  equals: RecurrenceFrequency
+  in: [RecurrenceFrequency!]
+  notIn: [RecurrenceFrequency!]
+  not: NestedEnumRecurrenceFrequencyFilter
+}
+
+input NestedEnumRecurrenceFrequencyFilter {
+  equals: RecurrenceFrequency
+  in: [RecurrenceFrequency!]
+  notIn: [RecurrenceFrequency!]
+  not: NestedEnumRecurrenceFrequencyFilter
+}
+
+input EnumDayModeFilter {
+  equals: DayMode
+  in: [DayMode!]
+  notIn: [DayMode!]
+  not: NestedEnumDayModeFilter
+}
+
+input NestedEnumDayModeFilter {
+  equals: DayMode
+  in: [DayMode!]
+  notIn: [DayMode!]
+  not: NestedEnumDayModeFilter
+}
+
+input EnumRecurrenceTypeFilter {
+  equals: RecurrenceType
+  in: [RecurrenceType!]
+  notIn: [RecurrenceType!]
+  not: NestedEnumRecurrenceTypeFilter
+}
+
+input NestedEnumRecurrenceTypeFilter {
+  equals: RecurrenceType
+  in: [RecurrenceType!]
+  notIn: [RecurrenceType!]
+  not: NestedEnumRecurrenceTypeFilter
+}
+
+input RecurringTransactionListRelationFilter {
+  every: RecurringTransactionWhereInput
+  some: RecurringTransactionWhereInput
+  none: RecurringTransactionWhereInput
+}
+
+input InstitutionRelationFilter {
+  is: InstitutionWhereInput
+  isNot: InstitutionWhereInput
+}
+
+input AccountCardNullableRelationFilter {
+  is: AccountCardWhereInput
+  isNot: AccountCardWhereInput
+}
+
+input AccountCardCreateNestedOneWithoutAccountInput {
+  create: AccountCardCreateWithoutAccountInput
+  connectOrCreate: AccountCardCreateOrConnectWithoutAccountInput
+  connect: AccountCardWhereUniqueInput
+}
+
+input AccountCardCreateWithoutAccountInput {
+  id: String
+  lastFourDigits: String
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
+  type: CardType!
+  defaultLimit: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  billings: CardBillingCreateNestedManyWithoutAccountCardInput
+}
+
+input CardBillingCreateNestedManyWithoutAccountCardInput {
+  create: [CardBillingCreateWithoutAccountCardInput!]
+  connectOrCreate: [CardBillingCreateOrConnectWithoutAccountCardInput!]
+  createMany: CardBillingCreateManyAccountCardInputEnvelope
+  connect: [CardBillingWhereUniqueInput!]
+}
+
+input CardBillingCreateWithoutAccountCardInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  installments: TransactionInstallmentCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
+}
+
+input TransactionCreateNestedOneWithoutBillingPaymentInput {
+  create: TransactionCreateWithoutBillingPaymentInput
+  connectOrCreate: TransactionCreateOrConnectWithoutBillingPaymentInput
+  connect: TransactionWhereUniqueInput
+}
+
+input TransactionCreateWithoutBillingPaymentInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input AccountCreateNestedOneWithoutSourceTransactionsInput {
+  create: AccountCreateWithoutSourceTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutSourceTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutSourceTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input UserCreateNestedOneWithoutAccountsInput {
+  create: UserCreateWithoutAccountsInput
+  connectOrCreate: UserCreateOrConnectWithoutAccountsInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutAccountsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
+  recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
+}
+
+input InvestmentCreateNestedManyWithoutUserInput {
+  create: [InvestmentCreateWithoutUserInput!]
+  connectOrCreate: [InvestmentCreateOrConnectWithoutUserInput!]
+  createMany: InvestmentCreateManyUserInputEnvelope
+  connect: [InvestmentWhereUniqueInput!]
+}
+
+input InvestmentCreateWithoutUserInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutInvestmentsInput!
+  transactions: InvestmentTransactionCreateNestedManyWithoutInvestmentInput
+}
+
+input AccountCreateNestedOneWithoutInvestmentsInput {
+  create: AccountCreateWithoutInvestmentsInput
+  connectOrCreate: AccountCreateOrConnectWithoutInvestmentsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutInvestmentsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input TransactionCreateNestedManyWithoutSourceAccountInput {
+  create: [TransactionCreateWithoutSourceAccountInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutSourceAccountInput!]
+  createMany: TransactionCreateManySourceAccountInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutSourceAccountInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input AccountCreateNestedOneWithoutDestinyTransactionsInput {
+  create: AccountCreateWithoutDestinyTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutDestinyTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutDestinyTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input InvestmentCreateNestedManyWithoutAccountInput {
+  create: [InvestmentCreateWithoutAccountInput!]
+  connectOrCreate: [InvestmentCreateOrConnectWithoutAccountInput!]
+  createMany: InvestmentCreateManyAccountInputEnvelope
+  connect: [InvestmentWhereUniqueInput!]
+}
+
+input InvestmentCreateWithoutAccountInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutInvestmentsInput!
+  transactions: InvestmentTransactionCreateNestedManyWithoutInvestmentInput
+}
+
+input UserCreateNestedOneWithoutInvestmentsInput {
+  create: UserCreateWithoutInvestmentsInput
+  connectOrCreate: UserCreateOrConnectWithoutInvestmentsInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutInvestmentsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
+  recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
+}
+
+input TransactionCreateNestedManyWithoutUserInput {
+  create: [TransactionCreateWithoutUserInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutUserInput!]
+  createMany: TransactionCreateManyUserInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutUserInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+}
+
+input CardBillingCreateNestedOneWithoutPaymentTransactionInput {
+  create: CardBillingCreateWithoutPaymentTransactionInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutPaymentTransactionInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutPaymentTransactionInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  installments: TransactionInstallmentCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
+}
+
+input AccountCardCreateNestedOneWithoutBillingsInput {
+  create: AccountCardCreateWithoutBillingsInput
+  connectOrCreate: AccountCardCreateOrConnectWithoutBillingsInput
+  connect: AccountCardWhereUniqueInput
+}
+
+input AccountCardCreateWithoutBillingsInput {
+  id: String
+  lastFourDigits: String
+  billingCycleDay: Int!
+  billingPaymentDay: Int!
+  type: CardType!
+  defaultLimit: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutAccountCardInput!
+}
+
+input AccountCreateNestedOneWithoutAccountCardInput {
+  create: AccountCreateWithoutAccountCardInput
+  connectOrCreate: AccountCreateOrConnectWithoutAccountCardInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutAccountCardInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input TransactionCreateNestedManyWithoutDestinyAccountInput {
+  create: [TransactionCreateWithoutDestinyAccountInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutDestinyAccountInput!]
+  createMany: TransactionCreateManyDestinyAccountInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutDestinyAccountInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input CardBillingCreateNestedOneWithoutTransactionsInput {
+  create: CardBillingCreateWithoutTransactionsInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutTransactionsInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutTransactionsInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  installments: TransactionInstallmentCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
+}
+
+input TransactionInstallmentCreateNestedManyWithoutCardBillingInput {
+  create: [TransactionInstallmentCreateWithoutCardBillingInput!]
+  connectOrCreate: [TransactionInstallmentCreateOrConnectWithoutCardBillingInput!]
+  createMany: TransactionInstallmentCreateManyCardBillingInputEnvelope
+  connect: [TransactionInstallmentWhereUniqueInput!]
+}
+
+input TransactionInstallmentCreateWithoutCardBillingInput {
+  id: String
+  installmentNumber: Int!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  transaction: TransactionCreateNestedOneWithoutInstallmentsInput!
+}
+
+input TransactionCreateNestedOneWithoutInstallmentsInput {
+  create: TransactionCreateWithoutInstallmentsInput
+  connectOrCreate: TransactionCreateOrConnectWithoutInstallmentsInput
+  connect: TransactionWhereUniqueInput
+}
+
+input TransactionCreateWithoutInstallmentsInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input RecurringTransactionCreateNestedOneWithoutTransactionsInput {
+  create: RecurringTransactionCreateWithoutTransactionsInput
+  connectOrCreate: RecurringTransactionCreateOrConnectWithoutTransactionsInput
+  connect: RecurringTransactionWhereUniqueInput
+}
+
+input RecurringTransactionCreateWithoutTransactionsInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput
+  user: UserCreateNestedOneWithoutRecurringTransactionsInput!
+}
+
+input AccountCreateNestedOneWithoutSourceRecurringTransactionsInput {
+  create: AccountCreateWithoutSourceRecurringTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutSourceRecurringTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutSourceRecurringTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input InvestmentTransactionCreateNestedManyWithoutAccountInput {
+  create: [InvestmentTransactionCreateWithoutAccountInput!]
+  connectOrCreate: [InvestmentTransactionCreateOrConnectWithoutAccountInput!]
+  createMany: InvestmentTransactionCreateManyAccountInputEnvelope
+  connect: [InvestmentTransactionWhereUniqueInput!]
+}
+
+input InvestmentTransactionCreateWithoutAccountInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  investment: InvestmentCreateNestedOneWithoutTransactionsInput!
+}
+
+input InvestmentCreateNestedOneWithoutTransactionsInput {
+  create: InvestmentCreateWithoutTransactionsInput
+  connectOrCreate: InvestmentCreateOrConnectWithoutTransactionsInput
+  connect: InvestmentWhereUniqueInput
+}
+
+input InvestmentCreateWithoutTransactionsInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutInvestmentsInput!
+  account: AccountCreateNestedOneWithoutInvestmentsInput!
+}
+
+input InvestmentCreateOrConnectWithoutTransactionsInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutTransactionsInput!
+}
+
+input InvestmentWhereUniqueInput {
+  id: String
+  AND: [InvestmentWhereInput!]
+  OR: [InvestmentWhereInput!]
+  NOT: [InvestmentWhereInput!]
+  amount: FloatFilter
+  correctedAmount: FloatNullableFilter
+  taxedAmount: FloatNullableFilter
+  startDate: DateTimeFilter
+  duration: IntNullableFilter
+  finishedAt: DateTimeNullableFilter
+  lastCorrectedAt: DateTimeNullableFilter
+  status: EnumInvestmentStatusFilter
+  regimeName: EnumRegimeFilter
+  regimePercentage: FloatNullableFilter
+  userId: StringFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  account: AccountRelationFilter
+  transactions: InvestmentTransactionListRelationFilter
+}
+
+input InvestmentTransactionCreateOrConnectWithoutAccountInput {
+  where: InvestmentTransactionWhereUniqueInput!
+  create: InvestmentTransactionCreateWithoutAccountInput!
+}
+
+input InvestmentTransactionWhereUniqueInput {
+  id: String
+  AND: [InvestmentTransactionWhereInput!]
+  OR: [InvestmentTransactionWhereInput!]
+  NOT: [InvestmentTransactionWhereInput!]
+  role: EnumInvestmentTransactionRoleFilter
+  amount: DecimalFilter
+  investmentId: StringFilter
+  accountId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  investment: InvestmentRelationFilter
+  account: AccountRelationFilter
+}
+
+input InvestmentTransactionCreateManyAccountInputEnvelope {
+  data: [InvestmentTransactionCreateManyAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentTransactionCreateManyAccountInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  investmentId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RecurringTransactionCreateNestedManyWithoutDestinyAccountInput {
+  create: [RecurringTransactionCreateWithoutDestinyAccountInput!]
+  connectOrCreate: [RecurringTransactionCreateOrConnectWithoutDestinyAccountInput!]
+  createMany: RecurringTransactionCreateManyDestinyAccountInputEnvelope
+  connect: [RecurringTransactionWhereUniqueInput!]
+}
+
+input RecurringTransactionCreateWithoutDestinyAccountInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
+  user: UserCreateNestedOneWithoutRecurringTransactionsInput!
+  transactions: TransactionCreateNestedManyWithoutRecurringTransactionInput
+}
+
+input UserCreateNestedOneWithoutRecurringTransactionsInput {
+  create: UserCreateWithoutRecurringTransactionsInput
+  connectOrCreate: UserCreateOrConnectWithoutRecurringTransactionsInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutRecurringTransactionsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
+}
+
+input CardBillingHistoryCreateNestedManyWithoutChangedByInput {
+  create: [CardBillingHistoryCreateWithoutChangedByInput!]
+  connectOrCreate: [CardBillingHistoryCreateOrConnectWithoutChangedByInput!]
+  createMany: CardBillingHistoryCreateManyChangedByInputEnvelope
+  connect: [CardBillingHistoryWhereUniqueInput!]
+}
+
+input CardBillingHistoryCreateWithoutChangedByInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  cardBilling: CardBillingCreateNestedOneWithoutStatusHistoryInput!
+}
+
+input CardBillingCreateNestedOneWithoutStatusHistoryInput {
+  create: CardBillingCreateWithoutStatusHistoryInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutStatusHistoryInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutStatusHistoryInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  installments: TransactionInstallmentCreateNestedManyWithoutCardBillingInput
+}
+
+input TransactionCreateNestedManyWithoutCardBillingInput {
+  create: [TransactionCreateWithoutCardBillingInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutCardBillingInput!]
+  createMany: TransactionCreateManyCardBillingInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutCardBillingInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input TransactionInstallmentCreateNestedManyWithoutTransactionInput {
+  create: [TransactionInstallmentCreateWithoutTransactionInput!]
+  connectOrCreate: [TransactionInstallmentCreateOrConnectWithoutTransactionInput!]
+  createMany: TransactionInstallmentCreateManyTransactionInputEnvelope
+  connect: [TransactionInstallmentWhereUniqueInput!]
+}
+
+input TransactionInstallmentCreateWithoutTransactionInput {
+  id: String
+  installmentNumber: Int!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  cardBilling: CardBillingCreateNestedOneWithoutInstallmentsInput
+}
+
+input CardBillingCreateNestedOneWithoutInstallmentsInput {
+  create: CardBillingCreateWithoutInstallmentsInput
+  connectOrCreate: CardBillingCreateOrConnectWithoutInstallmentsInput
+  connect: CardBillingWhereUniqueInput
+}
+
+input CardBillingCreateWithoutInstallmentsInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountCard: AccountCardCreateNestedOneWithoutBillingsInput!
+  paymentTransaction: TransactionCreateNestedOneWithoutBillingPaymentInput
+  transactions: TransactionCreateNestedManyWithoutCardBillingInput
+  statusHistory: CardBillingHistoryCreateNestedManyWithoutCardBillingInput
+}
+
+input CardBillingHistoryCreateNestedManyWithoutCardBillingInput {
+  create: [CardBillingHistoryCreateWithoutCardBillingInput!]
+  connectOrCreate: [CardBillingHistoryCreateOrConnectWithoutCardBillingInput!]
+  createMany: CardBillingHistoryCreateManyCardBillingInputEnvelope
+  connect: [CardBillingHistoryWhereUniqueInput!]
+}
+
+input CardBillingHistoryCreateWithoutCardBillingInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  changedBy: UserCreateNestedOneWithoutCardBillingStatusHistoriesInput
+}
+
+input UserCreateNestedOneWithoutCardBillingStatusHistoriesInput {
+  create: UserCreateWithoutCardBillingStatusHistoriesInput
+  connectOrCreate: UserCreateOrConnectWithoutCardBillingStatusHistoriesInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutCardBillingStatusHistoriesInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  transactions: TransactionCreateNestedManyWithoutUserInput
+  recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
+}
+
+input RecurringTransactionCreateNestedManyWithoutUserInput {
+  create: [RecurringTransactionCreateWithoutUserInput!]
+  connectOrCreate: [RecurringTransactionCreateOrConnectWithoutUserInput!]
+  createMany: RecurringTransactionCreateManyUserInputEnvelope
+  connect: [RecurringTransactionWhereUniqueInput!]
+}
+
+input RecurringTransactionCreateWithoutUserInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceRecurringTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput
+  transactions: TransactionCreateNestedManyWithoutRecurringTransactionInput
+}
+
+input AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput {
+  create: AccountCreateWithoutDestinyRecurringTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutDestinyRecurringTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutDestinyRecurringTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  investmentTransactions: InvestmentTransactionCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+}
+
+input RecurringTransactionCreateNestedManyWithoutSourceAccountInput {
+  create: [RecurringTransactionCreateWithoutSourceAccountInput!]
+  connectOrCreate: [RecurringTransactionCreateOrConnectWithoutSourceAccountInput!]
+  createMany: RecurringTransactionCreateManySourceAccountInputEnvelope
+  connect: [RecurringTransactionWhereUniqueInput!]
+}
+
+input RecurringTransactionCreateWithoutSourceAccountInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+  destinyAccount: AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput
+  user: UserCreateNestedOneWithoutRecurringTransactionsInput!
+  transactions: TransactionCreateNestedManyWithoutRecurringTransactionInput
+}
+
+input TransactionCreateNestedManyWithoutRecurringTransactionInput {
+  create: [TransactionCreateWithoutRecurringTransactionInput!]
+  connectOrCreate: [TransactionCreateOrConnectWithoutRecurringTransactionInput!]
+  createMany: TransactionCreateManyRecurringTransactionInputEnvelope
+  connect: [TransactionWhereUniqueInput!]
+}
+
+input TransactionCreateWithoutRecurringTransactionInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+  sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
+  destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  cardBilling: CardBillingCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  user: UserCreateNestedOneWithoutTransactionsInput!
+}
+
+input UserCreateNestedOneWithoutTransactionsInput {
+  create: UserCreateWithoutTransactionsInput
+  connectOrCreate: UserCreateOrConnectWithoutTransactionsInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutTransactionsInput {
+  id: String
+  email: String!
+  password: String!
+  name: String!
+  role: Role!
+  createdAt: DateTime
+  updatedAt: DateTime
+  accounts: AccountCreateNestedManyWithoutUserInput
+  investments: InvestmentCreateNestedManyWithoutUserInput
+  cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
+  recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
+}
+
+input UserCreateOrConnectWithoutTransactionsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutTransactionsInput!
+}
+
+input UserWhereUniqueInput {
+  id: String
+  email: String
   AND: [UserWhereInput!]
   OR: [UserWhereInput!]
   NOT: [UserWhereInput!]
-  id: StringFilter
-  email: StringFilter
   password: StringFilter
   name: StringFilter
   role: EnumRoleFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
+  accounts: AccountListRelationFilter
   investments: InvestmentListRelationFilter
+  transactions: TransactionListRelationFilter
+  cardBillingStatusHistories: CardBillingHistoryListRelationFilter
+  recurringTransactions: RecurringTransactionListRelationFilter
 }
 
-input EnumRoleFilter {
-  equals: Role
-  in: [Role!]
-  notIn: [Role!]
-  not: NestedEnumRoleFilter
+input TransactionCreateOrConnectWithoutRecurringTransactionInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutRecurringTransactionInput!
 }
 
-input NestedEnumRoleFilter {
-  equals: Role
-  in: [Role!]
-  notIn: [Role!]
-  not: NestedEnumRoleFilter
+input TransactionWhereUniqueInput {
+  id: String
+  AND: [TransactionWhereInput!]
+  OR: [TransactionWhereInput!]
+  NOT: [TransactionWhereInput!]
+  description: StringFilter
+  amount: DecimalFilter
+  date: DateTimeFilter
+  status: EnumTransactionStatusFilter
+  type: EnumTransactionTypeFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  paymentEnabled: BoolFilter
+  paymentLimit: DateTimeNullableFilter
+  sourceAccountId: StringNullableFilter
+  destinyAccountId: StringNullableFilter
+  cardBillingId: StringNullableFilter
+  recurringTransactionId: StringNullableFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  sourceAccount: AccountNullableRelationFilter
+  destinyAccount: AccountNullableRelationFilter
+  billingPayment: CardBillingNullableRelationFilter
+  cardBilling: CardBillingNullableRelationFilter
+  recurringTransaction: RecurringTransactionNullableRelationFilter
+  installments: TransactionInstallmentListRelationFilter
+  user: UserRelationFilter
 }
 
-input InvestmentListRelationFilter {
-  every: InvestmentWhereInput
-  some: InvestmentWhereInput
-  none: InvestmentWhereInput
+input TransactionCreateManyRecurringTransactionInputEnvelope {
+  data: [TransactionCreateManyRecurringTransactionInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyRecurringTransactionInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RecurringTransactionCreateOrConnectWithoutSourceAccountInput {
+  where: RecurringTransactionWhereUniqueInput!
+  create: RecurringTransactionCreateWithoutSourceAccountInput!
+}
+
+input RecurringTransactionWhereUniqueInput {
+  id: String
+  AND: [RecurringTransactionWhereInput!]
+  OR: [RecurringTransactionWhereInput!]
+  NOT: [RecurringTransactionWhereInput!]
+  description: StringFilter
+  estimatedAmount: DecimalFilter
+  type: EnumTransactionTypeFilter
+  paymentMethod: EnumPaymentMethodNullableFilter
+  frequency: EnumRecurrenceFrequencyFilter
+  dayMode: EnumDayModeFilter
+  dayOfMonth: IntNullableFilter
+  dayOfWeek: IntNullableFilter
+  weekOfMonth: IntNullableFilter
+  monthOfYear: IntNullableFilter
+  startDate: DateTimeFilter
+  endDate: DateTimeNullableFilter
+  isActive: BoolFilter
+  recurrenceType: EnumRecurrenceTypeFilter
+  totalInstallments: IntNullableFilter
+  sourceAccountId: StringNullableFilter
+  destinyAccountId: StringNullableFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  sourceAccount: AccountNullableRelationFilter
+  destinyAccount: AccountNullableRelationFilter
+  user: UserRelationFilter
+  transactions: TransactionListRelationFilter
+}
+
+input RecurringTransactionCreateManySourceAccountInputEnvelope {
+  data: [RecurringTransactionCreateManySourceAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input RecurringTransactionCreateManySourceAccountInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  destinyAccountId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutDestinyRecurringTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutDestinyRecurringTransactionsInput!
+}
+
+input AccountWhereUniqueInput {
+  id: String
+  AND: [AccountWhereInput!]
+  OR: [AccountWhereInput!]
+  NOT: [AccountWhereInput!]
+  name: StringFilter
+  type: EnumAccountTypeFilter
+  initialBalance: DecimalFilter
+  description: StringNullableFilter
+  isActive: BoolFilter
+  userId: StringFilter
+  institutionId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+  institution: InstitutionRelationFilter
+  accountCard: AccountCardNullableRelationFilter
+  sourceTransactions: TransactionListRelationFilter
+  destinyTransactions: TransactionListRelationFilter
+  investments: InvestmentListRelationFilter
+  investmentTransactions: InvestmentTransactionListRelationFilter
+  sourceRecurringTransactions: RecurringTransactionListRelationFilter
+  destinyRecurringTransactions: RecurringTransactionListRelationFilter
+}
+
+input RecurringTransactionCreateOrConnectWithoutUserInput {
+  where: RecurringTransactionWhereUniqueInput!
+  create: RecurringTransactionCreateWithoutUserInput!
+}
+
+input RecurringTransactionCreateManyUserInputEnvelope {
+  data: [RecurringTransactionCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input RecurringTransactionCreateManyUserInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  sourceAccountId: String
+  destinyAccountId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input UserCreateOrConnectWithoutCardBillingStatusHistoriesInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutCardBillingStatusHistoriesInput!
+}
+
+input CardBillingHistoryCreateOrConnectWithoutCardBillingInput {
+  where: CardBillingHistoryWhereUniqueInput!
+  create: CardBillingHistoryCreateWithoutCardBillingInput!
+}
+
+input CardBillingHistoryWhereUniqueInput {
+  id: String
+  AND: [CardBillingHistoryWhereInput!]
+  OR: [CardBillingHistoryWhereInput!]
+  NOT: [CardBillingHistoryWhereInput!]
+  status: EnumCardBillingStatusFilter
+  changedAt: DateTimeFilter
+  cardBillingId: StringFilter
+  changedById: StringNullableFilter
+  cardBilling: CardBillingRelationFilter
+  changedBy: UserNullableRelationFilter
+}
+
+input CardBillingHistoryCreateManyCardBillingInputEnvelope {
+  data: [CardBillingHistoryCreateManyCardBillingInput!]!
+  skipDuplicates: Boolean
+}
+
+input CardBillingHistoryCreateManyCardBillingInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  changedById: String
+}
+
+input CardBillingCreateOrConnectWithoutInstallmentsInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutInstallmentsInput!
+}
+
+input CardBillingWhereUniqueInput {
+  id: String
+  paymentTransactionId: String
+  accountCardId_periodStart: CardBillingAccountCardIdPeriodStartCompoundUniqueInput
+  AND: [CardBillingWhereInput!]
+  OR: [CardBillingWhereInput!]
+  NOT: [CardBillingWhereInput!]
+  periodStart: DateTimeFilter
+  periodEnd: DateTimeNullableFilter
+  paymentDate: DateTimeNullableFilter
+  limit: DecimalFilter
+  status: EnumCardBillingStatusFilter
+  accountCardId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  accountCard: AccountCardRelationFilter
+  paymentTransaction: TransactionNullableRelationFilter
+  transactions: TransactionListRelationFilter
+  installments: TransactionInstallmentListRelationFilter
+  statusHistory: CardBillingHistoryListRelationFilter
+}
+
+input CardBillingAccountCardIdPeriodStartCompoundUniqueInput {
+  accountCardId: String!
+  periodStart: DateTime!
+}
+
+input TransactionInstallmentCreateOrConnectWithoutTransactionInput {
+  where: TransactionInstallmentWhereUniqueInput!
+  create: TransactionInstallmentCreateWithoutTransactionInput!
+}
+
+input TransactionInstallmentWhereUniqueInput {
+  id: String
+  AND: [TransactionInstallmentWhereInput!]
+  OR: [TransactionInstallmentWhereInput!]
+  NOT: [TransactionInstallmentWhereInput!]
+  installmentNumber: IntFilter
+  amount: DecimalFilter
+  transactionId: StringFilter
+  cardBillingId: StringNullableFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  transaction: TransactionRelationFilter
+  cardBilling: CardBillingNullableRelationFilter
+}
+
+input TransactionInstallmentCreateManyTransactionInputEnvelope {
+  data: [TransactionInstallmentCreateManyTransactionInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionInstallmentCreateManyTransactionInput {
+  id: String
+  installmentNumber: Int!
+  amount: Decimal!
+  cardBillingId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TransactionCreateOrConnectWithoutCardBillingInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutCardBillingInput!
+}
+
+input TransactionCreateManyCardBillingInputEnvelope {
+  data: [TransactionCreateManyCardBillingInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyCardBillingInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  recurringTransactionId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CardBillingCreateOrConnectWithoutStatusHistoryInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutStatusHistoryInput!
+}
+
+input CardBillingHistoryCreateOrConnectWithoutChangedByInput {
+  where: CardBillingHistoryWhereUniqueInput!
+  create: CardBillingHistoryCreateWithoutChangedByInput!
+}
+
+input CardBillingHistoryCreateManyChangedByInputEnvelope {
+  data: [CardBillingHistoryCreateManyChangedByInput!]!
+  skipDuplicates: Boolean
+}
+
+input CardBillingHistoryCreateManyChangedByInput {
+  id: String
+  status: CardBillingStatus!
+  changedAt: DateTime
+  cardBillingId: String!
+}
+
+input UserCreateOrConnectWithoutRecurringTransactionsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutRecurringTransactionsInput!
+}
+
+input RecurringTransactionCreateOrConnectWithoutDestinyAccountInput {
+  where: RecurringTransactionWhereUniqueInput!
+  create: RecurringTransactionCreateWithoutDestinyAccountInput!
+}
+
+input RecurringTransactionCreateManyDestinyAccountInputEnvelope {
+  data: [RecurringTransactionCreateManyDestinyAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input RecurringTransactionCreateManyDestinyAccountInput {
+  id: String
+  description: String!
+  estimatedAmount: Decimal!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  isActive: Boolean
+  recurrenceType: RecurrenceType
+  totalInstallments: Int
+  sourceAccountId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutSourceRecurringTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutSourceRecurringTransactionsInput!
+}
+
+input RecurringTransactionCreateOrConnectWithoutTransactionsInput {
+  where: RecurringTransactionWhereUniqueInput!
+  create: RecurringTransactionCreateWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutInstallmentsInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutInstallmentsInput!
+}
+
+input TransactionInstallmentCreateOrConnectWithoutCardBillingInput {
+  where: TransactionInstallmentWhereUniqueInput!
+  create: TransactionInstallmentCreateWithoutCardBillingInput!
+}
+
+input TransactionInstallmentCreateManyCardBillingInputEnvelope {
+  data: [TransactionInstallmentCreateManyCardBillingInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionInstallmentCreateManyCardBillingInput {
+  id: String
+  installmentNumber: Int!
+  amount: Decimal!
+  transactionId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CardBillingCreateOrConnectWithoutTransactionsInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutDestinyAccountInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutDestinyAccountInput!
+}
+
+input TransactionCreateManyDestinyAccountInputEnvelope {
+  data: [TransactionCreateManyDestinyAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyDestinyAccountInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutAccountCardInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutAccountCardInput!
+}
+
+input AccountCardCreateOrConnectWithoutBillingsInput {
+  where: AccountCardWhereUniqueInput!
+  create: AccountCardCreateWithoutBillingsInput!
+}
+
+input AccountCardWhereUniqueInput {
+  id: String
+  accountId: String
+  AND: [AccountCardWhereInput!]
+  OR: [AccountCardWhereInput!]
+  NOT: [AccountCardWhereInput!]
+  lastFourDigits: StringNullableFilter
+  billingCycleDay: IntFilter
+  billingPaymentDay: IntFilter
+  type: EnumCardTypeFilter
+  defaultLimit: DecimalFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  account: AccountRelationFilter
+  billings: CardBillingListRelationFilter
+}
+
+input CardBillingCreateOrConnectWithoutPaymentTransactionInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutPaymentTransactionInput!
+}
+
+input TransactionCreateOrConnectWithoutUserInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutUserInput!
+}
+
+input TransactionCreateManyUserInputEnvelope {
+  data: [TransactionCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManyUserInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  sourceAccountId: String
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input UserCreateOrConnectWithoutInvestmentsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutInvestmentsInput!
+}
+
+input InvestmentTransactionCreateNestedManyWithoutInvestmentInput {
+  create: [InvestmentTransactionCreateWithoutInvestmentInput!]
+  connectOrCreate: [InvestmentTransactionCreateOrConnectWithoutInvestmentInput!]
+  createMany: InvestmentTransactionCreateManyInvestmentInputEnvelope
+  connect: [InvestmentTransactionWhereUniqueInput!]
+}
+
+input InvestmentTransactionCreateWithoutInvestmentInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  createdAt: DateTime
+  updatedAt: DateTime
+  account: AccountCreateNestedOneWithoutInvestmentTransactionsInput!
+}
+
+input AccountCreateNestedOneWithoutInvestmentTransactionsInput {
+  create: AccountCreateWithoutInvestmentTransactionsInput
+  connectOrCreate: AccountCreateOrConnectWithoutInvestmentTransactionsInput
+  connect: AccountWhereUniqueInput
+}
+
+input AccountCreateWithoutInvestmentTransactionsInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  createdAt: DateTime
+  updatedAt: DateTime
+  user: UserCreateNestedOneWithoutAccountsInput!
+  institution: InstitutionCreateNestedOneWithoutAccountsInput!
+  accountCard: AccountCardCreateNestedOneWithoutAccountInput
+  sourceTransactions: TransactionCreateNestedManyWithoutSourceAccountInput
+  destinyTransactions: TransactionCreateNestedManyWithoutDestinyAccountInput
+  investments: InvestmentCreateNestedManyWithoutAccountInput
+  sourceRecurringTransactions: RecurringTransactionCreateNestedManyWithoutSourceAccountInput
+  destinyRecurringTransactions: RecurringTransactionCreateNestedManyWithoutDestinyAccountInput
+}
+
+input AccountCreateOrConnectWithoutInvestmentTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutInvestmentTransactionsInput!
+}
+
+input InvestmentTransactionCreateOrConnectWithoutInvestmentInput {
+  where: InvestmentTransactionWhereUniqueInput!
+  create: InvestmentTransactionCreateWithoutInvestmentInput!
+}
+
+input InvestmentTransactionCreateManyInvestmentInputEnvelope {
+  data: [InvestmentTransactionCreateManyInvestmentInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentTransactionCreateManyInvestmentInput {
+  id: String
+  role: InvestmentTransactionRole!
+  amount: Decimal!
+  accountId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InvestmentCreateOrConnectWithoutAccountInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutAccountInput!
+}
+
+input InvestmentCreateManyAccountInputEnvelope {
+  data: [InvestmentCreateManyAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input InvestmentCreateManyAccountInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutDestinyTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutDestinyTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutSourceAccountInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutSourceAccountInput!
+}
+
+input TransactionCreateManySourceAccountInputEnvelope {
+  data: [TransactionCreateManySourceAccountInput!]!
+  skipDuplicates: Boolean
+}
+
+input TransactionCreateManySourceAccountInput {
+  id: String
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  status: TransactionStatus!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  destinyAccountId: String
+  cardBillingId: String
+  recurringTransactionId: String
+  userId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCreateOrConnectWithoutInvestmentsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutInvestmentsInput!
+}
+
+input InvestmentCreateOrConnectWithoutUserInput {
+  where: InvestmentWhereUniqueInput!
+  create: InvestmentCreateWithoutUserInput!
 }
 
 input InvestmentCreateManyUserInputEnvelope {
@@ -563,8 +3883,74 @@ input InvestmentCreateManyUserInput {
   duration: Int
   finishedAt: DateTime
   lastCorrectedAt: DateTime
+  status: InvestmentStatus
   regimeName: Regime!
   regimePercentage: Float
+  accountId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input UserCreateOrConnectWithoutAccountsInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutAccountsInput!
+}
+
+input AccountCreateOrConnectWithoutSourceTransactionsInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutSourceTransactionsInput!
+}
+
+input TransactionCreateOrConnectWithoutBillingPaymentInput {
+  where: TransactionWhereUniqueInput!
+  create: TransactionCreateWithoutBillingPaymentInput!
+}
+
+input CardBillingCreateOrConnectWithoutAccountCardInput {
+  where: CardBillingWhereUniqueInput!
+  create: CardBillingCreateWithoutAccountCardInput!
+}
+
+input CardBillingCreateManyAccountCardInputEnvelope {
+  data: [CardBillingCreateManyAccountCardInput!]!
+  skipDuplicates: Boolean
+}
+
+input CardBillingCreateManyAccountCardInput {
+  id: String
+  periodStart: DateTime!
+  periodEnd: DateTime
+  paymentDate: DateTime
+  limit: Decimal!
+  status: CardBillingStatus!
+  paymentTransactionId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AccountCardCreateOrConnectWithoutAccountInput {
+  where: AccountCardWhereUniqueInput!
+  create: AccountCardCreateWithoutAccountInput!
+}
+
+input AccountCreateOrConnectWithoutUserInput {
+  where: AccountWhereUniqueInput!
+  create: AccountCreateWithoutUserInput!
+}
+
+input AccountCreateManyUserInputEnvelope {
+  data: [AccountCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input AccountCreateManyUserInput {
+  id: String
+  name: String!
+  type: AccountType!
+  initialBalance: Decimal
+  description: String
+  isActive: Boolean
+  institutionId: String!
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -572,6 +3958,143 @@ input InvestmentCreateManyUserInput {
 input AuthSignInInput {
   username: String!
   password: String!
+}
+
+input CreateInvestmentInput {
+  id: String
+  amount: Float!
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime!
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime!
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  accountId: ID!
+}
+
+input CreateAccountInput {
+  name: String!
+  type: AccountType!
+  description: String
+  institutionId: ID!
+  initialBalance: Decimal!
+  isActive: Boolean!
+  cardInfos: CreateAccountCardInfos
+}
+
+input CreateAccountCardInfos {
+  type: CardType!
+  billingCycleDay: Float
+  billingPaymentDay: Float
+  defaultLimit: Decimal
+}
+
+input CreateTransactionInput {
+  description: String!
+  amount: Decimal!
+  date: DateTime!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  paymentEnabled: Boolean
+  paymentLimit: DateTime
+  billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
+  recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
+  installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput
+  status: TransactionStatus
+
+  """
+  Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
+  """
+  isCompleted: Boolean
+  sourceAccountId: ID
+  destinyAccountId: ID
+}
+
+input CreateInstallmentTransactionInput {
+  """Descrição da transação"""
+  description: String!
+
+  """Valor total da compra"""
+  totalAmount: Decimal!
+
+  """Número de parcelas"""
+  totalInstallments: Int!
+
+  """Data da primeira parcela"""
+  startDate: DateTime!
+
+  """ID da conta cartão de crédito"""
+  sourceAccountId: ID!
+}
+
+input UpdateTransactionInput {
+  id: ID!
+  description: String
+  amount: Float
+  date: DateTime
+  paymentMethod: PaymentMethod
+  status: TransactionStatus
+
+  """
+  Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
+  """
+  isCompleted: Boolean
+}
+
+input RescheduleTransactionInput {
+  id: ID!
+  newDate: DateTime!
+}
+
+input UpdateRecurringTransactionsInput {
+  transactionId: ID!
+  scope: UpdateRecurringScope!
+  description: String
+  amount: Float
+  paymentMethod: PaymentMethod
+}
+
+"""Scope for updating recurring transactions"""
+enum UpdateRecurringScope {
+  THIS_ONLY
+  THIS_AND_FUTURE
+  ALL_PLANNED
+}
+
+input CreateRecurringTransactionInput {
+  description: String!
+  estimatedAmount: Float!
+  type: TransactionType!
+  paymentMethod: PaymentMethod
+  frequency: RecurrenceFrequency!
+  dayMode: DayMode = SPECIFIC_DAY
+  dayOfMonth: Int
+  dayOfWeek: Int
+  weekOfMonth: Int
+  monthOfYear: Int
+  startDate: DateTime!
+  endDate: DateTime
+  sourceAccountId: ID
+  destinyAccountId: ID
+  recurrenceType: RecurrenceType = PERIODIC
+  totalInstallments: Int
+}
+
+input UpdateRecurringTransactionInput {
+  description: String
+  estimatedAmount: Float
+  paymentMethod: PaymentMethod
+  dayOfMonth: Int
+  monthOfYear: Int
+  endDate: DateTime
+  isActive: Boolean
+  sourceAccountId: ID
+  destinyAccountId: ID
 }
 
 type Subscription {

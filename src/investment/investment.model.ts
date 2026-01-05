@@ -14,6 +14,7 @@ import {
 export class InvestmentModel extends OmitType(Investment, [
   'user',
   'userId',
+  '_count',
 ] as const) {
   @Field(() => String, { nullable: false })
   currentVariation!: string;
@@ -81,3 +82,21 @@ export class InvestmentRegimeSummary {
 export class InvestmentRegimeSummaryConnection extends Connection(
   InvestmentRegimeSummary,
 ) {}
+
+@ObjectType()
+export class AccountWithInvestmentCount {
+  @Field(() => String, { nullable: false })
+  id!: string;
+
+  @Field(() => String, { nullable: false })
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  institutionName?: string;
+
+  @Field(() => String, { nullable: true })
+  institutionLogoUrl?: string;
+
+  @Field(() => Int, { nullable: false })
+  investmentCount!: number;
+}

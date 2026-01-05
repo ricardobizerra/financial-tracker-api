@@ -18,6 +18,11 @@ import { redisStore } from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { InvestmentModule } from './investment/investment.module';
 import { BacenModule } from './external/bacen/bacen.module';
+import { AccountModule } from './account/account.module';
+import { InstitutionModule } from './institution/institution.module';
+import { TransactionModule } from './transaction/transaction.module';
+import { CardModule } from './card/card.module';
+import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
 
 @Module({
   imports: [
@@ -54,6 +59,11 @@ import { BacenModule } from './external/bacen/bacen.module';
     BacenModule,
     IpeadataModule,
     InvestmentModule,
+    AccountModule,
+    InstitutionModule,
+    TransactionModule,
+    CardModule,
+    RecurringTransactionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

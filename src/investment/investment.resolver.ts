@@ -22,18 +22,37 @@ import {
   InvestmentRegimeSummaryConnection,
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
+  AccountWithInvestmentCount,
 } from './investment.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
 import {
+  Account,
   Investment,
   InvestmentCreateWithoutUserInput,
   Regime,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
 } from '@/lib/graphql/prisma-client';
+import { AccountService } from '@/account/account.service';
+import { AccountType } from '@prisma/client';
+import { NotFoundException } from '@nestjs/common';
+import { CreateInvestmentInput } from './input/create-investment.input';
+import { TransactionService } from '@/transaction/transaction.service';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  InvestmentEvolutionModel,
+  InvestmentEvolutionArgs,
+} from './investment-evolution.model';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
-  constructor(private readonly investmentService: InvestmentService) {}
+  constructor(
+    private readonly investmentService: InvestmentService,
+    private readonly accountService: AccountService,
+    private readonly transactionService: TransactionService,
+  ) {}
 
   @Auth()
   @Query(() => InvestmentConnection, { name: 'investments' })
@@ -42,6 +61,8 @@ export class InvestmentResolver {
     @Args() ordenationArgs: OrdenationInvestmentArgs,
     @Args('regime', { type: () => Regime, nullable: true })
     regime: Regime | null,
+    @Args('accountIds', { type: () => [String!], nullable: true })
+    accountIds: string[] | null,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
@@ -56,21 +77,58 @@ export class InvestmentResolver {
       ordenationArgs,
       userId: user?.id,
       regime,
+      accountIds,
     });
   }
 
   @Auth()
   @Mutation(() => Investment, { name: 'createInvestment' })
   async create(
-    @Args('data') data: InvestmentCreateWithoutUserInput,
+    @Args('data') data: CreateInvestmentInput,
     @CurrentUser() user: UserModel,
   ) {
+    const account = await this.accountService.find({
+      id: data.accountId,
+      type: {
+        in: [AccountType.SAVINGS, AccountType.INVESTMENT],
+      },
+      user: {
+        id: user.id,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Conta não encontrada');
+    }
+
+    if (
+      account.type === AccountType.SAVINGS &&
+      data.regimeName !== Regime.POUPANCA
+    ) {
+      throw new NotFoundException(
+        'Investimento em poupança deve ser criado a partir de uma conta-poupança',
+      );
+    }
+
+    if (
+      account.type === AccountType.INVESTMENT &&
+      data.regimeName === Regime.POUPANCA
+    ) {
+      throw new NotFoundException(
+        'Investimento que não seja em poupança deve ser criado a partir de uma conta de investimento',
+      );
+    }
+
     const createdInvestment = await this.investmentService.create(
       data,
-      user?.id,
+      user.id,
     );
 
-    return createdInvestment;
+    if (!createdInvestment) {
+      throw new NotFoundException('Failed to create investment');
+    }
+
+    return createdInvestment.investment;
   }
 
   @Auth()
@@ -109,6 +167,8 @@ export class InvestmentResolver {
   async investmentRegimes(
     @CurrentUser() user: UserModel,
     @Info() info: GraphQLResolveInfo,
+    @Args('accountId', { type: () => String, nullable: true })
+    accountId: string | null,
   ) {
     const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
       info,
@@ -117,7 +177,36 @@ export class InvestmentResolver {
 
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
+      accountId,
       queriedFields,
+    });
+  }
+
+  @Auth()
+  @Query(() => InvestmentEvolutionModel, { name: 'investmentEvolution' })
+  async getInvestmentEvolution(
+    @Args() args: InvestmentEvolutionArgs,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentEvolution({
+      userId: user.id,
+      accountId: args.accountId,
+      period: args.period || 'YEAR',
+    });
+  }
+
+  @Auth()
+  @Query(() => [AccountWithInvestmentCount], {
+    name: 'investmentAccounts',
+  })
+  async getAccountsWithInvestmentCount(
+    @Args('regime', { type: () => Regime, nullable: false })
+    regime: Regime,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getAccountsWithInvestmentCount({
+      userId: user.id,
+      regime,
     });
   }
 }
