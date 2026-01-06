@@ -172,6 +172,48 @@ type AccountCard {
   _count: AccountCardCount!
 }
 
+type AuthUserProviderCountAggregate {
+  id: Int!
+  providerName: Int!
+  providerId: Int!
+  userId: Int!
+  createdAt: Int!
+  updatedAt: Int!
+  _all: Int!
+}
+
+type AuthUserProviderMaxAggregate {
+  id: String
+  providerName: AuthProviderName
+  providerId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+enum AuthProviderName {
+  GOOGLE
+}
+
+type AuthUserProviderMinAggregate {
+  id: String
+  providerName: AuthProviderName
+  providerId: String
+  userId: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AuthUserProvider {
+  id: ID!
+  providerName: AuthProviderName!
+  providerId: String!
+  userId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+}
+
 type CardBillingAvgAggregate {
   limit: Decimal
 }
@@ -831,6 +873,7 @@ type UserCountAggregate {
 type UserCount {
   accounts: Int!
   investments: Int!
+  authUserProviders: Int!
   transactions: Int!
   cardBillingStatusHistories: Int!
   recurringTransactions: Int!
@@ -864,13 +907,14 @@ type UserMinAggregate {
 type User {
   id: ID!
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime!
   updatedAt: DateTime!
   accounts: [Account!]
   investments: [Investment!]
+  authUserProviders: [AuthUserProvider!]
   transactions: [Transaction!]
   cardBillingStatusHistories: [CardBillingHistory!]
   recurringTransactions: [RecurringTransaction!]
@@ -885,7 +929,6 @@ type UserModel {
 }
 
 type SignIn {
-  accessToken: String!
   user: UserModel
 }
 
@@ -1437,6 +1480,9 @@ enum OrdenationRecurringTransactionModel {
 type Mutation {
   createUser(data: UserCreateInput!): SignIn!
   authSignIn(data: AuthSignInInput!): SignIn!
+  authSignOut: Boolean!
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(token: String!, newPassword: String!): Boolean!
   createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
   createAccount(data: CreateAccountInput!): AccountModel!
@@ -1459,13 +1505,14 @@ type Mutation {
 input UserCreateInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
   cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
   recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
@@ -1734,13 +1781,14 @@ input UserWhereInput {
   NOT: [UserWhereInput!]
   id: StringFilter
   email: StringFilter
-  password: StringFilter
+  password: StringNullableFilter
   name: StringFilter
   role: EnumRoleFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   accounts: AccountListRelationFilter
   investments: InvestmentListRelationFilter
+  authUserProviders: AuthUserProviderListRelationFilter
   transactions: TransactionListRelationFilter
   cardBillingStatusHistories: CardBillingHistoryListRelationFilter
   recurringTransactions: RecurringTransactionListRelationFilter
@@ -1949,6 +1997,39 @@ input NestedEnumInvestmentTransactionRoleFilter {
 input InvestmentRelationFilter {
   is: InvestmentWhereInput
   isNot: InvestmentWhereInput
+}
+
+input AuthUserProviderListRelationFilter {
+  every: AuthUserProviderWhereInput
+  some: AuthUserProviderWhereInput
+  none: AuthUserProviderWhereInput
+}
+
+input AuthUserProviderWhereInput {
+  AND: [AuthUserProviderWhereInput!]
+  OR: [AuthUserProviderWhereInput!]
+  NOT: [AuthUserProviderWhereInput!]
+  id: StringFilter
+  providerName: EnumAuthProviderNameFilter
+  providerId: StringFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+}
+
+input EnumAuthProviderNameFilter {
+  equals: AuthProviderName
+  in: [AuthProviderName!]
+  notIn: [AuthProviderName!]
+  not: NestedEnumAuthProviderNameFilter
+}
+
+input NestedEnumAuthProviderNameFilter {
+  equals: AuthProviderName
+  in: [AuthProviderName!]
+  notIn: [AuthProviderName!]
+  not: NestedEnumAuthProviderNameFilter
 }
 
 input TransactionListRelationFilter {
@@ -2391,12 +2472,13 @@ input UserCreateNestedOneWithoutAccountsInput {
 input UserCreateWithoutAccountsInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
   cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
   recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
@@ -2538,15 +2620,69 @@ input UserCreateNestedOneWithoutInvestmentsInput {
 input UserCreateWithoutInvestmentsInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
   cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
   recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
+}
+
+input AuthUserProviderCreateNestedManyWithoutUserInput {
+  create: [AuthUserProviderCreateWithoutUserInput!]
+  connectOrCreate: [AuthUserProviderCreateOrConnectWithoutUserInput!]
+  createMany: AuthUserProviderCreateManyUserInputEnvelope
+  connect: [AuthUserProviderWhereUniqueInput!]
+}
+
+input AuthUserProviderCreateWithoutUserInput {
+  id: String
+  providerName: AuthProviderName!
+  providerId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthUserProviderCreateOrConnectWithoutUserInput {
+  where: AuthUserProviderWhereUniqueInput!
+  create: AuthUserProviderCreateWithoutUserInput!
+}
+
+input AuthUserProviderWhereUniqueInput {
+  id: String
+  providerName_providerId_userId: AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput
+  AND: [AuthUserProviderWhereInput!]
+  OR: [AuthUserProviderWhereInput!]
+  NOT: [AuthUserProviderWhereInput!]
+  providerName: EnumAuthProviderNameFilter
+  providerId: StringFilter
+  userId: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  user: UserRelationFilter
+}
+
+input AuthUserProviderProviderNameProviderIdUserIdCompoundUniqueInput {
+  providerName: AuthProviderName!
+  providerId: String!
+  userId: String!
+}
+
+input AuthUserProviderCreateManyUserInputEnvelope {
+  data: [AuthUserProviderCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input AuthUserProviderCreateManyUserInput {
+  id: String
+  providerName: AuthProviderName!
+  providerId: String!
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 
 input TransactionCreateNestedManyWithoutUserInput {
@@ -2928,13 +3064,14 @@ input UserCreateNestedOneWithoutRecurringTransactionsInput {
 input UserCreateWithoutRecurringTransactionsInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
   cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
 }
@@ -3061,13 +3198,14 @@ input UserCreateNestedOneWithoutCardBillingStatusHistoriesInput {
 input UserCreateWithoutCardBillingStatusHistoriesInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   transactions: TransactionCreateNestedManyWithoutUserInput
   recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
 }
@@ -3195,13 +3333,14 @@ input UserCreateNestedOneWithoutTransactionsInput {
 input UserCreateWithoutTransactionsInput {
   id: String
   email: String!
-  password: String!
+  password: String
   name: String!
   role: Role!
   createdAt: DateTime
   updatedAt: DateTime
   accounts: AccountCreateNestedManyWithoutUserInput
   investments: InvestmentCreateNestedManyWithoutUserInput
+  authUserProviders: AuthUserProviderCreateNestedManyWithoutUserInput
   cardBillingStatusHistories: CardBillingHistoryCreateNestedManyWithoutChangedByInput
   recurringTransactions: RecurringTransactionCreateNestedManyWithoutUserInput
 }
@@ -3217,13 +3356,14 @@ input UserWhereUniqueInput {
   AND: [UserWhereInput!]
   OR: [UserWhereInput!]
   NOT: [UserWhereInput!]
-  password: StringFilter
+  password: StringNullableFilter
   name: StringFilter
   role: EnumRoleFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   accounts: AccountListRelationFilter
   investments: InvestmentListRelationFilter
+  authUserProviders: AuthUserProviderListRelationFilter
   transactions: TransactionListRelationFilter
   cardBillingStatusHistories: CardBillingHistoryListRelationFilter
   recurringTransactions: RecurringTransactionListRelationFilter

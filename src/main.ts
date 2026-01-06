@@ -8,13 +8,12 @@ async function bootstrap() {
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
 
-  const nodeEnv = configService.get('NODE_ENV', { infer: true });
-
   app.enableCors({
-    origin: nodeEnv === 'development' ? '*' : configService.get('FRONTEND_URL'),
+    origin: configService.get('FRONTEND_URL'),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,
+    credentials: true,
   });
 
   const port = configService.get('PORT', { infer: true });

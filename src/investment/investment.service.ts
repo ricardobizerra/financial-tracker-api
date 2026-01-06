@@ -608,16 +608,16 @@ export class InvestmentService {
 
     return {
       ...(queriedFields.includes('initialAmount') && {
-        initialAmount: totalInitialAmount,
+        initialAmount: totalInitialAmount ?? 0,
       }),
       ...(queriedFields.includes('currentAmount') && {
-        currentAmount: totalCurrentAmount,
+        currentAmount: totalCurrentAmount ?? 0,
       }),
       ...(queriedFields.includes('currentVariation') && {
         currentVariation: currentVariation.toFixed(2).replace('.', ',') + '%',
       }),
       ...(queriedFields.includes('taxedAmount') && {
-        taxedAmount: totalTaxedAmount,
+        taxedAmount: totalTaxedAmount ?? 0,
       }),
       ...(queriedFields.includes('taxedVariation') && {
         taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',

@@ -21,15 +21,16 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String?
   name     String
 
   role Role
 
   accounts                   Account[]
   investments                Investment[]
+  authUserProviders          AuthUserProvider[]
   transactions               Transaction[]
   cardBillingStatusHistories CardBillingHistory[]
   recurringTransactions      RecurringTransaction[]
@@ -140,6 +141,21 @@ model CardBillingHistory {
   @@index([cardBillingId])
   @@index([changedById])
   @@index([changedAt])
+}
+
+model AuthUserProvider {
+  id String @id @default(uuid())
+
+  providerName AuthProviderName
+  providerId   String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([providerName, providerId, userId])
 }
 
 model Investment {
@@ -310,6 +326,10 @@ enum PaymentMethod {
 enum InvestmentStatus {
   OPEN
   CLOSED
+}
+
+enum AuthProviderName {
+  GOOGLE
 }
 
 enum Role {

@@ -23,6 +23,8 @@ import { InstitutionModule } from './institution/institution.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { CardModule } from './card/card.module';
 import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
+import { QueueModule } from '@/lib/queue/queue.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -31,7 +33,7 @@ import { RecurringTransactionModule } from './recurring-transaction/recurring-tr
       playground: false,
       autoSchemaFile: join(process.cwd(), 'src/lib/graphql/schema.gql'),
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      context: ({ req }) => ({ request: req }),
+      context: ({ req, res }) => ({ req, res }),
       subscriptions: {
         'graphql-ws': true,
       },
@@ -64,6 +66,8 @@ import { RecurringTransactionModule } from './recurring-transaction/recurring-tr
     TransactionModule,
     CardModule,
     RecurringTransactionModule,
+    QueueModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

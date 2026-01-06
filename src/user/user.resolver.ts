@@ -1,5 +1,6 @@
 import {
   Args,
+  Context,
   ID,
   Info,
   Mutation,
@@ -20,6 +21,7 @@ import { SignIn } from '@/auth/models/sign-in.model';
 import { UserConnection } from './models/user.connection';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
+import { Response } from 'express';
 
 @Resolver(() => UserModel)
 export class UserResolver {
@@ -52,7 +54,10 @@ export class UserResolver {
   }
 
   @Mutation(() => SignIn, { name: 'createUser' })
-  async create(@Args('data') data: UserCreateInput) {
+  async create(
+    @Args('data') data: UserCreateInput,
+    @Context('res') res: Response,
+  ) {
     const emailAlreadyExists = await this.userService.findByEmail(data.email);
 
     if (!!emailAlreadyExists) {
@@ -61,12 +66,16 @@ export class UserResolver {
 
     const createdUser = await this.userService.create(data);
 
-    const returnObject = await this.authService.signIn(
+    const { accessToken, user } = await this.authService.signIn(
       createdUser.email,
       data.password,
     );
 
-    return returnObject;
+    this.authService.setTokenCookie(res, accessToken);
+
+    return {
+      user,
+    };
   }
 
   @Subscription(() => UserModel, {
