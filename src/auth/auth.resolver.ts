@@ -30,4 +30,19 @@ export class AuthResolver {
     this.authService.clearTokenCookie(res);
     return true;
   }
+
+  @Mutation(() => Boolean, { name: 'requestPasswordReset' })
+  async requestPasswordReset(@Args('email') email: string): Promise<boolean> {
+    await this.authService.requestPasswordReset(email);
+    return true; // Sempre retorna true para não revelar se email existe
+  }
+
+  @Mutation(() => Boolean, { name: 'resetPassword' })
+  async resetPassword(
+    @Args('token') token: string,
+    @Args('newPassword') newPassword: string,
+  ): Promise<boolean> {
+    await this.authService.resetPassword(token, newPassword);
+    return true;
+  }
 }

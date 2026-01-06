@@ -30,6 +30,9 @@ export const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.coerce.string(),
   GOOGLE_CLIENT_SECRET: z.coerce.string(),
   GOOGLE_CALLBACK_URL: z.coerce.string(),
+
+  RESEND_API_KEY: z.coerce.string(),
+  MAIL_FROM_EMAIL: z.coerce.string(),
 });
 
 export type Env = z.infer<typeof envSchema>;
