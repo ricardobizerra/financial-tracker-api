@@ -23,6 +23,7 @@ import { InstitutionModule } from './institution/institution.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { CardModule } from './card/card.module';
 import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
+import { QueueModule } from '@/lib/queue/queue.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { RecurringTransactionModule } from './recurring-transaction/recurring-tr
     TransactionModule,
     CardModule,
     RecurringTransactionModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],
