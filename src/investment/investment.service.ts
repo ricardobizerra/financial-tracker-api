@@ -158,18 +158,20 @@ export class InvestmentService {
       )
     ) {
       cdiLastDate = await this.redisCacheService.get(
-        'external-ipeadata-cdi-last-date',
+        'external-bacen-cdi-last-date',
         async () => {
-          const cdiValues = await this.ipeadataService.getCdiValues();
+          const cdiValues = await this.bacenService.getCdiValues();
 
           await this.redisCacheService.set(
-            'external-ipeadata-cdi-daily',
+            'external-bacen-cdi-daily',
             cdiValues,
           );
 
           return cdiValues?.[cdiValues?.length - 1]?.date;
         },
       );
+
+      console.log('external-bacen-cdi-last-date:', cdiLastDate);
     }
 
     if (
@@ -663,9 +665,9 @@ export class InvestmentService {
 
     if (investment.regimeName === Regime.CDI) {
       const cdiValues = await this.redisCacheService.get(
-        'external-ipeadata-cdi-daily',
+        'external-bacen-cdi-daily',
         async () => {
-          return await this.ipeadataService.getCdiValues();
+          return await this.bacenService.getCdiValues();
         },
       );
 
@@ -719,27 +721,62 @@ export class InvestmentService {
         return result;
       }
 
+      // O CDI começa a render no dia SEGUINTE à aplicação
+      // Encontra o primeiro dia útil APÓS a data de início
       const firstDayIndex = cdiValues.findIndex((cdi) => {
         const cdiDate = new Date(cdi.date);
         const dateToMatch = new Date(investment.startDate);
         cdiDate.setHours(0, 0, 0, 0);
         dateToMatch.setHours(0, 0, 0, 0);
-        return cdiDate.getTime() >= dateToMatch.getTime();
+        return cdiDate.getTime() > dateToMatch.getTime();
       });
 
       if (firstDayIndex === -1) {
         throw new NotFoundException('Initial date not found in CDI data');
       }
 
-      const endIndex = Math.min(
-        firstDayIndex + investment.duration,
-        cdiValues.length,
-      );
+      // Calcula a data de fim com base na duração em dias corridos
+      // Se não há duração definida, usa a última data CDI disponível
+      let investmentEndDate: Date;
+      if (investment.duration) {
+        investmentEndDate = new Date(investment.startDate);
+        investmentEndDate.setDate(
+          investmentEndDate.getDate() + investment.duration,
+        );
+      } else {
+        // Para investimentos sem prazo, corrige até a última data disponível
+        investmentEndDate = new Date(cdiValues[cdiValues.length - 1].date);
+      }
 
-      for (let i = firstDayIndex; i < endIndex; i++) {
+      // Itera sobre os dias úteis (valores CDI) dentro do período do investimento
+      // A calculadora do BC inclui a taxa do dia final, então aplicamos até a última data disponível
+      let lastAppliedIndex = firstDayIndex;
+      for (let i = firstDayIndex; i < cdiValues.length; i++) {
+        const cdiDate = new Date(cdiValues[i].date);
+        cdiDate.setHours(0, 0, 0, 0);
+
+        // Para apenas quando excede a data de fim do investimento
+        if (cdiDate > investmentEndDate) break;
+
+        lastAppliedIndex = i;
         amount *=
           1 + (cdiValues[i].value * (investment.regimePercentage / 100)) / 100;
       }
+
+      console.log('=== CDI Calculation Debug ===');
+      console.log('Investment start date:', investment.startDate);
+      console.log('Investment end date:', investmentEndDate);
+      console.log('First CDI index:', firstDayIndex);
+      console.log('First CDI date:', cdiValues[firstDayIndex].date);
+      console.log('Last CDI index:', lastAppliedIndex);
+      console.log('Last CDI date:', cdiValues[lastAppliedIndex].date);
+      console.log(
+        'Total CDI days applied:',
+        lastAppliedIndex - firstDayIndex + 1,
+      );
+      console.log('Initial amount:', investment.amount);
+      console.log('Corrected amount:', amount);
+      console.log('=============================');
     }
 
     if (investment.regimeName === Regime.POUPANCA) {
@@ -873,7 +910,7 @@ export class InvestmentService {
     });
 
     let latestCdiDate: string | null = null;
-    let cdiValues: IpeadataCachedValue[] | null = null;
+    let cdiValues: { date: string; value: number }[] | null = null;
 
     let latestPoupancaDate: string | null = null;
     let poupancaValues: BacenCachedValue[] | null = null;
@@ -884,10 +921,10 @@ export class InvestmentService {
       investments.some((investment) => investment.regimeName === Regime.CDI)
     ) {
       const lastKnownCdiDate = await this.redisCacheService.get(
-        'external-ipeadata-cdi-last-date',
+        'external-bacen-cdi-last-date',
       );
 
-      cdiValues = await this.ipeadataService.getCdiValues();
+      cdiValues = await this.bacenService.getCdiValues();
 
       if (!cdiValues || cdiValues.length === 0) {
         nonUpdatableRegimes.push(Regime.CDI);
@@ -931,11 +968,8 @@ export class InvestmentService {
     }
 
     await Promise.all([
-      this.redisCacheService.set('external-ipeadata-cdi-daily', cdiValues),
-      this.redisCacheService.set(
-        'external-ipeadata-cdi-last-date',
-        latestCdiDate,
-      ),
+      this.redisCacheService.set('external-bacen-cdi-daily', cdiValues),
+      this.redisCacheService.set('external-bacen-cdi-last-date', latestCdiDate),
       this.redisCacheService.set(
         'external-bacen-poupanca-daily',
         poupancaValues,

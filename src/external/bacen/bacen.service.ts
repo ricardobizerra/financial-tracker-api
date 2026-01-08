@@ -113,4 +113,34 @@ export class BacenService {
       `Cron: Cached ${poupancaValues?.length || 0} poupanca values`,
     );
   }
+
+  async getCdiValues(
+    range: BacenApiRange = {
+      initialDate: sub(new Date(), { years: 10 }),
+      finalDate: new Date(),
+    },
+  ): Promise<{ date: string; value: number }[]> {
+    const values = await this.getDataByCode('12', range);
+
+    return values?.map((item) => ({
+      date: this.correctBacenDateFormat(item.data),
+      value: Number(item.valor),
+    }));
+  }
+
+  // Monday to Friday, 8:00 to 12:00
+  @Cron('0 0 8-12 * * 1-5')
+  async cacheCdiValues() {
+    this.logger.log('Cron: Starting Bacen CDI values cache update');
+    const cdiValues = await this.getCdiValues();
+
+    await Promise.all([
+      this.redisCacheService.set('external-bacen-cdi-daily', cdiValues),
+      this.redisCacheService.set(
+        'external-bacen-cdi-last-date',
+        cdiValues?.[cdiValues?.length - 1]?.date,
+      ),
+    ]);
+    this.logger.log(`Cron: Cached ${cdiValues?.length || 0} Bacen CDI values`);
+  }
 }

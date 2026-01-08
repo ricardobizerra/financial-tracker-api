@@ -9,6 +9,8 @@ type CacheKeyMapping = {
   'external-ipeadata-cdi-last-date': string;
   'external-bacen-poupanca-daily': BacenCachedValue[];
   'external-bacen-poupanca-last-date': string;
+  'external-bacen-cdi-daily': { date: string; value: number }[];
+  'external-bacen-cdi-last-date': string;
 };
 
 type BaseCacheKey = keyof CacheKeyMapping;
