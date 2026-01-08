@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisPubSub } from 'graphql-redis-subscriptions';
 import Redis, { RedisOptions } from 'ioredis';
@@ -8,6 +8,8 @@ export class RedisSubscriptionService
   extends RedisPubSub
   implements OnModuleInit
 {
+  private readonly logger = new Logger(RedisSubscriptionService.name);
+
   constructor(private readonly configService: ConfigService) {
     const options: RedisOptions = {
       host: configService.get('REDIS_HOST'),
@@ -24,5 +26,6 @@ export class RedisSubscriptionService
 
   async onModuleInit() {
     await this.getSubscriber().subscribe('EVENTS');
+    this.logger.log('Redis subscription service initialized');
   }
 }
