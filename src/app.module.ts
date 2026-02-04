@@ -25,6 +25,7 @@ import { CardModule } from './card/card.module';
 import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
 import { QueueModule } from '@/lib/queue/queue.module';
 import { MailModule } from './mail/mail.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { MailModule } from './mail/mail.module';
     RecurringTransactionModule,
     QueueModule,
     MailModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

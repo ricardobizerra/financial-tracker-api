@@ -704,6 +704,7 @@ type RecurringTransaction {
 
 type TransactionAvgAggregate {
   amount: Decimal
+  categoryConfidence: Float
 }
 
 type TransactionCountAggregate {
@@ -716,6 +717,8 @@ type TransactionCountAggregate {
   paymentMethod: Int!
   paymentEnabled: Int!
   paymentLimit: Int!
+  category: Int!
+  categoryConfidence: Int!
   sourceAccountId: Int!
   destinyAccountId: Int!
   cardBillingId: Int!
@@ -740,6 +743,8 @@ type TransactionMaxAggregate {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -756,6 +761,22 @@ enum TransactionStatus {
   OVERDUE
 }
 
+enum TransactionCategory {
+  FOOD_DINING
+  TRANSPORT
+  HOUSING
+  UTILITIES
+  HEALTHCARE
+  ENTERTAINMENT
+  SHOPPING
+  EDUCATION
+  TRAVEL
+  SALARY
+  INVESTMENT_INCOME
+  TRANSFER
+  OTHER
+}
+
 type TransactionMinAggregate {
   id: String
   description: String
@@ -766,6 +787,8 @@ type TransactionMinAggregate {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -777,6 +800,7 @@ type TransactionMinAggregate {
 
 type TransactionSumAggregate {
   amount: Decimal
+  categoryConfidence: Float
 }
 
 type Transaction {
@@ -789,6 +813,8 @@ type Transaction {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean!
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -1105,6 +1131,8 @@ type TransactionModel {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean!
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -1302,6 +1330,16 @@ type RecurringTransactionModelEdge {
   node: RecurringTransactionModel!
 }
 
+type CategorySuggestion {
+  category: TransactionCategory!
+  confidence: Float!
+  reasoning: String
+}
+
+type ChatResponse {
+  message: String!
+}
+
 type Query {
   health: String!
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
@@ -1335,6 +1373,7 @@ type Query {
   institution(id: String!): InstitutionModel!
   recurringTransaction(id: String!): RecurringTransactionModel
   recurringTransactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationRecurringTransactionModel, orderDirection: OrderDirection, accountId: ID, isActive: Boolean): RecurringTransactionConnection!
+  suggestCategory(description: String!): CategorySuggestion!
 }
 
 enum OrdenationUserModel {
@@ -1407,6 +1446,8 @@ enum OrdenationTransactionModel {
   paymentMethod
   paymentEnabled
   paymentLimit
+  category
+  categoryConfidence
   sourceAccountId
   destinyAccountId
   cardBillingId
@@ -1500,6 +1541,7 @@ type Mutation {
   resumeRecurringTransaction(id: String!): RecurringTransactionModel!
   endRecurringTransaction(id: String!, endDate: DateTime!): RecurringTransactionModel!
   deleteRecurringTransaction(id: String!): RecurringTransactionModel!
+  chat(message: String!): ChatResponse!
 }
 
 input UserCreateInput {
@@ -2051,6 +2093,8 @@ input TransactionWhereInput {
   paymentMethod: EnumPaymentMethodNullableFilter
   paymentEnabled: BoolFilter
   paymentLimit: DateTimeNullableFilter
+  category: EnumTransactionCategoryNullableFilter
+  categoryConfidence: FloatNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
@@ -2107,6 +2151,20 @@ input NestedEnumPaymentMethodNullableFilter {
   in: [PaymentMethod!]
   notIn: [PaymentMethod!]
   not: NestedEnumPaymentMethodNullableFilter
+}
+
+input EnumTransactionCategoryNullableFilter {
+  equals: TransactionCategory
+  in: [TransactionCategory!]
+  notIn: [TransactionCategory!]
+  not: NestedEnumTransactionCategoryNullableFilter
+}
+
+input NestedEnumTransactionCategoryNullableFilter {
+  equals: TransactionCategory
+  in: [TransactionCategory!]
+  notIn: [TransactionCategory!]
+  not: NestedEnumTransactionCategoryNullableFilter
 }
 
 input AccountNullableRelationFilter {
@@ -2428,6 +2486,8 @@ input TransactionCreateWithoutBillingPaymentInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2551,6 +2611,8 @@ input TransactionCreateWithoutSourceAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
@@ -2702,6 +2764,8 @@ input TransactionCreateWithoutUserInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2793,6 +2857,8 @@ input TransactionCreateWithoutDestinyAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2856,6 +2922,8 @@ input TransactionCreateWithoutInstallmentsInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3128,6 +3196,8 @@ input TransactionCreateWithoutCardBillingInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3314,6 +3384,8 @@ input TransactionCreateWithoutRecurringTransactionInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3387,6 +3459,8 @@ input TransactionWhereUniqueInput {
   paymentMethod: EnumPaymentMethodNullableFilter
   paymentEnabled: BoolFilter
   paymentLimit: DateTimeNullableFilter
+  category: EnumTransactionCategoryNullableFilter
+  categoryConfidence: FloatNullableFilter
   sourceAccountId: StringNullableFilter
   destinyAccountId: StringNullableFilter
   cardBillingId: StringNullableFilter
@@ -3418,6 +3492,8 @@ input TransactionCreateManyRecurringTransactionInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -3674,6 +3750,8 @@ input TransactionCreateManyCardBillingInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   recurringTransactionId: String
@@ -3801,6 +3879,8 @@ input TransactionCreateManyDestinyAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   cardBillingId: String
   recurringTransactionId: String
@@ -3861,6 +3941,8 @@ input TransactionCreateManyUserInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   sourceAccountId: String
   destinyAccountId: String
   cardBillingId: String
@@ -3991,6 +4073,8 @@ input TransactionCreateManySourceAccountInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   destinyAccountId: String
   cardBillingId: String
   recurringTransactionId: String
@@ -4142,6 +4226,8 @@ input CreateTransactionInput {
   paymentMethod: PaymentMethod
   paymentEnabled: Boolean
   paymentLimit: DateTime
+  category: TransactionCategory
+  categoryConfidence: Float
   billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
   installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput

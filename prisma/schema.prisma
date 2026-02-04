@@ -215,6 +215,10 @@ model Transaction {
   paymentEnabled Boolean           @default(true)
   paymentLimit   DateTime?
 
+  // Categoria da transação (pode ser sugerida por IA)
+  category           TransactionCategory?
+  categoryConfidence Float? // 0-1: confiança da sugestão de IA
+
   sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "SourceAccount")
   sourceAccountId String?
 
@@ -348,6 +352,22 @@ enum InvestmentTransactionRole {
   REDEMPTION
   INCOME
   FEE
+}
+
+enum TransactionCategory {
+  FOOD_DINING // Alimentação
+  TRANSPORT // Transporte
+  HOUSING // Moradia
+  UTILITIES // Contas (luz, água, internet)
+  HEALTHCARE // Saúde
+  ENTERTAINMENT // Lazer
+  SHOPPING // Compras
+  EDUCATION // Educação
+  TRAVEL // Viagens
+  SALARY // Salário
+  INVESTMENT_INCOME // Rendimentos
+  TRANSFER // Transferências
+  OTHER // Outros
 }
 
 enum TransactionStatus {

@@ -155,6 +155,8 @@ Table Transaction {
   paymentMethod PaymentMethod
   paymentEnabled Boolean [not null, default: true]
   paymentLimit DateTime
+  category TransactionCategory
+  categoryConfidence Float
   sourceAccount Account
   sourceAccountId String
   destinyAccount Account
@@ -265,6 +267,22 @@ Enum InvestmentTransactionRole {
   REDEMPTION
   INCOME
   FEE
+}
+
+Enum TransactionCategory {
+  FOOD_DINING
+  TRANSPORT
+  HOUSING
+  UTILITIES
+  HEALTHCARE
+  ENTERTAINMENT
+  SHOPPING
+  EDUCATION
+  TRAVEL
+  SALARY
+  INVESTMENT_INCOME
+  TRANSFER
+  OTHER
 }
 
 Enum TransactionStatus {

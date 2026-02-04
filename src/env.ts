@@ -33,6 +33,9 @@ export const envSchema = z.object({
 
   RESEND_API_KEY: z.coerce.string(),
   MAIL_FROM_EMAIL: z.coerce.string(),
+
+  // IA (opcional)
+  GEMINI_API_KEY: z.coerce.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
