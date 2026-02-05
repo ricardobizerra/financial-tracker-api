@@ -109,15 +109,18 @@ export class LoggingInterceptor implements NestInterceptor {
     );
   }
 
-  private sanitize(obj: Record<string, unknown>): Record<string, unknown> {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => {
-        if (this.sensitiveKeys.includes(key)) return [key, '[REDACTED]'];
-        if (typeof value === 'object' && value !== null) {
-          return [key, this.sanitize(value as Record<string, unknown>)];
-        }
-        return [key, value];
-      }),
-    );
+  private sanitize(obj: unknown): unknown {
+    if (Array.isArray(obj)) {
+      return obj.map((v) => this.sanitize(v));
+    }
+    if (typeof obj === 'object' && obj !== null) {
+      return Object.fromEntries(
+        Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
+          if (this.sensitiveKeys.includes(key)) return [key, '[REDACTED]'];
+          return [key, this.sanitize(value)];
+        }),
+      );
+    }
+    return obj;
   }
 }
