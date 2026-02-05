@@ -5,12 +5,14 @@ import {
 } from './types/ipeadata-response';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 
 @Injectable()
 export class IpeadataService {
+  private readonly logger = new Logger(IpeadataService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private redisCacheService: RedisCacheService,
@@ -26,8 +28,10 @@ export class IpeadataService {
         )
         .pipe(
           catchError((error: AxiosError) => {
-            console.error(error.response?.data);
-            throw 'An error happened!';
+            this.logger.error(
+              `IpeaData API error: ${JSON.stringify(error.response?.data)}`,
+            );
+            throw new Error('Failed to fetch data from IpeaData API');
           }),
         ),
     );
@@ -47,6 +51,7 @@ export class IpeadataService {
   // Monday to Friday, 8:00 to 12:00
   @Cron('0 0 8-12 * * 1-5')
   async cacheCdiValues() {
+    this.logger.log('Cron: Starting CDI values cache update');
     const cdiValues = await this.getCdiValues();
 
     await Promise.all([
@@ -56,5 +61,6 @@ export class IpeadataService {
         cdiValues?.[cdiValues?.length - 1]?.date,
       ),
     ]);
+    this.logger.log(`Cron: Cached ${cdiValues?.length || 0} CDI values`);
   }
 }

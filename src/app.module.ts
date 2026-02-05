@@ -28,19 +28,26 @@ import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      playground: false,
-      autoSchemaFile: join(process.cwd(), 'src/lib/graphql/schema.gql'),
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      context: ({ req, res }) => ({ req, res }),
-      subscriptions: {
-        'graphql-ws': true,
-      },
-    }),
     ConfigModule.forRoot({
       validate: (config) => envSchema.parse(config),
       isGlobal: true,
+    }),
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<Env, true>) => ({
+        playground: false,
+        autoSchemaFile:
+          configService.get('NODE_ENV') === 'production'
+            ? join('/tmp', 'schema.gql')
+            : join(process.cwd(), 'src/lib/graphql/schema.gql'),
+        plugins: [ApolloServerPluginLandingPageLocalDefault()],
+        context: ({ req, res }) => ({ req, res }),
+        subscriptions: {
+          'graphql-ws': true,
+        },
+      }),
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],

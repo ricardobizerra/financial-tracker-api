@@ -3,6 +3,7 @@ import { Job } from 'bullmq';
 import { Resend } from 'resend';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   MAIL_QUEUE,
   MailJobType,
@@ -17,7 +18,10 @@ export class MailProcessor extends WorkerHost {
   private readonly frontendUrl: string;
   private readonly fromEmail: string;
 
-  constructor(private readonly configService: ConfigService<Env, true>) {
+  constructor(
+    private readonly configService: ConfigService<Env, true>,
+    private readonly jwtService: JwtService,
+  ) {
     super();
     this.resend = new Resend(configService.get('RESEND_API_KEY'));
     this.frontendUrl = configService.get('FRONTEND_URL');
@@ -37,6 +41,16 @@ export class MailProcessor extends WorkerHost {
   }
 
   private async handlePasswordReset(data: PasswordResetJobData): Promise<void> {
+    // Verificar se o token ainda é válido antes de enviar
+    try {
+      await this.jwtService.verifyAsync(data.token);
+    } catch {
+      this.logger.warn(
+        `Skipping password reset email for ${data.email}: token has expired`,
+      );
+      return;
+    }
+
     const resetUrl = `${this.frontendUrl}/reset-password?token=${data.token}`;
 
     const { error } = await this.resend.emails.send({

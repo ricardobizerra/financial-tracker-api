@@ -93,34 +93,6 @@ export class InvestmentService {
       ? Number(investmentsLengthQuery)
       : undefined;
 
-    console.log(
-      selectObject<Investment, InvestmentModel>(queriedFields, {
-        currentVariation: ['amount'],
-        taxPercentage: ['amount'],
-        taxedVariation: ['amount'],
-        account: ['id'],
-        transactions: ['id'],
-        ...((queriedFields.includes('correctedAmount') ||
-          queriedFields.includes('taxedAmount') ||
-          queriedFields.includes('currentVariation') ||
-          queriedFields.includes('taxedVariation') ||
-          queriedFields.includes('taxPercentage')) && {
-          DEFAULT: [
-            'id',
-            'amount',
-            'startDate',
-            'finishedAt',
-            'duration',
-            'regimeName',
-            'regimePercentage',
-            'lastCorrectedAt',
-            'correctedAmount',
-            'taxedAmount',
-          ] satisfies (keyof Investment)[],
-        }),
-      }),
-    );
-
     const investmentsQuery = await this.prismaService.investment.findMany({
       take: last
         ? unbufferedCursor
