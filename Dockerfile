@@ -12,3 +12,12 @@ RUN yarn install
 COPY . .
 RUN yarn generate
 CMD ["yarn", "start:dev"]
+
+# Production stage
+FROM base AS production
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY . .
+RUN yarn generate:prod
+RUN yarn build
+CMD ["yarn", "start:prod"]
