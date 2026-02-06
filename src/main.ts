@@ -5,6 +5,8 @@ import { Env } from '@/env';
 import { Logger } from '@nestjs/common';
 import { LoggingInterceptor } from '@/lib/interceptors/logging.interceptor';
 
+import * as cookieParser from 'cookie-parser';
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
@@ -12,6 +14,7 @@ async function bootstrap() {
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
 
   app.useGlobalInterceptors(new LoggingInterceptor());
+  app.use(cookieParser());
 
   app.enableCors({
     origin: configService.get('FRONTEND_URL'),
