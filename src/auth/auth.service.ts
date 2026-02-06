@@ -100,11 +100,14 @@ export class AuthService {
   }
 
   setTokenCookie(res: Response, accessToken: string) {
+    const isProduction =
+      this.configService.get('NODE_ENV', { infer: true }) === 'production';
+
     res.cookie('accessToken', accessToken, {
       maxAge:
         this.configService.get('JWT_EXPIRES_IN_SECONDS', { infer: true }) *
         1000,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict',
       secure: true,
       httpOnly: true,
       signed: false,
@@ -112,8 +115,11 @@ export class AuthService {
   }
 
   clearTokenCookie(res: Response) {
+    const isProduction =
+      this.configService.get('NODE_ENV', { infer: true }) === 'production';
+
     res.clearCookie('accessToken', {
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict',
       secure: true,
       httpOnly: true,
       signed: false,
