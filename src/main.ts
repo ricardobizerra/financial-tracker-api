@@ -5,7 +5,7 @@ import { Env } from '@/env';
 import { Logger } from '@nestjs/common';
 import { LoggingInterceptor } from '@/lib/interceptors/logging.interceptor';
 
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
