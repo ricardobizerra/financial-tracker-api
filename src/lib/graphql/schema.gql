@@ -4270,6 +4270,7 @@ input UpdateTransactionInput {
   Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.
   """
   isCompleted: Boolean
+  category: TransactionCategory
 }
 
 input RescheduleTransactionInput {
@@ -4309,6 +4310,7 @@ input CreateRecurringTransactionInput {
   destinyAccountId: ID
   recurrenceType: RecurrenceType = PERIODIC
   totalInstallments: Int
+  category: TransactionCategory
 }
 
 input UpdateRecurringTransactionInput {
