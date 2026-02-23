@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { CsrfGuard } from '@/lib/guards/csrf.guard';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -29,19 +31,26 @@ import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      playground: false,
-      autoSchemaFile: join(process.cwd(), 'src/lib/graphql/schema.gql'),
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      context: ({ req, res }) => ({ req, res }),
-      subscriptions: {
-        'graphql-ws': true,
-      },
-    }),
     ConfigModule.forRoot({
       validate: (config) => envSchema.parse(config),
       isGlobal: true,
+    }),
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<Env, true>) => ({
+        playground: false,
+        autoSchemaFile:
+          configService.get('NODE_ENV') === 'production'
+            ? join('/tmp', 'schema.gql')
+            : join(process.cwd(), 'src/lib/graphql/schema.gql'),
+        plugins: [ApolloServerPluginLandingPageLocalDefault()],
+        context: ({ req, res }) => ({ req, res }),
+        subscriptions: {
+          'graphql-ws': true,
+        },
+      }),
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
@@ -72,6 +81,12 @@ import { AiModule } from './ai/ai.module';
     AiModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
+  ],
 })
 export class AppModule {}

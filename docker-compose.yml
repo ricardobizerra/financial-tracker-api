@@ -43,13 +43,10 @@ services:
     container_name: ${APP_NAME}-api
     build:
       context: .
-      target: development
+      target: ${NODE_ENV}
     restart: always
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/node_modules
     ports:
       - '${PORT:-3333}:${PORT:-3333}'
     depends_on:
