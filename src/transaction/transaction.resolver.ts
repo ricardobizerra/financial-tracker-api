@@ -315,6 +315,7 @@ export class TransactionResolver {
       status: calculatedStatus,
       type: data.type,
       paymentMethod: calculatedPaymentMethod,
+      category: data.category,
       ...((data.type === TransactionType.EXPENSE ||
         data.type === TransactionType.BETWEEN_ACCOUNTS) && {
         sourceAccount: {
@@ -590,6 +591,7 @@ export class TransactionResolver {
       ...(data.paymentMethod !== undefined && {
         paymentMethod: data.paymentMethod as PaymentMethod,
       }),
+      ...(data.category !== undefined && { category: data.category }),
       ...(newStatus !== undefined && {
         status: newStatus,
       }),

@@ -232,6 +232,7 @@ export class RecurringTransactionService {
           destinyAccountId: data.destinyAccountId,
           recurringTransactionId: recurring.id,
           userId,
+          category: data.category,
         },
       });
 

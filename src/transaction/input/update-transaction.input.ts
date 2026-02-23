@@ -1,4 +1,8 @@
-import { PaymentMethod, TransactionStatus } from '@/lib/graphql/prisma-client';
+import {
+  PaymentMethod,
+  TransactionCategory,
+  TransactionStatus,
+} from '@/lib/graphql/prisma-client';
 import { Field, ID, InputType, Float } from '@nestjs/graphql';
 
 @InputType()
@@ -27,4 +31,7 @@ export class UpdateTransactionInput {
       'Se true e a data for hoje, marca como COMPLETED. Se false ou não informado, usa PLANNED para hoje.',
   })
   isCompleted?: boolean;
+
+  @Field(() => TransactionCategory, { nullable: true })
+  category?: TransactionCategory;
 }
