@@ -17,6 +17,7 @@ import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { TransactionService } from '@/transaction/transaction.service';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { GoneException } from '@nestjs/common';
 
 @ObjectType()
 export class CategorySuggestion {
@@ -48,6 +49,8 @@ export class AiResolver {
   async suggestCategory(
     @Args('description', { type: () => String }) description: string,
   ): Promise<CategorySuggestionType> {
+    throw new GoneException('Temporarily unavailable');
+
     return this.aiService.suggestCategory(description);
   }
 
@@ -57,6 +60,8 @@ export class AiResolver {
     @Args('message', { type: () => String }) message: string,
     @CurrentUser() user: UserModel,
   ): Promise<ChatResponse> {
+    throw new GoneException('Temporarily unavailable');
+
     // Buscar contexto financeiro do usuário para o mês atual
     const now = new Date();
     const summary = await this.transactionService.getSummary({
