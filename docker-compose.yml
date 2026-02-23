@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     container_name: ${APP_NAME}-postgres
-    image: postgres
+    image: postgres:17-alpine
     restart: always
     env_file:
       - .env
@@ -20,7 +20,7 @@ services:
       - '5432:5432'
   redis:
     container_name: ${APP_NAME}-redis
-    image: redis
+    image: redis:7-alpine
     restart: always
     env_file:
       - .env
@@ -39,6 +39,22 @@ services:
       - redis:/data
     ports:
       - '6379:6379'
+  api:
+    container_name: ${APP_NAME}-api
+    build:
+      context: .
+      target: ${NODE_ENV}
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - '${PORT:-3333}:${PORT:-3333}'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres:

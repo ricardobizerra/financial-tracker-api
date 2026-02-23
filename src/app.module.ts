@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { CsrfGuard } from '@/lib/guards/csrf.guard';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,22 +20,37 @@ import { redisStore } from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { InvestmentModule } from './investment/investment.module';
 import { BacenModule } from './external/bacen/bacen.module';
+import { AccountModule } from './account/account.module';
+import { InstitutionModule } from './institution/institution.module';
+import { TransactionModule } from './transaction/transaction.module';
+import { CardModule } from './card/card.module';
+import { RecurringTransactionModule } from './recurring-transaction/recurring-transaction.module';
+import { QueueModule } from '@/lib/queue/queue.module';
+import { MailModule } from './mail/mail.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      playground: false,
-      autoSchemaFile: join(process.cwd(), 'src/lib/graphql/schema.gql'),
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      context: ({ req }) => ({ request: req }),
-      subscriptions: {
-        'graphql-ws': true,
-      },
-    }),
     ConfigModule.forRoot({
       validate: (config) => envSchema.parse(config),
       isGlobal: true,
+    }),
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<Env, true>) => ({
+        playground: false,
+        autoSchemaFile:
+          configService.get('NODE_ENV') === 'production'
+            ? join('/tmp', 'schema.gql')
+            : join(process.cwd(), 'src/lib/graphql/schema.gql'),
+        plugins: [ApolloServerPluginLandingPageLocalDefault()],
+        context: ({ req, res }) => ({ req, res }),
+        subscriptions: {
+          'graphql-ws': true,
+        },
+      }),
     }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
@@ -54,8 +71,22 @@ import { BacenModule } from './external/bacen/bacen.module';
     BacenModule,
     IpeadataModule,
     InvestmentModule,
+    AccountModule,
+    InstitutionModule,
+    TransactionModule,
+    CardModule,
+    RecurringTransactionModule,
+    QueueModule,
+    MailModule,
+    AiModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,7 +1,7 @@
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 type CacheKeyMapping = {
@@ -25,6 +25,8 @@ type KeyFunctionReturn<K extends CacheKey> =
 
 @Injectable()
 export class RedisCacheService {
+  private readonly logger = new Logger(RedisCacheService.name);
+
   constructor(@Inject(CACHE_MANAGER) private cacheService: Cache) {}
 
   async get<K extends CacheKey>(
@@ -35,14 +37,17 @@ export class RedisCacheService {
       await this.cacheService.get(key);
 
     if (cacheValue !== null && cacheValue !== undefined) {
+      this.logger.debug(`Cache hit for key: ${key}`);
       return cacheValue;
     }
 
+    this.logger.debug(`Cache miss for key: ${key}`);
     if (keyFunction) {
       const value = await keyFunction();
 
       if (value !== null && value !== undefined) {
         await this.cacheService.set(key, value);
+        this.logger.debug(`Cache populated for key: ${key}`);
       }
 
       return value;
@@ -56,10 +61,12 @@ export class RedisCacheService {
     value: KeyFunctionReturn<K>,
     ttl?: number,
   ) {
+    this.logger.debug(`Cache set for key: ${key}`);
     return await this.cacheService.set(key, value, ttl);
   }
 
   async del(key: string) {
+    this.logger.debug(`Cache delete for key: ${key}`);
     return await this.cacheService.del(key);
   }
 }

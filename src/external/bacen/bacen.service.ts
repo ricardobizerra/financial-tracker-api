@@ -8,7 +8,7 @@ import {
   retry,
 } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import {
@@ -20,6 +20,8 @@ import { format, sub } from 'date-fns';
 
 @Injectable()
 export class BacenService {
+  private readonly logger = new Logger(BacenService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private redisCacheService: RedisCacheService,
@@ -55,12 +57,16 @@ export class BacenService {
         retry({
           count: maxRetries,
           delay: (error, retryCount) => {
-            console.log(`Retrying (${retryCount}/${maxRetries})...`);
+            this.logger.warn(
+              `Retrying Bacen API request (${retryCount}/${maxRetries})...`,
+            );
             return timer(retryCount * initialDelay);
           },
         }),
         catchError((error) => {
-          console.error('API request failed after retries:', error.message);
+          this.logger.error(
+            `Bacen API request failed after retries: ${error.message}`,
+          );
           return throwError(
             () =>
               new Error(
@@ -96,11 +102,15 @@ export class BacenService {
   // 8:00 to 12:00
   @Cron('0 0 8-12 * * *')
   async cachePoupancaValues() {
+    this.logger.log('Cron: Starting poupanca values cache update');
     const poupancaValues = await this.getPoupancaValues();
 
     await this.redisCacheService.set(
       'external-bacen-poupanca-daily',
       poupancaValues,
+    );
+    this.logger.log(
+      `Cron: Cached ${poupancaValues?.length || 0} poupanca values`,
     );
   }
 }

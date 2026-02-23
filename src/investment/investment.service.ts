@@ -2,7 +2,14 @@ import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
-import { Investment, Regime as RegimePrisma } from '@prisma/client';
+import {
+  AccountType,
+  Investment,
+  InvestmentTransactionRole,
+  Regime as RegimePrisma,
+  TransactionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import {
   InvestmentConnection,
@@ -14,16 +21,14 @@ import {
 } from './investment.model';
 import { differenceInDays } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
-import {
-  InvestmentCreateWithoutUserInput,
-  Regime,
-} from '@/lib/graphql/prisma-client';
+import { Regime, Transaction } from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
 import { Cron } from '@nestjs/schedule';
 import { BacenService } from '@/external/bacen/bacen.service';
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
+import { CreateInvestmentInput } from './input/create-investment.input';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -54,15 +59,23 @@ export class InvestmentService {
     ordenationArgs,
     userId,
     regime,
+    accountIds,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
     regime: Regime | null;
+    accountIds?: string[] | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+
+    const whereClause = {
+      userId,
+      ...(regime && { regimeName: regime }),
+      ...(accountIds && { accountId: { in: accountIds } }),
+    };
 
     const unbufferedCursor = after
       ? Number(Buffer.from(after, 'base64').toString('utf-8'))
@@ -72,10 +85,7 @@ export class InvestmentService {
 
     const investmentsLengthQuery = last
       ? await this.prismaService.investment.count({
-          where: {
-            regimeName: regime,
-            userId,
-          },
+          where: whereClause,
         })
       : undefined;
 
@@ -115,6 +125,8 @@ export class InvestmentService {
         currentVariation: ['amount'],
         taxPercentage: ['amount'],
         taxedVariation: ['amount'],
+        account: [],
+        transactions: [],
         ...((queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
           queriedFields.includes('currentVariation') ||
@@ -134,10 +146,7 @@ export class InvestmentService {
           ] satisfies (keyof Investment)[],
         }),
       }),
-      where: {
-        userId,
-        regimeName: regime,
-      },
+      where: whereClause,
     });
 
     let cdiLastDate: string;
@@ -218,43 +227,18 @@ export class InvestmentService {
         const taxPercentage = getIrpfTax(currentInvestmentDays);
 
         return {
-          ...(queriedFields.includes('id') && { id: investment.id }),
-          ...(queriedFields.includes('amount') && {
-            amount: investment.amount,
+          ...investment,
+          ...(correctedAmount && {
+            correctedAmount: correctedAmount,
           }),
-          ...(queriedFields.includes('correctedAmount') &&
-            correctedAmount && {
-              correctedAmount: correctedAmount,
-            }),
-          ...(queriedFields.includes('currentVariation') && {
-            currentVariation:
-              correctedVariation.toFixed(2).replace('.', ',') + '%',
+          currentVariation:
+            correctedVariation.toFixed(2).replace('.', ',') + '%',
+          taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
+          ...(taxedAmount && {
+            taxedAmount: taxedAmount,
           }),
-          ...(queriedFields.includes('taxPercentage') && {
-            taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
-          }),
-          ...(queriedFields.includes('taxedAmount') &&
-            taxedAmount && {
-              taxedAmount: taxedAmount,
-            }),
-          ...(queriedFields.includes('taxedVariation') && {
-            taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
-          }),
-          ...(queriedFields.includes('startDate') && {
-            startDate: investment.startDate,
-          }),
-          ...(queriedFields.includes('finishedAt') && {
-            finishedAt: investment.finishedAt,
-          }),
-          ...(queriedFields.includes('duration') && {
-            duration: investment.duration,
-          }),
-          ...(queriedFields.includes('regimeName') && {
-            regimeName: investment.regimeName as Regime,
-          }),
-          ...(queriedFields.includes('regimePercentage') && {
-            regimePercentage: investment.regimePercentage,
-          }),
+          taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+          regimeName: investment.regimeName as Regime,
         };
       }),
     );
@@ -357,10 +341,21 @@ export class InvestmentService {
     };
   }
 
-  async create(data: InvestmentCreateWithoutUserInput, userId: string) {
+  async create(data: CreateInvestmentInput, userId: string) {
+    const isPoupanca = data.regimeName === Regime.POUPANCA;
+
     const investment = await this.prismaService.investment.create({
       data: {
-        ...data,
+        amount: data.amount,
+        startDate: data.startDate,
+        duration: isPoupanca ? undefined : data.duration,
+        regimeName: data.regimeName,
+        regimePercentage: isPoupanca ? data.regimePercentage : 100,
+        account: {
+          connect: {
+            id: data.accountId,
+          },
+        },
         user: {
           connect: {
             id: userId,
@@ -369,7 +364,34 @@ export class InvestmentService {
       },
     });
 
-    return investment;
+    if (!investment) {
+      return null;
+    }
+
+    const investmentTransaction =
+      await this.prismaService.investmentTransaction.create({
+        data: {
+          amount: data.amount,
+          role: InvestmentTransactionRole.FUNDING,
+          investment: {
+            connect: {
+              id: investment.id,
+            },
+          },
+          account: {
+            connect: {
+              id: data.accountId,
+            },
+          },
+        },
+      });
+
+    if (!investmentTransaction) {
+      await this.delete(investment.id, userId);
+      return null;
+    }
+
+    return { investment, investmentTransaction };
   }
 
   async delete(id: string, userId: string) {
@@ -400,15 +422,22 @@ export class InvestmentService {
 
   async getInvestmentRegimes({
     userId,
+    accountId,
     queriedFields,
   }: {
     userId: string;
+    accountId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
+    const whereClause = {
+      userId,
+      ...(accountId && { accountId }),
+    };
+
     // Get all investments grouped by regime
     const investmentsByRegime = await this.prismaService.investment.groupBy({
       by: ['regimeName'],
-      where: { userId },
+      where: whereClause,
       _sum: {
         amount: true,
       },
@@ -424,7 +453,7 @@ export class InvestmentService {
 
     // Get all investments with their corrected and taxed amounts
     const allInvestments = await this.prismaService.investment.findMany({
-      where: { userId },
+      where: whereClause,
       select: {
         id: true,
         amount: true,
@@ -494,8 +523,12 @@ export class InvestmentService {
       };
     });
 
-    const startCursor = regimeSummaries[0].cursor;
-    const endCursor = regimeSummaries[regimeSummaries.length - 1].cursor;
+    const startCursor = regimeSummaries?.length
+      ? regimeSummaries[0].cursor
+      : null;
+    const endCursor = regimeSummaries?.length
+      ? regimeSummaries[regimeSummaries.length - 1].cursor
+      : null;
 
     return {
       edges: regimeSummaries,
@@ -517,9 +550,9 @@ export class InvestmentService {
   }): Promise<TotalInvestmentsModel> {
     const {
       _sum: {
-        amount: totalInitialAmount,
-        correctedAmount: totalCurrentAmount,
-        taxedAmount: totalTaxedAmount,
+        amount: rawTotalInitialAmount,
+        correctedAmount: rawTotalCurrentAmount,
+        taxedAmount: rawTotalTaxedAmount,
       },
     } = await this.prismaService.investment.aggregate({
       _sum: {
@@ -529,6 +562,11 @@ export class InvestmentService {
       },
       where: { userId },
     });
+
+    // Default to 0 when there are no investments
+    const totalInitialAmount = rawTotalInitialAmount ?? 0;
+    const totalCurrentAmount = rawTotalCurrentAmount ?? 0;
+    const totalTaxedAmount = rawTotalTaxedAmount ?? 0;
 
     const currentVariation =
       queriedFields.includes('currentVariation') && totalInitialAmount > 0
@@ -542,16 +580,16 @@ export class InvestmentService {
 
     return {
       ...(queriedFields.includes('initialAmount') && {
-        initialAmount: totalInitialAmount,
+        initialAmount: totalInitialAmount ?? 0,
       }),
       ...(queriedFields.includes('currentAmount') && {
-        currentAmount: totalCurrentAmount,
+        currentAmount: totalCurrentAmount ?? 0,
       }),
       ...(queriedFields.includes('currentVariation') && {
         currentVariation: currentVariation.toFixed(2).replace('.', ',') + '%',
       }),
       ...(queriedFields.includes('taxedAmount') && {
-        taxedAmount: totalTaxedAmount,
+        taxedAmount: totalTaxedAmount ?? 0,
       }),
       ...(queriedFields.includes('taxedVariation') && {
         taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
@@ -922,5 +960,234 @@ export class InvestmentService {
           ),
         ),
     );
+  }
+
+  async getInvestmentEvolution({
+    userId,
+    accountId,
+    period,
+  }: {
+    userId: string;
+    accountId?: string;
+    period: string;
+  }) {
+    // Calcular data de início baseado no período
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'MONTH':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          now.getDate(),
+        );
+        break;
+      case 'THREE_MONTHS':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 3,
+          now.getDate(),
+        );
+        break;
+      case 'SIX_MONTHS':
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 6,
+          now.getDate(),
+        );
+        break;
+      case 'YEAR':
+        startDate = new Date(
+          now.getFullYear() - 1,
+          now.getMonth(),
+          now.getDate(),
+        );
+        break;
+      case 'ALL':
+      default:
+        startDate = new Date(2000, 0, 1);
+        break;
+    }
+
+    // Buscar investimentos do usuário
+    const investments = await this.prismaService.investment.findMany({
+      where: {
+        userId,
+        ...(accountId && { accountId }),
+      },
+      select: {
+        id: true,
+        amount: true,
+        correctedAmount: true,
+        taxedAmount: true,
+        startDate: true,
+        finishedAt: true,
+        regimeName: true,
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
+
+    if (investments.length === 0) {
+      return {
+        dataPoints: [],
+        totalInvested: 0,
+        totalCurrentAmount: 0,
+        totalTaxedAmount: 0,
+        totalProfit: '0',
+        totalProfitPercentage: '0%',
+      };
+    }
+
+    // Encontrar a data mais antiga relevante
+    const oldestInvestmentDate = investments.reduce((oldest, inv) => {
+      const invDate = new Date(inv.startDate);
+      return invDate < oldest ? invDate : oldest;
+    }, new Date());
+
+    const effectiveStartDate =
+      oldestInvestmentDate > startDate ? oldestInvestmentDate : startDate;
+
+    // Gerar pontos de dados mensais
+    const dataPoints: {
+      date: Date;
+      invested: number;
+      currentAmount: number;
+      taxedAmount: number;
+      profit: number;
+    }[] = [];
+
+    const currentDate = new Date(effectiveStartDate);
+    currentDate.setDate(1); // Primeiro dia do mês
+
+    while (currentDate <= now) {
+      const pointDate = new Date(currentDate);
+
+      // Calcular investimentos ativos naquela data
+      let invested = 0;
+      let currentAmount = 0;
+      let taxedAmount = 0;
+
+      investments.forEach((inv) => {
+        const invStartDate = new Date(inv.startDate);
+        const invEndDate = inv.finishedAt ? new Date(inv.finishedAt) : null;
+
+        // Se o investimento já existia naquela data
+        if (invStartDate <= pointDate) {
+          // Se ainda está ativo ou encerrou depois dessa data
+          if (!invEndDate || invEndDate >= pointDate) {
+            invested += Number(inv.amount);
+
+            // Para valores correntes, usar proporcional ao tempo
+            const daysFromStart = Math.floor(
+              (pointDate.getTime() - invStartDate.getTime()) /
+                (1000 * 60 * 60 * 24),
+            );
+            const totalDays = Math.floor(
+              (now.getTime() - invStartDate.getTime()) / (1000 * 60 * 60 * 24),
+            );
+
+            if (totalDays > 0) {
+              const progressRatio = Math.min(daysFromStart / totalDays, 1);
+              const profit =
+                Number(inv.correctedAmount || inv.amount) - Number(inv.amount);
+              const taxedProfit =
+                Number(inv.taxedAmount || inv.amount) - Number(inv.amount);
+
+              currentAmount += Number(inv.amount) + profit * progressRatio;
+              taxedAmount += Number(inv.amount) + taxedProfit * progressRatio;
+            } else {
+              currentAmount += Number(inv.amount);
+              taxedAmount += Number(inv.amount);
+            }
+          }
+        }
+      });
+
+      if (invested > 0) {
+        dataPoints.push({
+          date: pointDate,
+          invested,
+          currentAmount,
+          taxedAmount,
+          profit: currentAmount - invested,
+        });
+      }
+
+      // Avançar para o próximo mês
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+
+    // Calcular totais atuais
+    const totalInvested = investments.reduce(
+      (sum, inv) => sum + Number(inv.amount),
+      0,
+    );
+    const totalCurrentAmount = investments.reduce(
+      (sum, inv) => sum + Number(inv.correctedAmount || inv.amount),
+      0,
+    );
+    const totalTaxedAmount = investments.reduce(
+      (sum, inv) => sum + Number(inv.taxedAmount || inv.amount),
+      0,
+    );
+    const totalProfit = totalCurrentAmount - totalInvested;
+    const totalProfitPercentage =
+      totalInvested > 0
+        ? ((totalProfit / totalInvested) * 100).toFixed(2) + '%'
+        : '0%';
+
+    return {
+      dataPoints,
+      totalInvested,
+      totalCurrentAmount,
+      totalTaxedAmount,
+      totalProfit: totalProfit.toFixed(2),
+      totalProfitPercentage,
+    };
+  }
+
+  async getAccountsWithInvestmentCount({
+    userId,
+    regime,
+  }: {
+    userId: string;
+    regime: RegimePrisma;
+  }) {
+    // Determine account type based on regime
+    const accountType =
+      regime === 'POUPANCA' ? AccountType.SAVINGS : AccountType.INVESTMENT;
+
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        userId,
+        type: accountType,
+      },
+      include: {
+        institution: true,
+        _count: {
+          select: {
+            investments: {
+              where: {
+                regimeName: regime,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return accounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      institutionName: account.institution?.name,
+      institutionLogoUrl: account.institution?.logoUrl,
+      investmentCount: account._count.investments,
+    }));
   }
 }

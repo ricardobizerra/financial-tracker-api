@@ -26,6 +26,16 @@ export const envSchema = z.object({
 
   JWT_SECRET: z.coerce.string(),
   JWT_EXPIRES_IN_SECONDS: z.coerce.number(),
+
+  GOOGLE_CLIENT_ID: z.coerce.string(),
+  GOOGLE_CLIENT_SECRET: z.coerce.string(),
+  GOOGLE_CALLBACK_URL: z.coerce.string(),
+
+  RESEND_API_KEY: z.coerce.string(),
+  MAIL_FROM_EMAIL: z.coerce.string(),
+
+  // IA (opcional)
+  GEMINI_API_KEY: z.coerce.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
