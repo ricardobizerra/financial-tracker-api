@@ -49,6 +49,9 @@ services:
       - .env
     ports:
       - '${PORT:-3333}:${PORT:-3333}'
+    volumes:
+      - .:/app
+      - /app/node_modules
     depends_on:
       - postgres
       - redis
