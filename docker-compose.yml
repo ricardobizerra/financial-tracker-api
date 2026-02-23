@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     container_name: ${APP_NAME}-postgres
-    image: postgres
+    image: postgres:17-alpine
     restart: always
     env_file:
       - .env
@@ -20,7 +20,7 @@ services:
       - '5432:5432'
   redis:
     container_name: ${APP_NAME}-redis
-    image: redis
+    image: redis:7-alpine
     restart: always
     env_file:
       - .env
