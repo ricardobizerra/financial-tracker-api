@@ -2,9 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../lib/prisma/prisma.service';
 import {
-  AccountCard,
+  Card,
   CardBilling,
   CardBillingCreateInput,
+  CardCreateInput,
 } from '@/lib/graphql/prisma-client';
 import { TransactionModel } from '@/transaction/transaction.model';
 import {
@@ -25,14 +26,16 @@ import { format } from 'date-fns';
 export class CardService {
   constructor(private prisma: PrismaService) {}
 
-  async find(
-    where: Prisma.AccountCardWhereUniqueInput,
-  ): Promise<AccountCard | null> {
-    const accountCard = await this.prisma.accountCard.findUnique({
+  async find(where: Prisma.CardWhereUniqueInput): Promise<Card | null> {
+    const card = await this.prisma.card.findUnique({
       where,
     });
 
-    return accountCard;
+    return card;
+  }
+
+  async create(data: CardCreateInput) {
+    return this.prisma.card.create({ data });
   }
 
   async updateCard({
@@ -47,11 +50,11 @@ export class CardService {
     billingCycleDay?: number;
     billingPaymentDay?: number;
     defaultLimit?: Decimal;
-  }): Promise<AccountCard> {
-    const card = await this.prisma.accountCard.findFirst({
+  }): Promise<Card> {
+    const card = await this.prisma.card.findFirst({
       where: {
         id: cardId,
-        account: {
+        institutionConnection: {
           userId,
         },
       },
@@ -61,7 +64,7 @@ export class CardService {
       throw new NotFoundException('Card not found');
     }
 
-    return this.prisma.accountCard.update({
+    return this.prisma.card.update({
       where: { id: cardId },
       data: {
         ...(billingCycleDay !== undefined && { billingCycleDay }),
@@ -83,9 +86,9 @@ export class CardService {
             transaction: true,
           },
         },
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionConnection: {
               include: {
                 user: true,
               },
@@ -131,7 +134,7 @@ export class CardService {
 
   async findCurrentBilling(
     queriedFields: (keyof CardBillingOnDate)[],
-    accountId: string,
+    cardId: string,
     userId: string,
     billingId?: string,
   ): Promise<CardBillingOnDate> {
@@ -153,10 +156,10 @@ export class CardService {
           : {
               periodStart: { lte: new Date() },
             }),
-        accountCard: {
-          account: {
-            id: accountId,
-            user: { id: userId },
+        card: {
+          id: cardId,
+          institutionConnection: {
+            userId,
           },
         },
       },
@@ -181,10 +184,10 @@ export class CardService {
       currentBilling = await this.prisma.cardBilling.findFirst({
         where: {
           periodStart: { lte: new Date() },
-          accountCard: {
-            account: {
-              id: accountId,
-              user: { id: userId },
+          card: {
+            id: cardId,
+            institutionConnection: {
+              userId,
             },
           },
         },
@@ -212,10 +215,10 @@ export class CardService {
               periodStart: {
                 lt: currentBilling.periodStart,
               },
-              accountCard: {
-                account: {
-                  id: accountId,
-                  user: { id: userId },
+              card: {
+                id: cardId,
+                institutionConnection: {
+                  userId,
                 },
               },
             },
@@ -231,10 +234,10 @@ export class CardService {
               periodStart: {
                 gt: currentBilling.periodStart,
               },
-              accountCard: {
-                account: {
-                  id: accountId,
-                  user: { id: userId },
+              card: {
+                id: cardId,
+                institutionConnection: {
+                  userId,
                 },
               },
             },
@@ -292,8 +295,8 @@ export class CardService {
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
+        card: {
+          institutionConnection: {
             userId,
           },
         },
@@ -303,10 +306,14 @@ export class CardService {
         transactions: {
           include: {
             sourceAccount: {
-              include: { institution: true },
+              include: {
+                institutionConnection: { include: { institution: true } },
+              },
             },
             destinyAccount: {
-              include: { institution: true },
+              include: {
+                institutionConnection: { include: { institution: true } },
+              },
             },
             cardBilling: true,
           },
@@ -322,10 +329,14 @@ export class CardService {
             transaction: {
               include: {
                 sourceAccount: {
-                  include: { institution: true },
+                  include: {
+                    institutionConnection: { include: { institution: true } },
+                  },
                 },
                 destinyAccount: {
-                  include: { institution: true },
+                  include: {
+                    institutionConnection: { include: { institution: true } },
+                  },
                 },
                 cardBilling: true,
                 installments: true, // Para contar total de parcelas
@@ -400,9 +411,9 @@ export class CardService {
             transaction: true,
           },
         },
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionConnection: {
               include: {
                 institution: true,
                 user: true,
@@ -448,16 +459,11 @@ export class CardService {
         data: {
           amount: totalAmount,
           date: billing.paymentDate,
-          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
+          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.card.name}`,
           status: TransactionStatus.PLANNED,
           type: TransactionType.EXPENSE,
           paymentEnabled: false,
           paymentLimit: billing.paymentDate,
-          destinyAccount: {
-            connect: {
-              id: billing.accountCard.account.id,
-            },
-          },
           billingPayment: {
             connect: {
               id: billing.id,
@@ -465,7 +471,7 @@ export class CardService {
           },
           user: {
             connect: {
-              id: billing.accountCard.account.user.id,
+              id: billing.card.institutionConnection.user.id,
             },
           },
         },
@@ -499,7 +505,7 @@ export class CardService {
       const today = new Date();
       const currentBilling = await this.prisma.cardBilling.findFirst({
         where: {
-          accountCardId: billing.accountCard.id,
+          cardId: billing.card.id,
           periodStart: { lte: today },
         },
         orderBy: { periodStart: 'desc' },
@@ -586,7 +592,7 @@ export class CardService {
 
     const billing = await this.prisma.cardBilling.create({
       data: {
-        accountCard: {
+        card: {
           connect: {
             id: cardId,
           },
@@ -598,9 +604,9 @@ export class CardService {
         limit,
       },
       include: {
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionConnection: {
               include: {
                 institution: true,
                 user: true,
@@ -640,17 +646,17 @@ export class CardService {
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
+        card: {
+          institutionConnection: {
             userId,
           },
         },
         status: CardBillingStatus.PENDING,
       },
       include: {
-        accountCard: {
+        card: {
           include: {
-            account: true,
+            institutionConnection: true,
           },
         },
         paymentTransaction: true,
@@ -686,11 +692,11 @@ export class CardService {
     nextPeriodStart.setHours(0, 0, 0, 0);
 
     const nextBilling = await this.createBilling({
-      cardId: billing.accountCardId,
-      cardBillingCycleDay: billing.accountCard.billingCycleDay,
-      cardBillingPaymentDay: billing.accountCard.billingPaymentDay,
+      cardId: billing.cardId,
+      cardBillingCycleDay: billing.card.billingCycleDay,
+      cardBillingPaymentDay: billing.card.billingPaymentDay,
       periodStart: nextPeriodStart,
-      limit: billing.accountCard.defaultLimit,
+      limit: billing.card.defaultLimit,
     });
 
     // Move transactions after closing date to new billing
@@ -744,19 +750,14 @@ export class CardService {
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
-            user: { id: userId },
+        card: {
+          institutionConnection: {
+            userId,
           },
         },
       },
       include: {
         paymentTransaction: true,
-        accountCard: {
-          include: {
-            account: true,
-          },
-        },
       },
     });
 

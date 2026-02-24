@@ -1,14 +1,8 @@
 import { Resolver, Query, Args, Info, Mutation, ID } from '@nestjs/graphql';
 import { CardService } from './card.service';
-import {
-  AccountCard,
-  CardBilling,
-  PaymentMethod,
-  Transaction,
-  User,
-} from '@/lib/graphql/prisma-client';
+import { Card, CardBilling, CardType, User } from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
-import { CardBillingModel, CardBillingOnDate } from './card.model';
+import { CardBillingOnDate } from './card.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { AccountService } from '@/account/account.service';
 import { NotFoundException } from '@nestjs/common';
@@ -16,8 +10,9 @@ import { GraphQLResolveInfo } from 'graphql';
 import { getQueriedFields } from '@/utils/get-queried-fields';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TransactionModel } from '@/transaction/transaction.model';
+import { CreateCardInput } from './create-card.input';
 
-@Resolver(() => AccountCard)
+@Resolver(() => Card)
 export class CardResolver {
   constructor(
     private readonly cardService: CardService,
@@ -25,8 +20,8 @@ export class CardResolver {
   ) {}
 
   @Auth()
-  @Query(() => AccountCard, { nullable: true })
-  async accountCard(@Args('id') id: string): Promise<AccountCard> {
+  @Query(() => Card, { nullable: true })
+  async accountCard(@Args('id') id: string): Promise<Card> {
     return this.cardService.find({ id });
   }
 
@@ -46,7 +41,7 @@ export class CardResolver {
 
     const account = await this.accountService.find({
       id: accountId,
-      user: { id: user.id },
+      institutionConnection: { userId: user.id },
     });
 
     if (!account) {
@@ -71,6 +66,56 @@ export class CardResolver {
   }
 
   @Auth()
+  @Mutation(() => Card)
+  async createCard(@Args('data') data: CreateCardInput): Promise<Card> {
+    const isCreditCard = data.type === CardType.CREDIT;
+
+    if (isCreditCard) {
+      const missingFields = [];
+      if (!data.billingCycleDay) {
+        missingFields.push('Billing cycle day');
+      }
+      if (!data.billingPaymentDay) {
+        missingFields.push('Billing payment day');
+      }
+      if (!data.defaultLimit) {
+        missingFields.push('Default limit');
+      }
+
+      if (missingFields.length > 0) {
+        throw new Error(
+          `${missingFields.join(', ')} ${missingFields.length > 1 ? 'are' : 'is'} required for credit cards`,
+        );
+      }
+    }
+
+    const createdCard = await this.cardService.create({
+      name: data.name,
+      type: data.type,
+      billingCycleDay: data.billingCycleDay ?? 1,
+      billingPaymentDay: data.billingPaymentDay ?? 1,
+      institutionConnection: {
+        connect: {
+          id: data.institutionConnectionId,
+        },
+      },
+      defaultLimit: data.defaultLimit ?? new Decimal(0),
+    });
+
+    if (isCreditCard) {
+      await this.cardService.createBilling({
+        cardId: createdCard.id,
+        cardBillingCycleDay: data.billingCycleDay,
+        cardBillingPaymentDay: data.billingPaymentDay,
+        periodStart: createdCard.createdAt,
+        limit: createdCard.defaultLimit,
+      });
+    }
+
+    return createdCard;
+  }
+
+  @Auth()
   @Mutation(() => CardBilling)
   async closeBilling(
     @CurrentUser() user: User,
@@ -85,7 +130,7 @@ export class CardResolver {
   }
 
   @Auth()
-  @Mutation(() => AccountCard)
+  @Mutation(() => Card)
   async updateAccountCard(
     @CurrentUser() user: User,
     @Args('cardId', { type: () => ID }) cardId: string,
@@ -95,7 +140,7 @@ export class CardResolver {
     billingPaymentDay?: number,
     @Args('defaultLimit', { type: () => Number, nullable: true })
     defaultLimit?: number,
-  ): Promise<AccountCard> {
+  ): Promise<Card> {
     return this.cardService.updateCard({
       cardId,
       userId: user.id,
