@@ -34,8 +34,17 @@ export class CardService {
     return card;
   }
 
-  async create(data: CardCreateInput) {
-    return this.prisma.card.create({ data });
+  async $transaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(fn);
+  }
+
+  async create(
+    data: CardCreateInput,
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ) {
+    return transactionClient.card.create({ data });
   }
 
   async updateCard({
@@ -535,19 +544,22 @@ export class CardService {
     return null;
   }
 
-  async createBilling({
-    cardId,
-    cardBillingCycleDay,
-    cardBillingPaymentDay,
-    periodStart,
-    limit,
-  }: {
-    cardId: string;
-    cardBillingCycleDay: number;
-    cardBillingPaymentDay: number;
-    periodStart: Date;
-    limit: Decimal;
-  }): Promise<CardBilling> {
+  async createBilling(
+    {
+      cardId,
+      cardBillingCycleDay,
+      cardBillingPaymentDay,
+      periodStart,
+      limit,
+    }: {
+      cardId: string;
+      cardBillingCycleDay: number;
+      cardBillingPaymentDay: number;
+      periodStart: Date;
+      limit: Decimal;
+    },
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<CardBilling> {
     // Calcular o início correto do período baseado no dia de fechamento
     // O período começa no dia seguinte ao fechamento do ciclo anterior
     const calculatedPeriodStart = new Date(periodStart);
@@ -590,7 +602,7 @@ export class CardService {
     paymentDate.setDate(cardBillingPaymentDay);
     paymentDate.setHours(23, 59, 59, 999);
 
-    const billing = await this.prisma.cardBilling.create({
+    const billing = await transactionClient.cardBilling.create({
       data: {
         card: {
           connect: {
@@ -620,7 +632,7 @@ export class CardService {
     // Criar apenas o histórico da fatura
     // A transação de pagamento será criada automaticamente pelo updatePaymentTransaction
     // quando a primeira despesa for adicionada à fatura
-    await this.prisma.cardBillingHistory.create({
+    await transactionClient.cardBillingHistory.create({
       data: {
         cardBilling: {
           connect: {

@@ -89,30 +89,38 @@ export class CardResolver {
       }
     }
 
-    const createdCard = await this.cardService.create({
-      name: data.name,
-      type: data.type,
-      billingCycleDay: data.billingCycleDay ?? 1,
-      billingPaymentDay: data.billingPaymentDay ?? 1,
-      institutionConnection: {
-        connect: {
-          id: data.institutionConnectionId,
+    return this.cardService.$transaction(async (transactionClient) => {
+      const createdCard = await this.cardService.create(
+        {
+          name: data.name,
+          type: data.type,
+          billingCycleDay: data.billingCycleDay ?? 1,
+          billingPaymentDay: data.billingPaymentDay ?? 1,
+          institutionConnection: {
+            connect: {
+              id: data.institutionConnectionId,
+            },
+          },
+          defaultLimit: data.defaultLimit ?? new Decimal(0),
         },
-      },
-      defaultLimit: data.defaultLimit ?? new Decimal(0),
+        transactionClient,
+      );
+
+      if (isCreditCard) {
+        await this.cardService.createBilling(
+          {
+            cardId: createdCard.id,
+            cardBillingCycleDay: data.billingCycleDay,
+            cardBillingPaymentDay: data.billingPaymentDay,
+            periodStart: createdCard.createdAt,
+            limit: createdCard.defaultLimit,
+          },
+          transactionClient,
+        );
+      }
+
+      return createdCard;
     });
-
-    if (isCreditCard) {
-      await this.cardService.createBilling({
-        cardId: createdCard.id,
-        cardBillingCycleDay: data.billingCycleDay,
-        cardBillingPaymentDay: data.billingPaymentDay,
-        periodStart: createdCard.createdAt,
-        limit: createdCard.defaultLimit,
-      });
-    }
-
-    return createdCard;
   }
 
   @Auth()
