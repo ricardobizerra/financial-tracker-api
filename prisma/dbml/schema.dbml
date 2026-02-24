@@ -8,12 +8,10 @@ Table User {
   password String
   name String [not null]
   role Role [not null]
-  accounts Account [not null]
-  investments Investment [not null]
   authUserProviders AuthUserProvider [not null]
   transactions Transaction [not null]
-  cardBillingStatusHistories CardBillingHistory [not null]
   recurringTransactions RecurringTransaction [not null]
+  institutionConnections InstitutionConnection [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -24,44 +22,57 @@ Table Institution {
   name String [not null]
   logoUrl String
   color String
-  types AccountType[] [not null]
-  accounts Account [not null]
+  types InstitutionType[] [not null]
+  institutionConnections InstitutionConnection [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
+}
+
+Table InstitutionConnection {
+  id String [pk]
+  institution Institution [not null]
+  institutionId String [not null]
+  user User [not null]
+  userId String [not null]
+  account Account
+  cards Card [not null]
+  investments Investment [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (institutionId, userId) [unique]
+  }
 }
 
 Table Account {
   id String [pk]
   name String [not null]
-  type AccountType [not null]
   initialBalance Decimal [not null, default: 0]
   description String
   isActive Boolean [not null, default: true]
-  user User [not null]
-  userId String [not null]
-  institution Institution [not null]
-  institutionId String [not null]
-  accountCard AccountCard
+  institutionConnection InstitutionConnection [not null]
+  institutionConnectionId String [unique, not null]
   sourceTransactions Transaction [not null]
   destinyTransactions Transaction [not null]
-  investments Investment [not null]
-  investmentTransactions InvestmentTransaction [not null]
   sourceRecurringTransactions RecurringTransaction [not null]
   destinyRecurringTransactions RecurringTransaction [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
 
-Table AccountCard {
+Table Card {
   id String [pk]
   lastFourDigits String
   billingCycleDay Int [not null]
   billingPaymentDay Int [not null]
   type CardType [not null]
   defaultLimit Decimal [not null]
-  account Account [not null]
-  accountId String [unique, not null]
+  institutionConnection InstitutionConnection [not null]
+  institutionConnectionId String [not null]
   billings CardBilling [not null]
+  sourceTransactions Transaction [not null]
+  sourceRecurringTransactions RecurringTransaction [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -73,8 +84,8 @@ Table CardBilling {
   paymentDate DateTime
   limit Decimal [not null]
   status CardBillingStatus [not null]
-  accountCard AccountCard [not null]
-  accountCardId String [not null]
+  card Card [not null]
+  cardId String [not null]
   paymentTransaction Transaction
   paymentTransactionId String [unique]
   transactions Transaction [not null]
@@ -84,7 +95,7 @@ Table CardBilling {
   updatedAt DateTime [not null]
 
   indexes {
-    (accountCardId, periodStart) [unique]
+    (cardId, periodStart) [unique]
   }
 }
 
@@ -94,8 +105,6 @@ Table CardBillingHistory {
   changedAt DateTime [default: `now()`, not null]
   cardBilling CardBilling [not null]
   cardBillingId String [not null]
-  changedBy User
-  changedById String
 }
 
 Table AuthUserProvider {
@@ -124,10 +133,8 @@ Table Investment {
   status InvestmentStatus [not null, default: 'OPEN']
   regimeName Regime [not null]
   regimePercentage Float [default: 100]
-  user User [not null]
-  userId String [not null]
-  account Account [not null]
-  accountId String [not null]
+  institutionConnection InstitutionConnection
+  institutionConnectionId String [not null]
   transactions InvestmentTransaction [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
@@ -139,8 +146,6 @@ Table InvestmentTransaction {
   amount Decimal [not null]
   investment Investment [not null]
   investmentId String [not null]
-  account Account [not null]
-  accountId String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -161,6 +166,8 @@ Table Transaction {
   sourceAccountId String
   destinyAccount Account
   destinyAccountId String
+  sourceCard Card
+  sourceCardId String
   billingPayment CardBilling
   cardBilling CardBilling
   cardBillingId String
@@ -206,6 +213,8 @@ Table RecurringTransaction {
   sourceAccountId String
   destinyAccount Account
   destinyAccountId String
+  sourceCard Card
+  sourceCardId String
   user User [not null]
   userId String [not null]
   transactions Transaction [not null]
@@ -213,13 +222,10 @@ Table RecurringTransaction {
   updatedAt DateTime [not null]
 }
 
-Enum AccountType {
-  WALLET
+Enum InstitutionType {
   CHECKING
-  SAVINGS
   INVESTMENT
-  CREDIT_CARD
-  OTHER
+  CARD
 }
 
 Enum CardType {
@@ -318,33 +324,31 @@ Enum RecurrenceType {
   INSTALLMENT
 }
 
-Ref: Account.userId > User.id [delete: Cascade]
+Ref: InstitutionConnection.institutionId > Institution.id [delete: Cascade]
 
-Ref: Account.institutionId > Institution.id [delete: Cascade]
+Ref: InstitutionConnection.userId > User.id [delete: Cascade]
 
-Ref: AccountCard.accountId - Account.id [delete: Cascade]
+Ref: Account.institutionConnectionId - InstitutionConnection.id [delete: Cascade]
 
-Ref: CardBilling.accountCardId > AccountCard.id [delete: Cascade]
+Ref: Card.institutionConnectionId > InstitutionConnection.id [delete: Cascade]
+
+Ref: CardBilling.cardId > Card.id [delete: Cascade]
 
 Ref: CardBilling.paymentTransactionId - Transaction.id
 
 Ref: CardBillingHistory.cardBillingId > CardBilling.id [delete: Cascade]
 
-Ref: CardBillingHistory.changedById > User.id [delete: Set Null]
-
 Ref: AuthUserProvider.userId > User.id
 
-Ref: Investment.userId > User.id [delete: Cascade]
-
-Ref: Investment.accountId > Account.id [delete: Cascade]
+Ref: Investment.institutionConnectionId > InstitutionConnection.id
 
 Ref: InvestmentTransaction.investmentId > Investment.id [delete: Cascade]
-
-Ref: InvestmentTransaction.accountId > Account.id [delete: Cascade]
 
 Ref: Transaction.sourceAccountId > Account.id [delete: Cascade]
 
 Ref: Transaction.destinyAccountId > Account.id [delete: Cascade]
+
+Ref: Transaction.sourceCardId > Card.id
 
 Ref: Transaction.cardBillingId - CardBilling.id
 
@@ -359,5 +363,7 @@ Ref: TransactionInstallment.cardBillingId > CardBilling.id [delete: Set Null]
 Ref: RecurringTransaction.sourceAccountId > Account.id [delete: Cascade]
 
 Ref: RecurringTransaction.destinyAccountId > Account.id [delete: Cascade]
+
+Ref: RecurringTransaction.sourceCardId > Card.id
 
 Ref: RecurringTransaction.userId > User.id [delete: Cascade]
