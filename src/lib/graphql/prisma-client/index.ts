@@ -276,6 +276,7 @@ export enum CardBillingScalarFieldEnum {
 
 export enum CardScalarFieldEnum {
   id = 'id',
+  name = 'name',
   lastFourDigits = 'lastFourDigits',
   billingCycleDay = 'billingCycleDay',
   billingPaymentDay = 'billingPaymentDay',
@@ -4243,6 +4244,8 @@ export class CardCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
   @Field(() => Boolean, { nullable: true })
+  name?: true;
+  @Field(() => Boolean, { nullable: true })
   lastFourDigits?: true;
   @Field(() => Boolean, { nullable: true })
   billingCycleDay?: true;
@@ -4267,6 +4270,8 @@ export class CardCountAggregate {
   @Field(() => Int, { nullable: false })
   id!: number;
   @Field(() => Int, { nullable: false })
+  name!: number;
+  @Field(() => Int, { nullable: false })
   lastFourDigits!: number;
   @Field(() => Int, { nullable: false })
   billingCycleDay!: number;
@@ -4290,6 +4295,8 @@ export class CardCountAggregate {
 export class CardCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   lastFourDigits?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -4331,6 +4338,8 @@ export class CardCreateManyInstitutionConnectionInputEnvelope {
 export class CardCreateManyInstitutionConnectionInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4353,6 +4362,8 @@ export class CardCreateManyInstitutionConnectionInput {
 export class CardCreateManyInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4498,6 +4509,8 @@ export class CardCreateOrConnectWithoutSourceTransactionsInput {
 export class CardCreateWithoutBillingsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4541,6 +4554,8 @@ export class CardCreateWithoutBillingsInput {
 export class CardCreateWithoutInstitutionConnectionInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4580,6 +4595,8 @@ export class CardCreateWithoutInstitutionConnectionInput {
 export class CardCreateWithoutSourceRecurringTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4619,6 +4636,8 @@ export class CardCreateWithoutSourceRecurringTransactionsInput {
 export class CardCreateWithoutSourceTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4658,6 +4677,8 @@ export class CardCreateWithoutSourceTransactionsInput {
 export class CardCreateInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4738,6 +4759,8 @@ export class CardGroupByArgs {
 export class CardGroupBy {
   @Field(() => String, { nullable: false })
   id!: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -4784,6 +4807,8 @@ export class CardMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
   @Field(() => Boolean, { nullable: true })
+  name?: true;
+  @Field(() => Boolean, { nullable: true })
   lastFourDigits?: true;
   @Field(() => Boolean, { nullable: true })
   billingCycleDay?: true;
@@ -4805,6 +4830,8 @@ export class CardMaxAggregateInput {
 export class CardMaxAggregate {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: true })
+  name?: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: true })
@@ -4828,6 +4855,8 @@ export class CardMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  name?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   lastFourDigits?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   billingCycleDay?: keyof typeof SortOrder;
@@ -4849,6 +4878,8 @@ export class CardMaxOrderByAggregateInput {
 export class CardMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
+  @Field(() => Boolean, { nullable: true })
+  name?: true;
   @Field(() => Boolean, { nullable: true })
   lastFourDigits?: true;
   @Field(() => Boolean, { nullable: true })
@@ -4872,6 +4903,8 @@ export class CardMinAggregate {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: true })
+  name?: string;
+  @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: true })
   billingCycleDay?: number;
@@ -4893,6 +4926,8 @@ export class CardMinAggregate {
 export class CardMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   lastFourDigits?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -4931,6 +4966,8 @@ export class CardOrderByRelationAggregateInput {
 export class CardOrderByWithAggregationInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  name?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   lastFourDigits?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -4968,6 +5005,8 @@ export class CardOrderByWithAggregationInput {
 export class CardOrderByWithRelationInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  name?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   lastFourDigits?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -5031,6 +5070,8 @@ export class CardScalarWhereWithAggregatesInput {
   NOT?: Array<CardScalarWhereWithAggregatesInput>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   id?: InstanceType<typeof StringWithAggregatesFilter>;
+  @Field(() => StringWithAggregatesFilter, { nullable: true })
+  name?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   lastFourDigits?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => IntWithAggregatesFilter, { nullable: true })
@@ -5063,6 +5104,8 @@ export class CardScalarWhereInput {
   NOT?: Array<CardScalarWhereInput>;
   @Field(() => StringFilter, { nullable: true })
   id?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  name?: InstanceType<typeof StringFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   lastFourDigits?: InstanceType<typeof StringNullableFilter>;
   @Field(() => IntFilter, { nullable: true })
@@ -5140,6 +5183,8 @@ export class CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput {
 export class CardUncheckedCreateWithoutBillingsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -5181,6 +5226,8 @@ export class CardUncheckedCreateWithoutBillingsInput {
 export class CardUncheckedCreateWithoutInstitutionConnectionInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -5227,6 +5274,8 @@ export class CardUncheckedCreateWithoutInstitutionConnectionInput {
 export class CardUncheckedCreateWithoutSourceRecurringTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -5265,6 +5314,8 @@ export class CardUncheckedCreateWithoutSourceRecurringTransactionsInput {
 export class CardUncheckedCreateWithoutSourceTransactionsInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -5306,6 +5357,8 @@ export class CardUncheckedCreateWithoutSourceTransactionsInput {
 export class CardUncheckedCreateInput {
   @Field(() => String, { nullable: true })
   id?: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits?: string;
   @Field(() => Int, { nullable: false })
@@ -5405,6 +5458,8 @@ export class CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput {
 export class CardUncheckedUpdateManyWithoutInstitutionConnectionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5428,6 +5483,8 @@ export class CardUncheckedUpdateManyWithoutInstitutionConnectionInput {
 export class CardUncheckedUpdateManyInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5455,6 +5512,8 @@ export class CardUncheckedUpdateManyInput {
 export class CardUncheckedUpdateWithoutBillingsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5499,6 +5558,8 @@ export class CardUncheckedUpdateWithoutBillingsInput {
 export class CardUncheckedUpdateWithoutInstitutionConnectionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5546,6 +5607,8 @@ export class CardUncheckedUpdateWithoutInstitutionConnectionInput {
 export class CardUncheckedUpdateWithoutSourceRecurringTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5587,6 +5650,8 @@ export class CardUncheckedUpdateWithoutSourceRecurringTransactionsInput {
 export class CardUncheckedUpdateWithoutSourceTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5631,6 +5696,8 @@ export class CardUncheckedUpdateWithoutSourceTransactionsInput {
 export class CardUncheckedUpdateInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5682,6 +5749,8 @@ export class CardUncheckedUpdateInput {
 export class CardUpdateManyMutationInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5904,6 +5973,8 @@ export class CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput {
 export class CardUpdateWithoutBillingsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5948,6 +6019,8 @@ export class CardUpdateWithoutBillingsInput {
 export class CardUpdateWithoutInstitutionConnectionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -5988,6 +6061,8 @@ export class CardUpdateWithoutInstitutionConnectionInput {
 export class CardUpdateWithoutSourceRecurringTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -6028,6 +6103,8 @@ export class CardUpdateWithoutSourceRecurringTransactionsInput {
 export class CardUpdateWithoutSourceTransactionsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -6068,6 +6145,8 @@ export class CardUpdateWithoutSourceTransactionsInput {
 export class CardUpdateInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  name?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   lastFourDigits?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -6184,6 +6263,8 @@ export class CardWhereUniqueInput {
   @Field(() => [CardWhereInput], { nullable: true })
   @Type(() => CardWhereInput)
   NOT?: Array<CardWhereInput>;
+  @Field(() => StringFilter, { nullable: true })
+  name?: InstanceType<typeof StringFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   lastFourDigits?: InstanceType<typeof StringNullableFilter>;
   @Field(() => IntFilter, { nullable: true })
@@ -6232,6 +6313,8 @@ export class CardWhereInput {
   NOT?: Array<CardWhereInput>;
   @Field(() => StringFilter, { nullable: true })
   id?: InstanceType<typeof StringFilter>;
+  @Field(() => StringFilter, { nullable: true })
+  name?: InstanceType<typeof StringFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   lastFourDigits?: InstanceType<typeof StringNullableFilter>;
   @Field(() => IntFilter, { nullable: true })
@@ -6271,6 +6354,8 @@ export class CardWhereInput {
 export class Card {
   @Field(() => ID, { nullable: false })
   id!: string;
+  @Field(() => String, { nullable: false })
+  name!: string;
   @Field(() => String, { nullable: true })
   lastFourDigits!: string | null;
   @Field(() => Int, { nullable: false })

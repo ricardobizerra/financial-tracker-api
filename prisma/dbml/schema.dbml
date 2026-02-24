@@ -63,6 +63,7 @@ Table Account {
 
 Table Card {
   id String [pk]
+  name String [not null]
   lastFourDigits String
   billingCycleDay Int [not null]
   billingPaymentDay Int [not null]
