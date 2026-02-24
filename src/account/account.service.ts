@@ -2,18 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
 import {
-  AccountType,
   CardBillingStatus,
   InvestmentStatus,
   Prisma,
   TransactionStatus,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import {
-  AccountFilterArgs,
-  AccountModel,
-  OrdenationAccountArgs,
-} from './account.model';
+import { AccountModel, OrdenationAccountArgs } from './account.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
@@ -24,7 +19,6 @@ export class AccountService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async findMany({
-    filterArgs,
     userId,
     queriedFields,
     paginationArgs,
@@ -36,7 +30,6 @@ export class AccountService {
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationAccountArgs;
-    filterArgs: AccountFilterArgs;
   }) {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -50,8 +43,9 @@ export class AccountService {
     const accountsLengthQuery = last
       ? await this.prismaService.account.count({
           where: {
-            ...(filterArgs.types && { type: { in: filterArgs.types } }),
-            userId,
+            institutionConnection: {
+              userId,
+            },
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
                 [field]: {
@@ -103,8 +97,8 @@ export class AccountService {
             'sourceTransactions',
             'destinyTransactions',
           ],
-          currentBillingAmount: ['accountCard', 'type'],
-          totalInvested: ['investments', 'type'],
+          currentBillingAmount: [],
+          totalInvested: [],
         }),
         // Garantir que date e status estejam disponíveis para o calculateBalance
         ...(queriedFields.includes('balance') && {
@@ -153,8 +147,9 @@ export class AccountService {
         }),
       },
       where: {
-        ...(filterArgs.types && { type: { in: filterArgs.types } }),
-        userId,
+        institutionConnection: {
+          userId,
+        },
         ...(!!searchArgs.search && {
           OR: ['name', 'description'].map((field) => ({
             [field]: {
@@ -205,8 +200,6 @@ export class AccountService {
             account.destinyTransactions,
             account.initialBalance,
           ),
-          currentBillingAmount: this.calculateCurrentBillingAmount(account),
-          totalInvested: this.calculateTotalInvested(account),
         },
       };
     });
@@ -251,8 +244,9 @@ export class AccountService {
             id: true,
           },
           where: {
-            ...(filterArgs.types && { type: { in: filterArgs.types } }),
-            userId,
+            institutionConnection: {
+              userId,
+            },
             ...(!!searchArgs.search && {
               OR: ['name', 'description'].map((field) => ({
                 [field]: {
@@ -299,8 +293,8 @@ export class AccountService {
               'sourceTransactions',
               'destinyTransactions',
             ],
-            currentBillingAmount: ['accountCard', 'type'],
-            totalInvested: ['investments', 'type'],
+            currentBillingAmount: [],
+            totalInvested: [],
           }),
           // Garantir que date e status estejam disponíveis para o calculateBalance
           ...(needsBalance && {
@@ -376,7 +370,6 @@ export class AccountService {
   }
 
   calculateCurrentBillingAmount(account: {
-    type?: AccountType;
     accountCard?: {
       billings?: Array<{
         status: CardBillingStatus;
@@ -384,10 +377,6 @@ export class AccountService {
       }>;
     };
   }): Decimal | null {
-    if (account.type !== AccountType.CREDIT_CARD) {
-      return null;
-    }
-
     const currentBilling = account.accountCard?.billings?.[0];
     if (!currentBilling) {
       return new Decimal(0);
@@ -402,16 +391,8 @@ export class AccountService {
   }
 
   calculateTotalInvested(account: {
-    type?: AccountType;
     investments?: Array<{ amount: Decimal | number }>;
   }): Decimal | null {
-    if (
-      account.type !== AccountType.INVESTMENT &&
-      account.type !== AccountType.SAVINGS
-    ) {
-      return null;
-    }
-
     return (
       account.investments?.reduce(
         (total, inv) => total.plus(new Decimal(inv.amount)),
