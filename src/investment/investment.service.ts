@@ -3,7 +3,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import {
-  AccountType,
   Investment,
   InvestmentTransactionRole,
   Regime as RegimePrisma,
@@ -125,7 +124,7 @@ export class InvestmentService {
         currentVariation: ['amount'],
         taxPercentage: ['amount'],
         taxedVariation: ['amount'],
-        account: [],
+        institutionConnection: [],
         transactions: [],
         ...((queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
@@ -319,7 +318,9 @@ export class InvestmentService {
             id: true,
           },
           where: {
-            userId,
+            institutionConnection: {
+              userId,
+            },
             regimeName: regime,
           },
         })
@@ -351,14 +352,9 @@ export class InvestmentService {
         duration: isPoupanca ? undefined : data.duration,
         regimeName: data.regimeName,
         regimePercentage: isPoupanca ? data.regimePercentage : 100,
-        account: {
+        institutionConnection: {
           connect: {
-            id: data.accountId,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
+            id: data.institutionConnectionId,
           },
         },
       },
@@ -378,11 +374,6 @@ export class InvestmentService {
               id: investment.id,
             },
           },
-          account: {
-            connect: {
-              id: data.accountId,
-            },
-          },
         },
       });
 
@@ -399,8 +390,8 @@ export class InvestmentService {
       await this.prismaService.investment.findUnique({
         where: {
           id,
-          user: {
-            id: userId,
+          institutionConnection: {
+            userId,
           },
         },
       });
@@ -422,16 +413,20 @@ export class InvestmentService {
 
   async getInvestmentRegimes({
     userId,
-    accountId,
+    institutionConnectionId,
     queriedFields,
   }: {
     userId: string;
-    accountId?: string | null;
+    institutionConnectionId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
     const whereClause = {
       userId,
-      ...(accountId && { accountId }),
+      ...(institutionConnectionId && {
+        institutionConnection: {
+          id: institutionConnectionId,
+        },
+      }),
     };
 
     // Get all investments grouped by regime
@@ -560,7 +555,7 @@ export class InvestmentService {
         correctedAmount: true,
         taxedAmount: true,
       },
-      where: { userId },
+      where: { institutionConnection: { userId } },
     });
 
     // Default to 0 when there are no investments
@@ -1013,7 +1008,9 @@ export class InvestmentService {
     // Buscar investimentos do usuário
     const investments = await this.prismaService.investment.findMany({
       where: {
-        userId,
+        institutionConnection: {
+          userId,
+        },
         ...(accountId && { accountId }),
       },
       select: {
@@ -1156,14 +1153,9 @@ export class InvestmentService {
     userId: string;
     regime: RegimePrisma;
   }) {
-    // Determine account type based on regime
-    const accountType =
-      regime === 'POUPANCA' ? AccountType.SAVINGS : AccountType.INVESTMENT;
-
-    const accounts = await this.prismaService.account.findMany({
+    const accounts = await this.prismaService.institutionConnection.findMany({
       where: {
         userId,
-        type: accountType,
       },
       include: {
         institution: true,
@@ -1178,14 +1170,15 @@ export class InvestmentService {
         },
       },
       orderBy: {
-        name: 'asc',
+        institution: {
+          name: 'asc',
+        },
       },
     });
 
     return accounts.map((account) => ({
       id: account.id,
-      name: account.name,
-      institutionName: account.institution?.name,
+      name: account.institution?.name,
       institutionLogoUrl: account.institution?.logoUrl,
       investmentCount: account._count.investments,
     }));

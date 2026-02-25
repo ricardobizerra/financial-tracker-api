@@ -11,11 +11,7 @@ import {
 } from '@nestjs/graphql';
 
 @ObjectType()
-export class InvestmentModel extends OmitType(Investment, [
-  'user',
-  'userId',
-  '_count',
-] as const) {
+export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
   @Field(() => String, { nullable: false })
   currentVariation!: string;
 
@@ -90,9 +86,6 @@ export class AccountWithInvestmentCount {
 
   @Field(() => String, { nullable: false })
   name!: string;
-
-  @Field(() => String, { nullable: true })
-  institutionName?: string;
 
   @Field(() => String, { nullable: true })
   institutionLogoUrl?: string;

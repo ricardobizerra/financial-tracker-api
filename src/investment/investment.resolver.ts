@@ -1,15 +1,4 @@
-import {
-  Args,
-  Field,
-  Float,
-  ID,
-  Info,
-  Mutation,
-  ObjectType,
-  PickType,
-  Query,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, ID, Info, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InvestmentService } from './investment.service';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { UserModel } from '@/user/models/user.model';
@@ -27,31 +16,23 @@ import {
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
 import {
-  Account,
   Investment,
-  InvestmentCreateWithoutUserInput,
   Regime,
-  Transaction,
-  TransactionStatus,
-  TransactionType,
+  InstitutionType,
 } from '@/lib/graphql/prisma-client';
-import { AccountService } from '@/account/account.service';
-import { AccountType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
-import { TransactionService } from '@/transaction/transaction.service';
-import { Decimal } from '@prisma/client/runtime/library';
 import {
   InvestmentEvolutionModel,
   InvestmentEvolutionArgs,
 } from './investment-evolution.model';
+import { InstitutionConnectionService } from '@/institution-connection/institution-connection.service';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
   constructor(
     private readonly investmentService: InvestmentService,
-    private readonly accountService: AccountService,
-    private readonly transactionService: TransactionService,
+    private readonly institutionConnectionService: InstitutionConnectionService,
   ) {}
 
   @Auth()
@@ -87,36 +68,20 @@ export class InvestmentResolver {
     @Args('data') data: CreateInvestmentInput,
     @CurrentUser() user: UserModel,
   ) {
-    const account = await this.accountService.find({
-      id: data.accountId,
-      type: {
-        in: [AccountType.SAVINGS, AccountType.INVESTMENT],
+    const institutionConnection = await this.institutionConnectionService.find({
+      id: data.institutionConnectionId,
+      institution: {
+        types: {
+          has: InstitutionType.INVESTMENT,
+        },
       },
       user: {
         id: user.id,
       },
     });
 
-    if (!account) {
+    if (!institutionConnection) {
       throw new NotFoundException('Conta não encontrada');
-    }
-
-    if (
-      account.type === AccountType.SAVINGS &&
-      data.regimeName !== Regime.POUPANCA
-    ) {
-      throw new NotFoundException(
-        'Investimento em poupança deve ser criado a partir de uma conta-poupança',
-      );
-    }
-
-    if (
-      account.type === AccountType.INVESTMENT &&
-      data.regimeName === Regime.POUPANCA
-    ) {
-      throw new NotFoundException(
-        'Investimento que não seja em poupança deve ser criado a partir de uma conta de investimento',
-      );
     }
 
     const createdInvestment = await this.investmentService.create(
@@ -167,8 +132,8 @@ export class InvestmentResolver {
   async investmentRegimes(
     @CurrentUser() user: UserModel,
     @Info() info: GraphQLResolveInfo,
-    @Args('accountId', { type: () => String, nullable: true })
-    accountId: string | null,
+    @Args('institutionConnectionId', { type: () => String, nullable: true })
+    institutionConnectionId: string | null,
   ) {
     const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
       info,
@@ -177,7 +142,7 @@ export class InvestmentResolver {
 
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
-      accountId,
+      institutionConnectionId,
       queriedFields,
     });
   }

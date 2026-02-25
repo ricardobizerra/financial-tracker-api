@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { InstitutionConnection } from '@/lib/graphql/prisma-client';
+import { Prisma } from '@prisma/client';
 import {
   InstitutionConnectionFilterArgs,
   InstitutionConnectionModel,
@@ -14,6 +15,20 @@ import { selectObject } from '@/utils/select-object';
 @Injectable()
 export class InstitutionConnectionService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  async find(
+    where: Prisma.InstitutionConnectionWhereUniqueInput,
+    queriedFields?: (keyof InstitutionConnectionModel)[],
+  ) {
+    return this.prismaService.institutionConnection.findUnique({
+      where,
+      select: queriedFields
+        ? selectObject<InstitutionConnection, InstitutionConnectionModel>(
+            queriedFields,
+          )
+        : undefined,
+    });
+  }
 
   async findMany({
     filterArgs,

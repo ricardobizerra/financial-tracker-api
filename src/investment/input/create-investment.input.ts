@@ -43,5 +43,5 @@ export class CreateInvestmentInput {
   updatedAt?: Date | string;
 
   @Field(() => ID, { nullable: false })
-  accountId!: string;
+  institutionConnectionId!: string;
 }

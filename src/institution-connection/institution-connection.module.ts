@@ -4,5 +4,6 @@ import { InstitutionConnectionService } from './institution-connection.service';
 
 @Module({
   providers: [InstitutionConnectionResolver, InstitutionConnectionService],
+  exports: [InstitutionConnectionService],
 })
 export class InstitutionConnectionModule {}
