@@ -17,5 +17,5 @@ export class CreateInstallmentTransactionInput {
   startDate: Date;
 
   @Field(() => ID, { description: 'ID da conta cartão de crédito' })
-  sourceAccountId: string;
+  sourceCardId: string;
 }

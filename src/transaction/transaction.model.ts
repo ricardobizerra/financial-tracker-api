@@ -66,6 +66,9 @@ export class TransactionFilterArgs {
   accountId?: string;
 
   @Field(() => ID, { nullable: true })
+  cardId?: string;
+
+  @Field(() => ID, { nullable: true })
   cardBillingId?: string;
 
   @Field(() => Date, { nullable: true })

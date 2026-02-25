@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
+  CardType,
   Transaction,
   TransactionCreateInput,
 } from '@/lib/graphql/prisma-client';
@@ -10,13 +11,13 @@ import {
   TransactionType,
   TransactionStatus,
   CardBillingStatus,
-  AccountType,
 } from '@prisma/client';
 import {
   TransactionModel,
   OrdenationTransactionArgs,
   TransactionFilterArgs,
   CancelCheckInfo,
+  TransactionConnection,
 } from './transaction.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
@@ -43,6 +44,9 @@ export class TransactionService {
           { sourceAccountId: filterArgs.accountId },
           { destinyAccountId: filterArgs.accountId },
         ],
+      }),
+      ...(filterArgs.cardId && {
+        sourceCardId: filterArgs.cardId,
       }),
       ...(filterArgs.cardBillingId && {
         cardBillingId: filterArgs.cardBillingId,
@@ -90,7 +94,7 @@ export class TransactionService {
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationTransactionArgs;
-  }) {
+  }): Promise<TransactionConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
@@ -181,19 +185,17 @@ export class TransactionService {
         id: true,
         status: true,
         // Incluir relações necessárias para cancelInfo
-        ...(needsCancelInfo && {
-          cardBilling: { select: { status: true } },
-          sourceAccount: { select: { type: true } },
-        }),
+        cardBilling: needsCancelInfo ? { select: { status: true } } : undefined,
         // Incluir installments se necessário (evita N+1)
-        ...((needsInstallments || needsCancelInfo) && {
-          installments: {
-            include: {
-              cardBilling: { select: { status: true, periodStart: true } },
-            },
-            orderBy: { installmentNumber: 'asc' as const },
-          },
-        }),
+        installments:
+          needsInstallments || needsCancelInfo
+            ? {
+                include: {
+                  cardBilling: { select: { status: true, periodStart: true } },
+                },
+                orderBy: { installmentNumber: 'asc' },
+              }
+            : undefined,
       },
       where: whereClause,
     });
@@ -215,33 +217,41 @@ export class TransactionService {
     }
 
     // Processar transações e anexar dados computados
-    const processedTransactions = transactions.map((transaction: any) => {
-      const txWithExtras = transaction;
-      const installments = transaction.installments || [];
+    const processedTransactions = transactions.map((transaction) => {
+      let installmentStartDate: TransactionModel['installmentStartDate'];
+      let canCancel: TransactionModel['canCancel'];
+      let cancelReason: TransactionModel['cancelReason'];
+      let cancelWarningMessage: TransactionModel['cancelWarningMessage'];
 
       // Computar installmentStartDate se solicitado
       if (needsInstallments) {
-        const firstInstallment = installments.find(
-          (i: any) => i.installmentNumber === 1,
+        const firstInstallment = transaction.installments?.find(
+          (i) => i.installmentNumber === 1,
         );
-        if (firstInstallment) {
-          txWithExtras.installmentStartDate =
-            firstInstallment.cardBilling?.periodStart ?? transaction.date;
-        }
+
+        installmentStartDate =
+          firstInstallment?.cardBilling?.periodStart ?? transaction.date;
       }
 
       // Computar cancelInfo e popular campos diretamente
       if (needsCancelInfo) {
         const cancelInfo = this.computeCancelInfo(
-          transaction as any,
-          installments,
+          transaction,
+          transaction.installments,
         );
-        txWithExtras.canCancel = cancelInfo.canCancel;
-        txWithExtras.cancelReason = cancelInfo.reason;
-        txWithExtras.cancelWarningMessage = cancelInfo.warningMessage;
+
+        canCancel = cancelInfo.canCancel;
+        cancelReason = cancelInfo.reason;
+        cancelWarningMessage = cancelInfo.warningMessage;
       }
 
-      return txWithExtras as TransactionModel;
+      return {
+        ...transaction,
+        installmentStartDate,
+        canCancel,
+        cancelReason,
+        cancelWarningMessage,
+      };
     });
 
     const edges = processedTransactions.map((transaction, index) => {
@@ -412,7 +422,6 @@ export class TransactionService {
       id: string;
       status: TransactionStatus;
       cardBilling?: { status: CardBillingStatus } | null;
-      sourceAccount?: { type: AccountType } | null;
     },
     installments: Array<{
       installmentNumber: number;
@@ -536,10 +545,8 @@ export class TransactionService {
         sourceAccountId: true,
         destinyAccountId: true,
         cardBillingId: true,
-        sourceAccount: {
-          select: {
-            type: true,
-          },
+        sourceCard: {
+          select: { id: true, type: true },
         },
       },
       orderBy: {
@@ -605,7 +612,8 @@ export class TransactionService {
         // (também serão capturadas via transação de pagamento da fatura)
         if (
           tx.type === TransactionType.EXPENSE &&
-          tx.sourceAccount?.type === AccountType.CREDIT_CARD
+          tx.sourceCard &&
+          tx.sourceCard.type === CardType.CREDIT
         ) {
           return;
         }
@@ -1016,12 +1024,22 @@ export class TransactionService {
       },
       orderBy: { date: 'asc' },
       include: {
-        sourceAccount: { include: { institution: true } },
-        destinyAccount: { include: { institution: true } },
+        sourceAccount: {
+          include: {
+            institutionConnection: { include: { institution: true } },
+          },
+        },
+        destinyAccount: {
+          include: {
+            institutionConnection: { include: { institution: true } },
+          },
+        },
         billingPayment: {
           include: {
-            accountCard: {
-              include: { account: { include: { institution: true } } },
+            card: {
+              include: {
+                institutionConnection: { include: { institution: true } },
+              },
             },
           },
         },
@@ -1048,7 +1066,6 @@ export class TransactionService {
           id: tx.id,
           status: tx.status,
           cardBilling: tx.cardBilling,
-          sourceAccount: tx.sourceAccount,
         },
         tx.installments,
       );

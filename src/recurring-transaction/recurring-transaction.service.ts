@@ -6,7 +6,6 @@ import {
   RecurrenceFrequency,
   RecurrenceType,
   TransactionType,
-  AccountType,
   TransactionStatus,
   PaymentMethod,
 } from '@prisma/client';
@@ -22,6 +21,7 @@ import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { selectObject } from '@/utils/select-object';
 import { CardService } from '@/card/card.service';
+import { CardType } from '@/lib/graphql/prisma-client';
 
 @Injectable()
 export class RecurringTransactionService {
@@ -112,19 +112,6 @@ export class RecurringTransactionService {
       throw new Error(
         'Both source and destiny accounts are required for between accounts transactions',
       );
-    }
-
-    // Validate that income transactions are not assigned to credit card accounts
-    if (data.type === TransactionType.INCOME && data.destinyAccountId) {
-      const destinyAccount = await this.prismaService.account.findUnique({
-        where: { id: data.destinyAccountId },
-      });
-
-      if (destinyAccount?.type === AccountType.CREDIT_CARD) {
-        throw new Error(
-          'Income transactions cannot be assigned to credit card accounts',
-        );
-      }
     }
 
     // Para INSTALLMENT, limitar ao número de parcelas
@@ -258,14 +245,14 @@ export class RecurringTransactionService {
    */
   private async determineStatus(
     type: TransactionType,
-    sourceAccountId?: string,
+    sourceCardId?: string,
   ): Promise<TransactionStatus> {
-    if (type === TransactionType.EXPENSE && sourceAccountId) {
-      const account = await this.prismaService.account.findUnique({
-        where: { id: sourceAccountId },
+    if (type === TransactionType.EXPENSE && sourceCardId) {
+      const card = await this.prismaService.card.findUnique({
+        where: { id: sourceCardId },
       });
 
-      if (account?.type === AccountType.CREDIT_CARD) {
+      if (card?.type === CardType.CREDIT) {
         return TransactionStatus.COMPLETED;
       }
     }
@@ -278,11 +265,11 @@ export class RecurringTransactionService {
    */
   private async linkTransactionToBilling(
     transactionId: string,
-    accountId: string,
+    cardId: string,
     date: Date,
   ) {
-    const card = await this.prismaService.accountCard.findUnique({
-      where: { accountId },
+    const card = await this.prismaService.card.findUnique({
+      where: { id: cardId },
     });
 
     if (!card) return;
@@ -290,7 +277,7 @@ export class RecurringTransactionService {
     // Find the billing for this date
     const billing = await this.prismaService.cardBilling.findFirst({
       where: {
-        accountCardId: card.id,
+        cardId: card.id,
         periodStart: { lte: date },
         OR: [{ periodEnd: { gte: date } }, { periodEnd: null }],
       },

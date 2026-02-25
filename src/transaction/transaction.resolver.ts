@@ -20,7 +20,6 @@ import { UserModel } from '@/user/models/user.model';
 import { TransactionFilterArgs } from './transaction.model';
 import {
   Account,
-  AccountType,
   CardBillingStatus,
   CardType,
   PaymentMethod,
@@ -53,6 +52,7 @@ import {
   FinancialAgendaArgs,
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
+import { Card } from '@/lib/graphql/prisma-client';
 
 @Resolver(() => TransactionModel)
 export class TransactionResolver {
@@ -97,18 +97,21 @@ export class TransactionResolver {
       );
     }
 
-    if (data.type === TransactionType.INCOME && !data.destinyAccountId) {
+    const hasDestiny = !!data.destinyAccountId;
+    const hasSource = !!data.sourceAccountId || !!data.sourceCardId;
+
+    if (data.type === TransactionType.INCOME && !hasDestiny) {
       throw new Error('Destiny account is mandatory for income transactions');
     }
 
-    if (data.type === TransactionType.EXPENSE && !data.sourceAccountId) {
+    if (data.type === TransactionType.EXPENSE && !hasSource) {
       throw new Error('Source account is mandatory for expense transactions');
     }
 
     if (
       data.type === TransactionType.BETWEEN_ACCOUNTS &&
-      !data.sourceAccountId &&
-      !data.destinyAccountId
+      !hasSource &&
+      !hasDestiny
     ) {
       throw new Error(
         'Source and destiny accounts are mandatory for transactions between accounts',
@@ -128,66 +131,34 @@ export class TransactionResolver {
       if (!destinyAccount) {
         throw new Error('Destiny account not found');
       }
-
-      // Prevent income transactions to credit card accounts
-      if (
-        data.type === TransactionType.INCOME &&
-        destinyAccount.type === AccountType.CREDIT_CARD
-      ) {
-        throw new Error(
-          'Income transactions cannot be assigned to credit card accounts',
-        );
-      }
-
-      // Prevent income transactions to investment or savings accounts
-      if (
-        data.type === TransactionType.INCOME &&
-        (destinyAccount.type === AccountType.INVESTMENT ||
-          destinyAccount.type === AccountType.SAVINGS)
-      ) {
-        throw new Error(
-          'Contas de investimento e poupança não podem receber receitas. Use uma transferência entre contas.',
-        );
-      }
     }
 
     let sourceAccount: Account | null = null;
+    let sourceCard: Card | null = null;
 
     if (
       data.type === TransactionType.EXPENSE ||
       data.type === TransactionType.BETWEEN_ACCOUNTS
     ) {
-      sourceAccount = await this.accountService.find({
-        id: data.sourceAccountId,
-      });
-
-      if (!sourceAccount) {
-        throw new Error('Source account not found');
+      if (data.sourceAccountId) {
+        sourceAccount = await this.accountService.find({
+          id: data.sourceAccountId,
+        });
+      } else if (data.sourceCardId) {
+        sourceCard = await this.cardService.find({
+          id: data.sourceCardId,
+        });
       }
 
-      // Prevent expense transactions from investment or savings accounts
-      if (
-        data.type === TransactionType.EXPENSE &&
-        (sourceAccount.type === AccountType.INVESTMENT ||
-          sourceAccount.type === AccountType.SAVINGS)
-      ) {
-        throw new Error(
-          'Contas de investimento e poupança não podem ter despesas. Use uma transferência entre contas.',
-        );
+      if (!sourceAccount && !sourceCard) {
+        throw new Error('Source account or card not found');
       }
 
       // Prevent card accounts from between-accounts transactions
-      if (data.type === TransactionType.BETWEEN_ACCOUNTS) {
-        if (sourceAccount.type === AccountType.CREDIT_CARD) {
-          throw new Error(
-            'Contas de cartão não podem participar de transferências entre contas.',
-          );
-        }
-        if (destinyAccount?.type === AccountType.CREDIT_CARD) {
-          throw new Error(
-            'Contas de cartão não podem participar de transferências entre contas.',
-          );
-        }
+      if (data.type === TransactionType.BETWEEN_ACCOUNTS && sourceCard) {
+        throw new Error(
+          'Cards cannot be used in between-accounts transactions.',
+        );
       }
     }
 
@@ -196,11 +167,10 @@ export class TransactionResolver {
     let isDebitCard = false;
 
     if (!calculatedPaymentMethod) {
-      const relevantAccount = sourceAccount || destinyAccount;
-      if (relevantAccount?.type === AccountType.CREDIT_CARD) {
+      if (sourceCard) {
         // Para contas de cartão, buscar o tipo do cartão (credit/debit)
         const card = await this.cardService.find({
-          accountId: relevantAccount.id,
+          id: sourceCard.id,
         });
 
         if (card?.type === CardType.DEBIT) {
@@ -227,8 +197,7 @@ export class TransactionResolver {
       calculatedPaymentMethod === PaymentMethod.DEBIT_CARD;
 
     if (isCardPaymentMethod) {
-      const relevantAccount = sourceAccount || destinyAccount;
-      if (relevantAccount && relevantAccount.type !== AccountType.CREDIT_CARD) {
+      if (sourceCard && sourceCard.type === CardType.CREDIT) {
         throw new Error(
           'Credit card and debit card payment methods can only be used with card-type accounts.',
         );
@@ -240,11 +209,11 @@ export class TransactionResolver {
     // Cartões de débito não usam billing/fatura - débito é imediato na conta
     if (
       data.type === TransactionType.EXPENSE &&
-      sourceAccount.type === AccountType.CREDIT_CARD &&
-      !isDebitCard
+      sourceCard &&
+      sourceCard.type === CardType.DEBIT
     ) {
       const card = await this.cardService.find({
-        accountId: sourceAccount.id,
+        id: sourceCard.id,
       });
 
       if (!card) {
@@ -253,7 +222,7 @@ export class TransactionResolver {
 
       const billing = await this.prismaService.cardBilling.findFirst({
         where: {
-          accountCard: {
+          card: {
             id: card.id,
           },
           periodStart: {
@@ -271,7 +240,7 @@ export class TransactionResolver {
       } else {
         const billing = await this.prismaService.cardBilling.findFirst({
           where: {
-            accountCard: {
+            card: {
               id: card.id,
             },
             periodStart: {
@@ -286,7 +255,7 @@ export class TransactionResolver {
         } else {
           const lastBilling = await this.prismaService.cardBilling.findFirst({
             where: {
-              accountCard: {
+              card: {
                 id: card.id,
               },
             },
@@ -360,23 +329,8 @@ export class TransactionResolver {
     @CurrentUser() user: UserModel,
   ): Promise<TransactionModel> {
     // Validar conta de origem (deve ser cartão de crédito)
-    const sourceAccount = await this.accountService.find({
-      id: data.sourceAccountId,
-    });
-
-    if (!sourceAccount) {
-      throw new Error('Conta de origem não encontrada');
-    }
-
-    if (sourceAccount.type !== AccountType.CREDIT_CARD) {
-      throw new Error(
-        'Transações parceladas só podem ser feitas com cartão de crédito',
-      );
-    }
-
-    // Buscar cartão
     const card = await this.cardService.find({
-      accountId: sourceAccount.id,
+      id: data.sourceCardId,
     });
 
     if (!card) {
@@ -402,8 +356,8 @@ export class TransactionResolver {
       status: TransactionStatus.COMPLETED,
       type: TransactionType.EXPENSE,
       paymentMethod: PaymentMethod.CREDIT_CARD,
-      sourceAccount: {
-        connect: { id: data.sourceAccountId },
+      sourceCard: {
+        connect: { id: data.sourceCardId },
       },
       user: {
         connect: { id: user.id },
@@ -415,7 +369,7 @@ export class TransactionResolver {
 
     // Buscar a primeira fatura existente no banco para este cartão
     const firstBilling = await this.prismaService.cardBilling.findFirst({
-      where: { accountCardId: card.id },
+      where: { cardId: card.id },
       orderBy: { periodStart: 'asc' },
     });
 
@@ -443,7 +397,7 @@ export class TransactionResolver {
       // Encontrar ou criar fatura para esta data
       let billing = await this.prismaService.cardBilling.findFirst({
         where: {
-          accountCardId: card.id,
+          cardId: card.id,
           periodStart: { lte: installmentDate },
           OR: [{ periodEnd: { gte: installmentDate } }, { periodEnd: null }],
         },
@@ -452,7 +406,7 @@ export class TransactionResolver {
       if (!billing) {
         // Buscar última fatura para criar a próxima
         const lastBilling = await this.prismaService.cardBilling.findFirst({
-          where: { accountCardId: card.id },
+          where: { cardId: card.id },
           orderBy: { periodEnd: 'desc' },
         });
 
@@ -654,7 +608,6 @@ export class TransactionResolver {
       where: { id },
       include: {
         cardBilling: { select: { status: true } },
-        sourceAccount: { select: { type: true } },
       },
     });
 

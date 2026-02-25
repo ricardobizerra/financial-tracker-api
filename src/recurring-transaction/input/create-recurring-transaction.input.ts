@@ -52,6 +52,9 @@ export class CreateRecurringTransactionInput {
   @Field(() => ID, { nullable: true })
   destinyAccountId?: string;
 
+  @Field(() => ID, { nullable: true })
+  sourceCardId?: string;
+
   // Campos de parcelamento
   @Field(() => RecurrenceType, { nullable: true, defaultValue: 'PERIODIC' })
   recurrenceType?: keyof typeof RecurrenceType;

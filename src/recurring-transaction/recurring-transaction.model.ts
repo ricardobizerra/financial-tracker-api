@@ -28,6 +28,9 @@ export class RecurringTransactionFilterArgs {
   @Field(() => ID, { nullable: true })
   accountId?: string;
 
+  @Field(() => ID, { nullable: true })
+  cardId?: string;
+
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
 }
