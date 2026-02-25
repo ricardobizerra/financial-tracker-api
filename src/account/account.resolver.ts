@@ -78,9 +78,9 @@ export class AccountResolver {
     const createdAccount = await this.accountService.create({
       name: data.name,
       description: data.description,
-      institutionConnection: {
+      institutionLink: {
         connect: {
-          id: data.institutionConnectionId,
+          id: data.institutionLinkId,
         },
       },
       initialBalance: data.initialBalance,

@@ -124,7 +124,7 @@ export class InvestmentService {
         currentVariation: ['amount'],
         taxPercentage: ['amount'],
         taxedVariation: ['amount'],
-        institutionConnection: [],
+        institutionLink: [],
         transactions: [],
         ...((queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
@@ -318,7 +318,7 @@ export class InvestmentService {
             id: true,
           },
           where: {
-            institutionConnection: {
+            institutionLink: {
               userId,
             },
             regimeName: regime,
@@ -352,9 +352,9 @@ export class InvestmentService {
         duration: isPoupanca ? undefined : data.duration,
         regimeName: data.regimeName,
         regimePercentage: isPoupanca ? data.regimePercentage : 100,
-        institutionConnection: {
+        institutionLink: {
           connect: {
-            id: data.institutionConnectionId,
+            id: data.institutionLinkId,
           },
         },
       },
@@ -390,7 +390,7 @@ export class InvestmentService {
       await this.prismaService.investment.findUnique({
         where: {
           id,
-          institutionConnection: {
+          institutionLink: {
             userId,
           },
         },
@@ -413,18 +413,18 @@ export class InvestmentService {
 
   async getInvestmentRegimes({
     userId,
-    institutionConnectionId,
+    institutionLinkId,
     queriedFields,
   }: {
     userId: string;
-    institutionConnectionId?: string | null;
+    institutionLinkId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
     const whereClause = {
       userId,
-      ...(institutionConnectionId && {
-        institutionConnection: {
-          id: institutionConnectionId,
+      ...(institutionLinkId && {
+        institutionLink: {
+          id: institutionLinkId,
         },
       }),
     };
@@ -555,7 +555,7 @@ export class InvestmentService {
         correctedAmount: true,
         taxedAmount: true,
       },
-      where: { institutionConnection: { userId } },
+      where: { institutionLink: { userId } },
     });
 
     // Default to 0 when there are no investments
@@ -1008,7 +1008,7 @@ export class InvestmentService {
     // Buscar investimentos do usuário
     const investments = await this.prismaService.investment.findMany({
       where: {
-        institutionConnection: {
+        institutionLink: {
           userId,
         },
         ...(accountId && { accountId }),
@@ -1153,7 +1153,7 @@ export class InvestmentService {
     userId: string;
     regime: RegimePrisma;
   }) {
-    const accounts = await this.prismaService.institutionConnection.findMany({
+    const accounts = await this.prismaService.institutionLink.findMany({
       where: {
         userId,
       },

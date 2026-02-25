@@ -1,4 +1,4 @@
-import { AccountCard, CardBilling } from '@/lib/graphql/prisma-client';
+import { CardBilling } from '@/lib/graphql/prisma-client';
 import { Field, ObjectType, OmitType } from '@nestjs/graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { GraphQLDecimal } from 'prisma-graphql-type-decimal';

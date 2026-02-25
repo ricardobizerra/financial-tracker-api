@@ -1,31 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { InstitutionConnection } from '@/lib/graphql/prisma-client';
+import { InstitutionLink } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
 import {
-  InstitutionConnectionFilterArgs,
-  InstitutionConnectionModel,
-  OrdenationInstitutionConnectionArgs,
-} from './institution-connection.model';
+  InstitutionLinkFilterArgs,
+  InstitutionLinkModel,
+  OrdenationInstitutionLinkArgs,
+} from './institution-link.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { selectObject } from '@/utils/select-object';
 
 @Injectable()
-export class InstitutionConnectionService {
+export class InstitutionLinkService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async find(
-    where: Prisma.InstitutionConnectionWhereUniqueInput,
-    queriedFields?: (keyof InstitutionConnectionModel)[],
+    where: Prisma.InstitutionLinkWhereUniqueInput,
+    queriedFields?: (keyof InstitutionLinkModel)[],
   ) {
-    return this.prismaService.institutionConnection.findUnique({
+    return this.prismaService.institutionLink.findUnique({
       where,
       select: queriedFields
-        ? selectObject<InstitutionConnection, InstitutionConnectionModel>(
-            queriedFields,
-          )
+        ? selectObject<InstitutionLink, InstitutionLinkModel>(queriedFields)
         : undefined,
     });
   }
@@ -39,11 +37,11 @@ export class InstitutionConnectionService {
     ordenationArgs,
   }: {
     userId: string;
-    queriedFields: (keyof InstitutionConnectionModel)[];
+    queriedFields: (keyof InstitutionLinkModel)[];
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
-    ordenationArgs: OrdenationInstitutionConnectionArgs;
-    filterArgs: InstitutionConnectionFilterArgs;
+    ordenationArgs: OrdenationInstitutionLinkArgs;
+    filterArgs: InstitutionLinkFilterArgs;
   }) {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -74,48 +72,46 @@ export class InstitutionConnectionService {
     };
 
     const lengthQuery = last
-      ? await this.prismaService.institutionConnection.count({
+      ? await this.prismaService.institutionLink.count({
           where: queryWhere,
         })
       : undefined;
 
     const length = !!lengthQuery ? Number(lengthQuery) : undefined;
 
-    const connections = await this.prismaService.institutionConnection.findMany(
-      {
-        take: last
-          ? unbufferedCursor
-            ? last
-            : length % last === 0
-              ? last
-              : length % last
-          : first
-            ? first
-            : undefined,
-        skip: unbufferedCursor
+    const connections = await this.prismaService.institutionLink.findMany({
+      take: last
+        ? unbufferedCursor
           ? last
-            ? length - unbufferedCursor + 1
-            : unbufferedCursor
-          : last
-            ? 0
-            : undefined,
-        orderBy: orderBy
-          ? {
-              [orderBy]: last
-                ? orderDirection === OrderDirection.Asc
-                  ? OrderDirection.Desc
-                  : OrderDirection.Asc
-                : orderDirection === OrderDirection.Asc
-                  ? OrderDirection.Asc
-                  : OrderDirection.Desc,
-            }
+          : length % last === 0
+            ? last
+            : length % last
+        : first
+          ? first
           : undefined,
-        select: selectObject<InstitutionConnection, InstitutionConnectionModel>(
-          queriedFields,
-        ),
-        where: queryWhere,
-      },
-    );
+      skip: unbufferedCursor
+        ? last
+          ? length - unbufferedCursor + 1
+          : unbufferedCursor
+        : last
+          ? 0
+          : undefined,
+      orderBy: orderBy
+        ? {
+            [orderBy]: last
+              ? orderDirection === OrderDirection.Asc
+                ? OrderDirection.Desc
+                : OrderDirection.Asc
+              : orderDirection === OrderDirection.Asc
+                ? OrderDirection.Asc
+                : OrderDirection.Desc,
+          }
+        : undefined,
+      select: selectObject<InstitutionLink, InstitutionLinkModel>(
+        queriedFields,
+      ),
+      where: queryWhere,
+    });
 
     if (last) {
       connections.reverse();
@@ -171,7 +167,7 @@ export class InstitutionConnectionService {
     const extraItem = !(
       last && Number(Buffer.from(startCursor, 'base64').toString('utf-8')) <= 1
     )
-      ? await this.prismaService.institutionConnection.findFirst({
+      ? await this.prismaService.institutionLink.findFirst({
           take: 1,
           skip: last
             ? Number(Buffer.from(startCursor, 'base64').toString('utf-8')) - 2

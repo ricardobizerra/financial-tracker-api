@@ -11,7 +11,7 @@ Table User {
   authUserProviders AuthUserProvider [not null]
   transactions Transaction [not null]
   recurringTransactions RecurringTransaction [not null]
-  institutionConnections InstitutionConnection [not null]
+  institutionLinks InstitutionLink [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -23,12 +23,12 @@ Table Institution {
   logoUrl String
   color String
   types InstitutionType[] [not null]
-  institutionConnections InstitutionConnection [not null]
+  institutionLinks InstitutionLink [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
 
-Table InstitutionConnection {
+Table InstitutionLink {
   id String [pk]
   institution Institution [not null]
   institutionId String [not null]
@@ -51,8 +51,8 @@ Table Account {
   initialBalance Decimal [not null, default: 0]
   description String
   isActive Boolean [not null, default: true]
-  institutionConnection InstitutionConnection [not null]
-  institutionConnectionId String [unique, not null]
+  institutionLink InstitutionLink [not null]
+  institutionLinkId String [unique, not null]
   sourceTransactions Transaction [not null]
   destinyTransactions Transaction [not null]
   sourceRecurringTransactions RecurringTransaction [not null]
@@ -69,8 +69,8 @@ Table Card {
   billingPaymentDay Int [not null]
   type CardType [not null]
   defaultLimit Decimal [not null]
-  institutionConnection InstitutionConnection [not null]
-  institutionConnectionId String [not null]
+  institutionLink InstitutionLink [not null]
+  institutionLinkId String [not null]
   billings CardBilling [not null]
   sourceTransactions Transaction [not null]
   sourceRecurringTransactions RecurringTransaction [not null]
@@ -134,8 +134,8 @@ Table Investment {
   status InvestmentStatus [not null, default: 'OPEN']
   regimeName Regime [not null]
   regimePercentage Float [default: 100]
-  institutionConnection InstitutionConnection
-  institutionConnectionId String [not null]
+  institutionLink InstitutionLink
+  institutionLinkId String [not null]
   transactions InvestmentTransaction [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
@@ -325,13 +325,13 @@ Enum RecurrenceType {
   INSTALLMENT
 }
 
-Ref: InstitutionConnection.institutionId > Institution.id [delete: Cascade]
+Ref: InstitutionLink.institutionId > Institution.id [delete: Cascade]
 
-Ref: InstitutionConnection.userId > User.id [delete: Cascade]
+Ref: InstitutionLink.userId > User.id [delete: Cascade]
 
-Ref: Account.institutionConnectionId - InstitutionConnection.id [delete: Cascade]
+Ref: Account.institutionLinkId - InstitutionLink.id [delete: Cascade]
 
-Ref: Card.institutionConnectionId > InstitutionConnection.id [delete: Cascade]
+Ref: Card.institutionLinkId > InstitutionLink.id [delete: Cascade]
 
 Ref: CardBilling.cardId > Card.id [delete: Cascade]
 
@@ -341,7 +341,7 @@ Ref: CardBillingHistory.cardBillingId > CardBilling.id [delete: Cascade]
 
 Ref: AuthUserProvider.userId > User.id
 
-Ref: Investment.institutionConnectionId > InstitutionConnection.id
+Ref: Investment.institutionLinkId > InstitutionLink.id
 
 Ref: InvestmentTransaction.investmentId > Investment.id [delete: Cascade]
 

@@ -26,13 +26,13 @@ import {
   InvestmentEvolutionModel,
   InvestmentEvolutionArgs,
 } from './investment-evolution.model';
-import { InstitutionConnectionService } from '@/institution-connection/institution-connection.service';
+import { InstitutionLinkService } from '@/institution-link/institution-link.service';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
   constructor(
     private readonly investmentService: InvestmentService,
-    private readonly institutionConnectionService: InstitutionConnectionService,
+    private readonly institutionLinkService: InstitutionLinkService,
   ) {}
 
   @Auth()
@@ -68,8 +68,8 @@ export class InvestmentResolver {
     @Args('data') data: CreateInvestmentInput,
     @CurrentUser() user: UserModel,
   ) {
-    const institutionConnection = await this.institutionConnectionService.find({
-      id: data.institutionConnectionId,
+    const institutionLink = await this.institutionLinkService.find({
+      id: data.institutionLinkId,
       institution: {
         types: {
           has: InstitutionType.INVESTMENT,
@@ -80,7 +80,7 @@ export class InvestmentResolver {
       },
     });
 
-    if (!institutionConnection) {
+    if (!institutionLink) {
       throw new NotFoundException('Conta não encontrada');
     }
 
@@ -132,8 +132,8 @@ export class InvestmentResolver {
   async investmentRegimes(
     @CurrentUser() user: UserModel,
     @Info() info: GraphQLResolveInfo,
-    @Args('institutionConnectionId', { type: () => String, nullable: true })
-    institutionConnectionId: string | null,
+    @Args('institutionLinkId', { type: () => String, nullable: true })
+    institutionLinkId: string | null,
   ) {
     const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
       info,
@@ -142,7 +142,7 @@ export class InvestmentResolver {
 
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
-      institutionConnectionId,
+      institutionLinkId,
       queriedFields,
     });
   }

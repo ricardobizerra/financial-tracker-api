@@ -11,7 +11,7 @@ export class CreateAccountInput {
   description?: string;
 
   @Field(() => ID)
-  institutionConnectionId: string;
+  institutionLinkId: string;
 
   @Field(() => GraphQLDecimal)
   initialBalance: Decimal;

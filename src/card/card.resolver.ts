@@ -41,7 +41,7 @@ export class CardResolver {
 
     const account = await this.accountService.find({
       id: accountId,
-      institutionConnection: { userId: user.id },
+      institutionLink: { userId: user.id },
     });
 
     if (!account) {
@@ -96,9 +96,9 @@ export class CardResolver {
           type: data.type,
           billingCycleDay: data.billingCycleDay ?? 1,
           billingPaymentDay: data.billingPaymentDay ?? 1,
-          institutionConnection: {
+          institutionLink: {
             connect: {
-              id: data.institutionConnectionId,
+              id: data.institutionLinkId,
             },
           },
           defaultLimit: data.defaultLimit ?? new Decimal(0),

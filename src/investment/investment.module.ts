@@ -5,7 +5,7 @@ import { IpeadataModule } from '@/external/ipeadata/ipeadata.module';
 import { BacenModule } from '@/external/bacen/bacen.module';
 import { AccountModule } from '@/account/account.module';
 import { TransactionModule } from '@/transaction/transaction.module';
-import { InstitutionConnectionModule } from '@/institution-connection/institution-connection.module';
+import { InstitutionLinkModule } from '@/institution-link/institution-link.module';
 
 @Module({
   imports: [
@@ -13,7 +13,7 @@ import { InstitutionConnectionModule } from '@/institution-connection/institutio
     BacenModule,
     AccountModule,
     TransactionModule,
-    InstitutionConnectionModule,
+    InstitutionLinkModule,
   ],
   providers: [InvestmentResolver, InvestmentService],
 })

@@ -12,7 +12,7 @@ export class CreateCardInput {
   type: CardType;
 
   @Field(() => ID)
-  institutionConnectionId: string;
+  institutionLinkId: string;
 
   @Field(() => Number, { nullable: true })
   billingCycleDay?: number;

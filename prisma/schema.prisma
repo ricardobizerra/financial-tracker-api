@@ -34,7 +34,7 @@ model User {
   transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
 
-  institutionConnections InstitutionConnection[]
+  institutionLinks InstitutionLink[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -48,13 +48,13 @@ model Institution {
   color   String?
   types   InstitutionType[]
 
-  institutionConnections InstitutionConnection[]
+  institutionLinks InstitutionLink[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model InstitutionConnection {
+model InstitutionLink {
   id String @id @default(uuid())
 
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
@@ -80,8 +80,8 @@ model Account {
   description    String?
   isActive       Boolean @default(true)
 
-  institutionConnection   InstitutionConnection @relation(fields: [institutionConnectionId], references: [id], onDelete: Cascade)
-  institutionConnectionId String                @unique
+  institutionLink   InstitutionLink @relation(fields: [institutionLinkId], references: [id], onDelete: Cascade)
+  institutionLinkId String          @unique
 
   sourceTransactions  Transaction[] @relation("SourceAccount")
   destinyTransactions Transaction[] @relation("DestinyAccount")
@@ -103,8 +103,8 @@ model Card {
   type              CardType
   defaultLimit      Decimal
 
-  institutionConnection   InstitutionConnection @relation(fields: [institutionConnectionId], references: [id], onDelete: Cascade)
-  institutionConnectionId String
+  institutionLink   InstitutionLink @relation(fields: [institutionLinkId], references: [id], onDelete: Cascade)
+  institutionLinkId String
 
   billings CardBilling[]
 
@@ -186,8 +186,8 @@ model Investment {
   regimeName       Regime
   regimePercentage Float? @default(100)
 
-  institutionConnection   InstitutionConnection? @relation(fields: [institutionConnectionId], references: [id])
-  institutionConnectionId String
+  institutionLink   InstitutionLink? @relation(fields: [institutionLinkId], references: [id])
+  institutionLinkId String
 
   transactions InvestmentTransaction[]
 

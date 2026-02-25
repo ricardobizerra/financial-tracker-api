@@ -6,38 +6,38 @@ import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
 import { GraphQLResolveInfo } from 'graphql';
 import { getQueriedFields } from '@/utils/get-queried-fields';
-import { InstitutionConnectionService } from './institution-connection.service';
+import { InstitutionLinkService } from './institution-link.service';
 import {
-  InstitutionConnectionConnection,
-  InstitutionConnectionFilterArgs,
-  OrdenationInstitutionConnectionArgs,
-  InstitutionConnectionModel,
-} from './institution-connection.model';
+  InstitutionLinkConnection,
+  InstitutionLinkFilterArgs,
+  OrdenationInstitutionLinkArgs,
+  InstitutionLinkModel,
+} from './institution-link.model';
 
-@Resolver(() => InstitutionConnectionModel)
-export class InstitutionConnectionResolver {
+@Resolver(() => InstitutionLinkModel)
+export class InstitutionLinkResolver {
   constructor(
-    private readonly institutionConnectionService: InstitutionConnectionService,
+    private readonly institutionLinkService: InstitutionLinkService,
   ) {}
 
   @Auth()
-  @Query(() => InstitutionConnectionConnection, {
-    name: 'institutionConnections',
+  @Query(() => InstitutionLinkConnection, {
+    name: 'institutionLinks',
   })
   async findMany(
     @Args() paginationArgs: PaginationArgs,
     @Args() searchArgs: SearchArgs,
-    @Args() ordenationArgs: OrdenationInstitutionConnectionArgs,
-    @Args() filterArgs: InstitutionConnectionFilterArgs,
+    @Args() ordenationArgs: OrdenationInstitutionLinkArgs,
+    @Args() filterArgs: InstitutionLinkFilterArgs,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
-    const queriedFields = getQueriedFields<InstitutionConnectionModel>(
+    const queriedFields = getQueriedFields<InstitutionLinkModel>(
       info,
-      'institutionConnections',
+      'institutionLinks',
     );
 
-    return this.institutionConnectionService.findMany({
+    return this.institutionLinkService.findMany({
       filterArgs,
       userId: user.id,
       queriedFields,

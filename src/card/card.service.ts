@@ -63,7 +63,7 @@ export class CardService {
     const card = await this.prisma.card.findFirst({
       where: {
         id: cardId,
-        institutionConnection: {
+        institutionLink: {
           userId,
         },
       },
@@ -97,7 +97,7 @@ export class CardService {
         },
         card: {
           include: {
-            institutionConnection: {
+            institutionLink: {
               include: {
                 user: true,
               },
@@ -167,7 +167,7 @@ export class CardService {
             }),
         card: {
           id: cardId,
-          institutionConnection: {
+          institutionLink: {
             userId,
           },
         },
@@ -195,7 +195,7 @@ export class CardService {
           periodStart: { lte: new Date() },
           card: {
             id: cardId,
-            institutionConnection: {
+            institutionLink: {
               userId,
             },
           },
@@ -226,7 +226,7 @@ export class CardService {
               },
               card: {
                 id: cardId,
-                institutionConnection: {
+                institutionLink: {
                   userId,
                 },
               },
@@ -245,7 +245,7 @@ export class CardService {
               },
               card: {
                 id: cardId,
-                institutionConnection: {
+                institutionLink: {
                   userId,
                 },
               },
@@ -305,7 +305,7 @@ export class CardService {
       where: {
         id: billingId,
         card: {
-          institutionConnection: {
+          institutionLink: {
             userId,
           },
         },
@@ -316,12 +316,12 @@ export class CardService {
           include: {
             sourceAccount: {
               include: {
-                institutionConnection: { include: { institution: true } },
+                institutionLink: { include: { institution: true } },
               },
             },
             destinyAccount: {
               include: {
-                institutionConnection: { include: { institution: true } },
+                institutionLink: { include: { institution: true } },
               },
             },
             cardBilling: true,
@@ -339,12 +339,12 @@ export class CardService {
               include: {
                 sourceAccount: {
                   include: {
-                    institutionConnection: { include: { institution: true } },
+                    institutionLink: { include: { institution: true } },
                   },
                 },
                 destinyAccount: {
                   include: {
-                    institutionConnection: { include: { institution: true } },
+                    institutionLink: { include: { institution: true } },
                   },
                 },
                 cardBilling: true,
@@ -422,7 +422,7 @@ export class CardService {
         },
         card: {
           include: {
-            institutionConnection: {
+            institutionLink: {
               include: {
                 institution: true,
                 user: true,
@@ -480,7 +480,7 @@ export class CardService {
           },
           user: {
             connect: {
-              id: billing.card.institutionConnection.user.id,
+              id: billing.card.institutionLink.user.id,
             },
           },
         },
@@ -618,7 +618,7 @@ export class CardService {
       include: {
         card: {
           include: {
-            institutionConnection: {
+            institutionLink: {
               include: {
                 institution: true,
                 user: true,
@@ -659,7 +659,7 @@ export class CardService {
       where: {
         id: billingId,
         card: {
-          institutionConnection: {
+          institutionLink: {
             userId,
           },
         },
@@ -668,7 +668,7 @@ export class CardService {
       include: {
         card: {
           include: {
-            institutionConnection: true,
+            institutionLink: true,
           },
         },
         paymentTransaction: true,
@@ -763,7 +763,7 @@ export class CardService {
       where: {
         id: billingId,
         card: {
-          institutionConnection: {
+          institutionLink: {
             userId,
           },
         },

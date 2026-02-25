@@ -7,18 +7,18 @@ const prisma = new PrismaClient();
 
 // Maps model names to their FK fields that need to be converted to relations
 const RELATION_FIELDS: Record<string, Record<string, string>> = {
-  institutionConnection: {
+  institutionLink: {
     institutionId: 'institution',
     userId: 'user',
   },
   investment: {
-    institutionConnectionId: 'institutionConnection',
+    institutionLinkId: 'institutionLink',
   },
   account: {
-    institutionConnectionId: 'institutionConnection',
+    institutionLinkId: 'institutionLink',
   },
   card: {
-    institutionConnectionId: 'institutionConnection',
+    institutionLinkId: 'institutionLink',
   },
   cardBilling: {
     cardId: 'card',

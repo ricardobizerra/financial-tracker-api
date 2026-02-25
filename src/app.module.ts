@@ -28,7 +28,7 @@ import { RecurringTransactionModule } from './recurring-transaction/recurring-tr
 import { QueueModule } from '@/lib/queue/queue.module';
 import { MailModule } from './mail/mail.module';
 import { AiModule } from './ai/ai.module';
-import { InstitutionConnectionModule } from './institution-connection/institution-connection.module';
+import { InstitutionLinkModule } from './institution-link/institution-link.module';
 
 @Module({
   imports: [
@@ -80,7 +80,7 @@ import { InstitutionConnectionModule } from './institution-connection/institutio
     QueueModule,
     MailModule,
     AiModule,
-    InstitutionConnectionModule,
+    InstitutionLinkModule,
   ],
   controllers: [AppController],
   providers: [

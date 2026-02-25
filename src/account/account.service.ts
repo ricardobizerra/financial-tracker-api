@@ -43,7 +43,7 @@ export class AccountService {
     const accountsLengthQuery = last
       ? await this.prismaService.account.count({
           where: {
-            institutionConnection: {
+            institutionLink: {
               userId,
             },
             ...(!!searchArgs.search && {
@@ -147,7 +147,7 @@ export class AccountService {
         }),
       },
       where: {
-        institutionConnection: {
+        institutionLink: {
           userId,
         },
         ...(!!searchArgs.search && {
@@ -244,7 +244,7 @@ export class AccountService {
             id: true,
           },
           where: {
-            institutionConnection: {
+            institutionLink: {
               userId,
             },
             ...(!!searchArgs.search && {

@@ -230,12 +230,12 @@ export enum InvestmentScalarFieldEnum {
   status = 'status',
   regimeName = 'regimeName',
   regimePercentage = 'regimePercentage',
-  institutionConnectionId = 'institutionConnectionId',
+  institutionLinkId = 'institutionLinkId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
 }
 
-export enum InstitutionConnectionScalarFieldEnum {
+export enum InstitutionLinkScalarFieldEnum {
   id = 'id',
   institutionId = 'institutionId',
   userId = 'userId',
@@ -282,7 +282,7 @@ export enum CardScalarFieldEnum {
   billingPaymentDay = 'billingPaymentDay',
   type = 'type',
   defaultLimit = 'defaultLimit',
-  institutionConnectionId = 'institutionConnectionId',
+  institutionLinkId = 'institutionLinkId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
 }
@@ -302,7 +302,7 @@ export enum AccountScalarFieldEnum {
   initialBalance = 'initialBalance',
   description = 'description',
   isActive = 'isActive',
-  institutionConnectionId = 'institutionConnectionId',
+  institutionLinkId = 'institutionLinkId',
   createdAt = 'createdAt',
   updatedAt = 'updatedAt',
 }
@@ -331,8 +331,8 @@ registerEnumType(InstitutionScalarFieldEnum, {
   name: 'InstitutionScalarFieldEnum',
   description: undefined,
 });
-registerEnumType(InstitutionConnectionScalarFieldEnum, {
-  name: 'InstitutionConnectionScalarFieldEnum',
+registerEnumType(InstitutionLinkScalarFieldEnum, {
+  name: 'InstitutionLinkScalarFieldEnum',
   description: undefined,
 });
 registerEnumType(InvestmentScalarFieldEnum, {
@@ -429,10 +429,7 @@ export class AccountAggregateArgs {
   orderBy?: Array<AccountOrderByWithRelationInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  cursor?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  cursor?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -485,7 +482,7 @@ export class AccountCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -507,7 +504,7 @@ export class AccountCountAggregate {
   @Field(() => Int, { nullable: false })
   isActive!: number;
   @Field(() => Int, { nullable: false })
-  institutionConnectionId!: number;
+  institutionLinkId!: number;
   @Field(() => Int, { nullable: false })
   createdAt!: number;
   @Field(() => Int, { nullable: false })
@@ -529,7 +526,7 @@ export class AccountCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   isActive?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -563,7 +560,7 @@ export class AccountCreateManyInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -588,10 +585,7 @@ export class AccountCreateNestedOneWithoutDestinyRecurringTransactionsInput {
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
@@ -608,32 +602,24 @@ export class AccountCreateNestedOneWithoutDestinyTransactionsInput {
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
-export class AccountCreateNestedOneWithoutInstitutionConnectionInput {
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
+export class AccountCreateNestedOneWithoutInstitutionLinkInput {
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create?: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
+  @Field(() => AccountCreateOrConnectWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create?: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
-  @Field(() => AccountCreateOrConnectWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountCreateOrConnectWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateOrConnectWithoutInstitutionLinkInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutInstitutionConnectionInput
+    typeof AccountCreateOrConnectWithoutInstitutionLinkInput
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
@@ -654,10 +640,7 @@ export class AccountCreateNestedOneWithoutSourceRecurringTransactionsInput {
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
@@ -674,20 +657,14 @@ export class AccountCreateNestedOneWithoutSourceTransactionsInput {
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
 export class AccountCreateOrConnectWithoutDestinyRecurringTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountCreateWithoutDestinyRecurringTransactionsInput, {
     nullable: false,
   })
@@ -701,10 +678,7 @@ export class AccountCreateOrConnectWithoutDestinyRecurringTransactionsInput {
 export class AccountCreateOrConnectWithoutDestinyTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountCreateWithoutDestinyTransactionsInput, {
     nullable: false,
   })
@@ -713,28 +687,20 @@ export class AccountCreateOrConnectWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountCreateOrConnectWithoutInstitutionConnectionInput {
+export class AccountCreateOrConnectWithoutInstitutionLinkInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
 export class AccountCreateOrConnectWithoutSourceRecurringTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountCreateWithoutSourceRecurringTransactionsInput, {
     nullable: false,
   })
@@ -748,10 +714,7 @@ export class AccountCreateOrConnectWithoutSourceRecurringTransactionsInput {
 export class AccountCreateOrConnectWithoutSourceTransactionsInput {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountCreateWithoutSourceTransactionsInput, { nullable: false })
   @Type(() => AccountCreateWithoutSourceTransactionsInput)
   create!: InstanceType<typeof AccountCreateWithoutSourceTransactionsInput>;
@@ -775,12 +738,12 @@ export class AccountCreateWithoutDestinyRecurringTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutAccountInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutAccountInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutAccountInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutAccountInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -823,12 +786,12 @@ export class AccountCreateWithoutDestinyTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutAccountInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutAccountInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutAccountInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutAccountInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -854,7 +817,7 @@ export class AccountCreateWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountCreateWithoutInstitutionConnectionInput {
+export class AccountCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -919,12 +882,12 @@ export class AccountCreateWithoutSourceRecurringTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutAccountInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutAccountInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutAccountInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutAccountInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -967,12 +930,12 @@ export class AccountCreateWithoutSourceTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutAccountInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutAccountInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutAccountInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutAccountInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutDestinyAccountInput, {
     nullable: true,
@@ -1015,12 +978,12 @@ export class AccountCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutAccountInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutAccountInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutAccountInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutAccountInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutAccountInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceAccountInput, {
     nullable: true,
@@ -1099,7 +1062,7 @@ export class AccountGroupBy {
   @Field(() => Boolean, { nullable: false })
   isActive!: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
@@ -1129,7 +1092,7 @@ export class AccountMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -1149,7 +1112,7 @@ export class AccountMaxAggregate {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1169,7 +1132,7 @@ export class AccountMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   isActive?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -1189,7 +1152,7 @@ export class AccountMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -1209,7 +1172,7 @@ export class AccountMinAggregate {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1229,7 +1192,7 @@ export class AccountMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   isActive?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -1259,7 +1222,7 @@ export class AccountOrderByWithAggregationInput {
   @Field(() => SortOrder, { nullable: true })
   isActive?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -1294,17 +1257,15 @@ export class AccountOrderByWithRelationInput {
   @Field(() => SortOrder, { nullable: true })
   isActive?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
-  @Field(() => InstitutionConnectionOrderByWithRelationInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionOrderByWithRelationInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionOrderByWithRelationInput
+  @Field(() => InstitutionLinkOrderByWithRelationInput, { nullable: true })
+  @Type(() => InstitutionLinkOrderByWithRelationInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkOrderByWithRelationInput
   >;
   @Field(() => TransactionOrderByRelationAggregateInput, { nullable: true })
   @Type(() => TransactionOrderByRelationAggregateInput)
@@ -1355,7 +1316,7 @@ export class AccountScalarWhereWithAggregatesInput {
   @Field(() => BoolWithAggregatesFilter, { nullable: true })
   isActive?: InstanceType<typeof BoolWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringWithAggregatesFilter>;
+  institutionLinkId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -1381,25 +1342,20 @@ export class AccountSumOrderByAggregateInput {
 }
 
 @InputType()
-export class AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput {
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
+export class AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput {
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create?: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
+  @Field(() => AccountCreateOrConnectWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create?: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
-  @Field(() => AccountCreateOrConnectWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountCreateOrConnectWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateOrConnectWithoutInstitutionLinkInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutInstitutionConnectionInput
+    typeof AccountCreateOrConnectWithoutInstitutionLinkInput
   >;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
 }
 
 @InputType()
@@ -1417,7 +1373,7 @@ export class AccountUncheckedCreateWithoutDestinyRecurringTransactionsInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1465,7 +1421,7 @@ export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1504,7 +1460,7 @@ export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountUncheckedCreateWithoutInstitutionConnectionInput {
+export class AccountUncheckedCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -1576,7 +1532,7 @@ export class AccountUncheckedCreateWithoutSourceRecurringTransactionsInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1624,7 +1580,7 @@ export class AccountUncheckedCreateWithoutSourceTransactionsInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1677,7 +1633,7 @@ export class AccountUncheckedCreateInput {
   @Field(() => Boolean, { nullable: true })
   isActive?: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -1736,9 +1692,7 @@ export class AccountUncheckedUpdateManyInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -1746,24 +1700,20 @@ export class AccountUncheckedUpdateManyInput {
 }
 
 @InputType()
-export class AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput {
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
+export class AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput {
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create?: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
+  @Field(() => AccountCreateOrConnectWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create?: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
-  @Field(() => AccountCreateOrConnectWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountCreateOrConnectWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateOrConnectWithoutInstitutionLinkInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutInstitutionConnectionInput
+    typeof AccountCreateOrConnectWithoutInstitutionLinkInput
   >;
-  @Field(() => AccountUpsertWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountUpsertWithoutInstitutionConnectionInput)
-  upsert?: InstanceType<typeof AccountUpsertWithoutInstitutionConnectionInput>;
+  @Field(() => AccountUpsertWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutInstitutionLinkInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutInstitutionLinkInput>;
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   disconnect?: InstanceType<typeof AccountWhereInput>;
@@ -1772,16 +1722,13 @@ export class AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
-  @Field(() => AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput, {
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
+  @Field(() => AccountUpdateToOneWithWhereWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput)
+  @Type(() => AccountUpdateToOneWithWhereWithoutInstitutionLinkInput)
   update?: InstanceType<
-    typeof AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput
+    typeof AccountUpdateToOneWithWhereWithoutInstitutionLinkInput
   >;
 }
 
@@ -1799,9 +1746,7 @@ export class AccountUncheckedUpdateWithoutDestinyRecurringTransactionsInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -1848,9 +1793,7 @@ export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -1889,7 +1832,7 @@ export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountUncheckedUpdateWithoutInstitutionConnectionInput {
+export class AccountUncheckedUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -1959,9 +1902,7 @@ export class AccountUncheckedUpdateWithoutSourceRecurringTransactionsInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -2008,9 +1949,7 @@ export class AccountUncheckedUpdateWithoutSourceTransactionsInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -2062,9 +2001,7 @@ export class AccountUncheckedUpdateInput {
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
   isActive?: InstanceType<typeof BoolFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -2159,10 +2096,7 @@ export class AccountUpdateOneWithoutDestinyRecurringTransactionsNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(
     () => AccountUpdateToOneWithWhereWithoutDestinyRecurringTransactionsInput,
     { nullable: true },
@@ -2198,10 +2132,7 @@ export class AccountUpdateOneWithoutDestinyTransactionsNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput, {
     nullable: true,
   })
@@ -2212,24 +2143,20 @@ export class AccountUpdateOneWithoutDestinyTransactionsNestedInput {
 }
 
 @InputType()
-export class AccountUpdateOneWithoutInstitutionConnectionNestedInput {
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
+export class AccountUpdateOneWithoutInstitutionLinkNestedInput {
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create?: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
+  @Field(() => AccountCreateOrConnectWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create?: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
-  @Field(() => AccountCreateOrConnectWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountCreateOrConnectWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateOrConnectWithoutInstitutionLinkInput)
   connectOrCreate?: InstanceType<
-    typeof AccountCreateOrConnectWithoutInstitutionConnectionInput
+    typeof AccountCreateOrConnectWithoutInstitutionLinkInput
   >;
-  @Field(() => AccountUpsertWithoutInstitutionConnectionInput, {
-    nullable: true,
-  })
-  @Type(() => AccountUpsertWithoutInstitutionConnectionInput)
-  upsert?: InstanceType<typeof AccountUpsertWithoutInstitutionConnectionInput>;
+  @Field(() => AccountUpsertWithoutInstitutionLinkInput, { nullable: true })
+  @Type(() => AccountUpsertWithoutInstitutionLinkInput)
+  upsert?: InstanceType<typeof AccountUpsertWithoutInstitutionLinkInput>;
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   disconnect?: InstanceType<typeof AccountWhereInput>;
@@ -2238,16 +2165,13 @@ export class AccountUpdateOneWithoutInstitutionConnectionNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
-  @Field(() => AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput, {
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
+  @Field(() => AccountUpdateToOneWithWhereWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput)
+  @Type(() => AccountUpdateToOneWithWhereWithoutInstitutionLinkInput)
   update?: InstanceType<
-    typeof AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput
+    typeof AccountUpdateToOneWithWhereWithoutInstitutionLinkInput
   >;
 }
 
@@ -2282,10 +2206,7 @@ export class AccountUpdateOneWithoutSourceRecurringTransactionsNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(
     () => AccountUpdateToOneWithWhereWithoutSourceRecurringTransactionsInput,
     { nullable: true },
@@ -2321,10 +2242,7 @@ export class AccountUpdateOneWithoutSourceTransactionsNestedInput {
   delete?: InstanceType<typeof AccountWhereInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  connect?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  connect?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountUpdateToOneWithWhereWithoutSourceTransactionsInput, {
     nullable: true,
   })
@@ -2361,15 +2279,13 @@ export class AccountUpdateToOneWithWhereWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountUpdateToOneWithWhereWithoutInstitutionConnectionInput {
+export class AccountUpdateToOneWithWhereWithoutInstitutionLinkInput {
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   where?: InstanceType<typeof AccountWhereInput>;
-  @Field(() => AccountUpdateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => AccountUpdateWithoutInstitutionConnectionInput)
-  data!: InstanceType<typeof AccountUpdateWithoutInstitutionConnectionInput>;
+  @Field(() => AccountUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutInstitutionLinkInput)
+  data!: InstanceType<typeof AccountUpdateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -2413,13 +2329,12 @@ export class AccountUpdateWithoutDestinyRecurringTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2461,13 +2376,12 @@ export class AccountUpdateWithoutDestinyTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2493,7 +2407,7 @@ export class AccountUpdateWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountUpdateWithoutInstitutionConnectionInput {
+export class AccountUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -2556,13 +2470,12 @@ export class AccountUpdateWithoutSourceRecurringTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2604,13 +2517,12 @@ export class AccountUpdateWithoutSourceTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutDestinyAccountNestedInput, {
     nullable: true,
@@ -2652,13 +2564,12 @@ export class AccountUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceAccountNestedInput, {
     nullable: true,
@@ -2729,17 +2640,13 @@ export class AccountUpsertWithoutDestinyTransactionsInput {
 }
 
 @InputType()
-export class AccountUpsertWithoutInstitutionConnectionInput {
-  @Field(() => AccountUpdateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => AccountUpdateWithoutInstitutionConnectionInput)
-  update!: InstanceType<typeof AccountUpdateWithoutInstitutionConnectionInput>;
-  @Field(() => AccountCreateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => AccountCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<typeof AccountCreateWithoutInstitutionConnectionInput>;
+export class AccountUpsertWithoutInstitutionLinkInput {
+  @Field(() => AccountUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => AccountUpdateWithoutInstitutionLinkInput)
+  update!: InstanceType<typeof AccountUpdateWithoutInstitutionLinkInput>;
+  @Field(() => AccountCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => AccountCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof AccountCreateWithoutInstitutionLinkInput>;
   @Field(() => AccountWhereInput, { nullable: true })
   @Type(() => AccountWhereInput)
   where?: InstanceType<typeof AccountWhereInput>;
@@ -2784,7 +2691,7 @@ export class AccountWhereUniqueInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => [AccountWhereInput], { nullable: true })
   @Type(() => AccountWhereInput)
   AND?: Array<AccountWhereInput>;
@@ -2807,11 +2714,9 @@ export class AccountWhereUniqueInput {
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionRelationFilter
-  >;
+  @Field(() => InstitutionLinkRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
@@ -2853,16 +2758,14 @@ export class AccountWhereInput {
   @Field(() => BoolFilter, { nullable: true })
   isActive?: InstanceType<typeof BoolFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionRelationFilter
-  >;
+  @Field(() => InstitutionLinkRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkRelationFilter>;
   @Field(() => TransactionListRelationFilter, { nullable: true })
   @Type(() => TransactionListRelationFilter)
   sourceTransactions?: InstanceType<typeof TransactionListRelationFilter>;
@@ -2894,13 +2797,13 @@ export class Account {
   @Field(() => Boolean, { nullable: false, defaultValue: true })
   isActive!: boolean;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
-  @Field(() => InstitutionConnection, { nullable: false })
-  institutionConnection?: InstanceType<typeof InstitutionConnection>;
+  @Field(() => InstitutionLink, { nullable: false })
+  institutionLink?: InstanceType<typeof InstitutionLink>;
   @Field(() => [Transaction], { nullable: true })
   sourceTransactions?: Array<Transaction>;
   @Field(() => [Transaction], { nullable: true })
@@ -2956,10 +2859,7 @@ export class DeleteManyAccountArgs {
 export class DeleteOneAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -2974,10 +2874,7 @@ export class FindFirstAccountOrThrowArgs {
   orderBy?: Array<AccountOrderByWithRelationInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  cursor?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  cursor?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -2998,10 +2895,7 @@ export class FindFirstAccountArgs {
   orderBy?: Array<AccountOrderByWithRelationInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  cursor?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  cursor?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3022,10 +2916,7 @@ export class FindManyAccountArgs {
   orderBy?: Array<AccountOrderByWithRelationInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: true })
   @Type(() => AccountWhereUniqueInput)
-  cursor?: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  cursor?: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
@@ -3040,10 +2931,7 @@ export class FindManyAccountArgs {
 export class FindUniqueAccountOrThrowArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3052,10 +2940,7 @@ export class FindUniqueAccountOrThrowArgs {
 export class FindUniqueAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3077,10 +2962,7 @@ export class UpdateOneAccountArgs {
   data!: InstanceType<typeof AccountUpdateInput>;
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -3089,10 +2971,7 @@ export class UpdateOneAccountArgs {
 export class UpsertOneAccountArgs {
   @Field(() => AccountWhereUniqueInput, { nullable: false })
   @Type(() => AccountWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    AccountWhereUniqueInput,
-    'id' | 'institutionConnectionId'
-  >;
+  where!: Prisma.AtLeast<AccountWhereUniqueInput, 'id' | 'institutionLinkId'>;
   @Field(() => AccountCreateInput, { nullable: false })
   @Type(() => AccountCreateInput)
   create!: InstanceType<typeof AccountCreateInput>;
@@ -4256,7 +4135,7 @@ export class CardCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   defaultLimit?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -4282,7 +4161,7 @@ export class CardCountAggregate {
   @Field(() => Int, { nullable: false })
   defaultLimit!: number;
   @Field(() => Int, { nullable: false })
-  institutionConnectionId!: number;
+  institutionLinkId!: number;
   @Field(() => Int, { nullable: false })
   createdAt!: number;
   @Field(() => Int, { nullable: false })
@@ -4308,7 +4187,7 @@ export class CardCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   defaultLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -4326,16 +4205,16 @@ export class CardCount {
 }
 
 @InputType()
-export class CardCreateManyInstitutionConnectionInputEnvelope {
-  @Field(() => [CardCreateManyInstitutionConnectionInput], { nullable: false })
-  @Type(() => CardCreateManyInstitutionConnectionInput)
-  data!: Array<CardCreateManyInstitutionConnectionInput>;
+export class CardCreateManyInstitutionLinkInputEnvelope {
+  @Field(() => [CardCreateManyInstitutionLinkInput], { nullable: false })
+  @Type(() => CardCreateManyInstitutionLinkInput)
+  data!: Array<CardCreateManyInstitutionLinkInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @InputType()
-export class CardCreateManyInstitutionConnectionInput {
+export class CardCreateManyInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -4377,7 +4256,7 @@ export class CardCreateManyInput {
   @Transform(transformToDecimal)
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -4385,24 +4264,18 @@ export class CardCreateManyInput {
 }
 
 @InputType()
-export class CardCreateNestedManyWithoutInstitutionConnectionInput {
-  @Field(() => [CardCreateWithoutInstitutionConnectionInput], {
+export class CardCreateNestedManyWithoutInstitutionLinkInput {
+  @Field(() => [CardCreateWithoutInstitutionLinkInput], { nullable: true })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create?: Array<CardCreateWithoutInstitutionLinkInput>;
+  @Field(() => [CardCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create?: Array<CardCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [CardCreateOrConnectWithoutInstitutionConnectionInput], {
-    nullable: true,
-  })
-  @Type(() => CardCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => CardCreateManyInstitutionConnectionInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => CardCreateManyInstitutionConnectionInputEnvelope)
-  createMany?: InstanceType<
-    typeof CardCreateManyInstitutionConnectionInputEnvelope
-  >;
+  @Type(() => CardCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => CardCreateManyInstitutionLinkInputEnvelope, { nullable: true })
+  @Type(() => CardCreateManyInstitutionLinkInputEnvelope)
+  createMany?: InstanceType<typeof CardCreateManyInstitutionLinkInputEnvelope>;
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
@@ -4472,13 +4345,13 @@ export class CardCreateOrConnectWithoutBillingsInput {
 }
 
 @InputType()
-export class CardCreateOrConnectWithoutInstitutionConnectionInput {
+export class CardCreateOrConnectWithoutInstitutionLinkInput {
   @Field(() => CardWhereUniqueInput, { nullable: false })
   @Type(() => CardWhereUniqueInput)
   where!: Prisma.AtLeast<CardWhereUniqueInput, 'id'>;
-  @Field(() => CardCreateWithoutInstitutionConnectionInput, { nullable: false })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<typeof CardCreateWithoutInstitutionConnectionInput>;
+  @Field(() => CardCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof CardCreateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -4527,12 +4400,12 @@ export class CardCreateWithoutBillingsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutCardsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutCardsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutCardsInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutCardsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutCardsInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutCardsInput
   >;
   @Field(() => TransactionCreateNestedManyWithoutSourceCardInput, {
     nullable: true,
@@ -4551,7 +4424,7 @@ export class CardCreateWithoutBillingsInput {
 }
 
 @InputType()
-export class CardCreateWithoutInstitutionConnectionInput {
+export class CardCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -4613,12 +4486,12 @@ export class CardCreateWithoutSourceRecurringTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutCardsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutCardsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutCardsInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutCardsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutCardsInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutCardsInput
   >;
   @Field(() => CardBillingCreateNestedManyWithoutCardInput, { nullable: true })
   @Type(() => CardBillingCreateNestedManyWithoutCardInput)
@@ -4654,12 +4527,12 @@ export class CardCreateWithoutSourceTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutCardsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutCardsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutCardsInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutCardsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutCardsInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutCardsInput
   >;
   @Field(() => CardBillingCreateNestedManyWithoutCardInput, { nullable: true })
   @Type(() => CardBillingCreateNestedManyWithoutCardInput)
@@ -4695,12 +4568,12 @@ export class CardCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutCardsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutCardsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutCardsInput)
-  institutionConnection!: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutCardsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutCardsInput)
+  institutionLink!: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutCardsInput
   >;
   @Field(() => CardBillingCreateNestedManyWithoutCardInput, { nullable: true })
   @Type(() => CardBillingCreateNestedManyWithoutCardInput)
@@ -4772,7 +4645,7 @@ export class CardGroupBy {
   @Field(() => GraphQLDecimal, { nullable: false })
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
@@ -4819,7 +4692,7 @@ export class CardMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   defaultLimit?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -4843,7 +4716,7 @@ export class CardMaxAggregate {
   @Field(() => GraphQLDecimal, { nullable: true })
   defaultLimit?: Decimal;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -4867,7 +4740,7 @@ export class CardMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   defaultLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -4891,7 +4764,7 @@ export class CardMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   defaultLimit?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -4915,7 +4788,7 @@ export class CardMinAggregate {
   @Field(() => GraphQLDecimal, { nullable: true })
   defaultLimit?: Decimal;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -4939,7 +4812,7 @@ export class CardMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   defaultLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -4979,7 +4852,7 @@ export class CardOrderByWithAggregationInput {
   @Field(() => SortOrder, { nullable: true })
   defaultLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -5018,17 +4891,15 @@ export class CardOrderByWithRelationInput {
   @Field(() => SortOrder, { nullable: true })
   defaultLimit?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
-  @Field(() => InstitutionConnectionOrderByWithRelationInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionOrderByWithRelationInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionOrderByWithRelationInput
+  @Field(() => InstitutionLinkOrderByWithRelationInput, { nullable: true })
+  @Type(() => InstitutionLinkOrderByWithRelationInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkOrderByWithRelationInput
   >;
   @Field(() => CardBillingOrderByRelationAggregateInput, { nullable: true })
   @Type(() => CardBillingOrderByRelationAggregateInput)
@@ -5084,7 +4955,7 @@ export class CardScalarWhereWithAggregatesInput {
   @Type(() => DecimalWithAggregatesFilter)
   defaultLimit?: InstanceType<typeof DecimalWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringWithAggregatesFilter>;
+  institutionLinkId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -5118,7 +4989,7 @@ export class CardScalarWhereInput {
   @Type(() => DecimalFilter)
   defaultLimit?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -5156,24 +5027,18 @@ export class CardSumOrderByAggregateInput {
 }
 
 @InputType()
-export class CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput {
-  @Field(() => [CardCreateWithoutInstitutionConnectionInput], {
+export class CardUncheckedCreateNestedManyWithoutInstitutionLinkInput {
+  @Field(() => [CardCreateWithoutInstitutionLinkInput], { nullable: true })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create?: Array<CardCreateWithoutInstitutionLinkInput>;
+  @Field(() => [CardCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create?: Array<CardCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [CardCreateOrConnectWithoutInstitutionConnectionInput], {
-    nullable: true,
-  })
-  @Type(() => CardCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => CardCreateManyInstitutionConnectionInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => CardCreateManyInstitutionConnectionInputEnvelope)
-  createMany?: InstanceType<
-    typeof CardCreateManyInstitutionConnectionInputEnvelope
-  >;
+  @Type(() => CardCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => CardCreateManyInstitutionLinkInputEnvelope, { nullable: true })
+  @Type(() => CardCreateManyInstitutionLinkInputEnvelope)
+  createMany?: InstanceType<typeof CardCreateManyInstitutionLinkInputEnvelope>;
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
@@ -5198,7 +5063,7 @@ export class CardUncheckedCreateWithoutBillingsInput {
   @Transform(transformToDecimal)
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -5223,7 +5088,7 @@ export class CardUncheckedCreateWithoutBillingsInput {
 }
 
 @InputType()
-export class CardUncheckedCreateWithoutInstitutionConnectionInput {
+export class CardUncheckedCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -5289,7 +5154,7 @@ export class CardUncheckedCreateWithoutSourceRecurringTransactionsInput {
   @Transform(transformToDecimal)
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -5329,7 +5194,7 @@ export class CardUncheckedCreateWithoutSourceTransactionsInput {
   @Transform(transformToDecimal)
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -5372,7 +5237,7 @@ export class CardUncheckedCreateInput {
   @Transform(transformToDecimal)
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -5404,29 +5269,23 @@ export class CardUncheckedCreateInput {
 }
 
 @InputType()
-export class CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput {
-  @Field(() => [CardCreateWithoutInstitutionConnectionInput], {
+export class CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput {
+  @Field(() => [CardCreateWithoutInstitutionLinkInput], { nullable: true })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create?: Array<CardCreateWithoutInstitutionLinkInput>;
+  @Field(() => [CardCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create?: Array<CardCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [CardCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => CardCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => [CardUpsertWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => [CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput], {
-    nullable: true,
-  })
-  @Type(() => CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput)
-  upsert?: Array<CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => CardCreateManyInstitutionConnectionInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => CardCreateManyInstitutionConnectionInputEnvelope)
-  createMany?: InstanceType<
-    typeof CardCreateManyInstitutionConnectionInputEnvelope
-  >;
+  @Type(() => CardUpsertWithWhereUniqueWithoutInstitutionLinkInput)
+  upsert?: Array<CardUpsertWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => CardCreateManyInstitutionLinkInputEnvelope, { nullable: true })
+  @Type(() => CardCreateManyInstitutionLinkInputEnvelope)
+  createMany?: InstanceType<typeof CardCreateManyInstitutionLinkInputEnvelope>;
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   set?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
@@ -5439,23 +5298,23 @@ export class CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput {
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
-  @Field(() => [CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput], {
+  @Field(() => [CardUpdateWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput)
-  update?: Array<CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => [CardUpdateManyWithWhereWithoutInstitutionConnectionInput], {
+  @Type(() => CardUpdateWithWhereUniqueWithoutInstitutionLinkInput)
+  update?: Array<CardUpdateWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => [CardUpdateManyWithWhereWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithWhereWithoutInstitutionConnectionInput)
-  updateMany?: Array<CardUpdateManyWithWhereWithoutInstitutionConnectionInput>;
+  @Type(() => CardUpdateManyWithWhereWithoutInstitutionLinkInput)
+  updateMany?: Array<CardUpdateManyWithWhereWithoutInstitutionLinkInput>;
   @Field(() => [CardScalarWhereInput], { nullable: true })
   @Type(() => CardScalarWhereInput)
   deleteMany?: Array<CardScalarWhereInput>;
 }
 
 @InputType()
-export class CardUncheckedUpdateManyWithoutInstitutionConnectionInput {
+export class CardUncheckedUpdateManyWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -5499,9 +5358,7 @@ export class CardUncheckedUpdateManyInput {
   @Type(() => DecimalFieldUpdateOperationsInput)
   defaultLimit?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -5528,9 +5385,7 @@ export class CardUncheckedUpdateWithoutBillingsInput {
   @Type(() => DecimalFieldUpdateOperationsInput)
   defaultLimit?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -5555,7 +5410,7 @@ export class CardUncheckedUpdateWithoutBillingsInput {
 }
 
 @InputType()
-export class CardUncheckedUpdateWithoutInstitutionConnectionInput {
+export class CardUncheckedUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -5623,9 +5478,7 @@ export class CardUncheckedUpdateWithoutSourceRecurringTransactionsInput {
   @Type(() => DecimalFieldUpdateOperationsInput)
   defaultLimit?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -5666,9 +5519,7 @@ export class CardUncheckedUpdateWithoutSourceTransactionsInput {
   @Type(() => DecimalFieldUpdateOperationsInput)
   defaultLimit?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -5712,9 +5563,7 @@ export class CardUncheckedUpdateInput {
   @Type(() => DecimalFieldUpdateOperationsInput)
   defaultLimit?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -5771,7 +5620,7 @@ export class CardUpdateManyMutationInput {
 }
 
 @InputType()
-export class CardUpdateManyWithWhereWithoutInstitutionConnectionInput {
+export class CardUpdateManyWithWhereWithoutInstitutionLinkInput {
   @Field(() => CardScalarWhereInput, { nullable: false })
   @Type(() => CardScalarWhereInput)
   where!: InstanceType<typeof CardScalarWhereInput>;
@@ -5781,29 +5630,23 @@ export class CardUpdateManyWithWhereWithoutInstitutionConnectionInput {
 }
 
 @InputType()
-export class CardUpdateManyWithoutInstitutionConnectionNestedInput {
-  @Field(() => [CardCreateWithoutInstitutionConnectionInput], {
+export class CardUpdateManyWithoutInstitutionLinkNestedInput {
+  @Field(() => [CardCreateWithoutInstitutionLinkInput], { nullable: true })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create?: Array<CardCreateWithoutInstitutionLinkInput>;
+  @Field(() => [CardCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create?: Array<CardCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [CardCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => CardCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => [CardUpsertWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<CardCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => [CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput], {
-    nullable: true,
-  })
-  @Type(() => CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput)
-  upsert?: Array<CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => CardCreateManyInstitutionConnectionInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => CardCreateManyInstitutionConnectionInputEnvelope)
-  createMany?: InstanceType<
-    typeof CardCreateManyInstitutionConnectionInputEnvelope
-  >;
+  @Type(() => CardUpsertWithWhereUniqueWithoutInstitutionLinkInput)
+  upsert?: Array<CardUpsertWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => CardCreateManyInstitutionLinkInputEnvelope, { nullable: true })
+  @Type(() => CardCreateManyInstitutionLinkInputEnvelope)
+  createMany?: InstanceType<typeof CardCreateManyInstitutionLinkInputEnvelope>;
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   set?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
@@ -5816,16 +5659,16 @@ export class CardUpdateManyWithoutInstitutionConnectionNestedInput {
   @Field(() => [CardWhereUniqueInput], { nullable: true })
   @Type(() => CardWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<CardWhereUniqueInput, 'id'>>;
-  @Field(() => [CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput], {
+  @Field(() => [CardUpdateWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput)
-  update?: Array<CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => [CardUpdateManyWithWhereWithoutInstitutionConnectionInput], {
+  @Type(() => CardUpdateWithWhereUniqueWithoutInstitutionLinkInput)
+  update?: Array<CardUpdateWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => [CardUpdateManyWithWhereWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithWhereWithoutInstitutionConnectionInput)
-  updateMany?: Array<CardUpdateManyWithWhereWithoutInstitutionConnectionInput>;
+  @Type(() => CardUpdateManyWithWhereWithoutInstitutionLinkInput)
+  updateMany?: Array<CardUpdateManyWithWhereWithoutInstitutionLinkInput>;
   @Field(() => [CardScalarWhereInput], { nullable: true })
   @Type(() => CardScalarWhereInput)
   deleteMany?: Array<CardScalarWhereInput>;
@@ -5960,13 +5803,13 @@ export class CardUpdateToOneWithWhereWithoutSourceTransactionsInput {
 }
 
 @InputType()
-export class CardUpdateWithWhereUniqueWithoutInstitutionConnectionInput {
+export class CardUpdateWithWhereUniqueWithoutInstitutionLinkInput {
   @Field(() => CardWhereUniqueInput, { nullable: false })
   @Type(() => CardWhereUniqueInput)
   where!: Prisma.AtLeast<CardWhereUniqueInput, 'id'>;
-  @Field(() => CardUpdateWithoutInstitutionConnectionInput, { nullable: false })
-  @Type(() => CardUpdateWithoutInstitutionConnectionInput)
-  data!: InstanceType<typeof CardUpdateWithoutInstitutionConnectionInput>;
+  @Field(() => CardUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => CardUpdateWithoutInstitutionLinkInput)
+  data!: InstanceType<typeof CardUpdateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -5992,12 +5835,12 @@ export class CardUpdateWithoutBillingsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput
   >;
   @Field(() => TransactionUpdateManyWithoutSourceCardNestedInput, {
     nullable: true,
@@ -6016,7 +5859,7 @@ export class CardUpdateWithoutBillingsInput {
 }
 
 @InputType()
-export class CardUpdateWithoutInstitutionConnectionInput {
+export class CardUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -6080,12 +5923,12 @@ export class CardUpdateWithoutSourceRecurringTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput
   >;
   @Field(() => CardBillingUpdateManyWithoutCardNestedInput, { nullable: true })
   @Type(() => CardBillingUpdateManyWithoutCardNestedInput)
@@ -6122,12 +5965,12 @@ export class CardUpdateWithoutSourceTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput
   >;
   @Field(() => CardBillingUpdateManyWithoutCardNestedInput, { nullable: true })
   @Type(() => CardBillingUpdateManyWithoutCardNestedInput)
@@ -6164,12 +6007,12 @@ export class CardUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput
+  @Type(() => InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput
   >;
   @Field(() => CardBillingUpdateManyWithoutCardNestedInput, { nullable: true })
   @Type(() => CardBillingUpdateManyWithoutCardNestedInput)
@@ -6191,16 +6034,16 @@ export class CardUpdateInput {
 }
 
 @InputType()
-export class CardUpsertWithWhereUniqueWithoutInstitutionConnectionInput {
+export class CardUpsertWithWhereUniqueWithoutInstitutionLinkInput {
   @Field(() => CardWhereUniqueInput, { nullable: false })
   @Type(() => CardWhereUniqueInput)
   where!: Prisma.AtLeast<CardWhereUniqueInput, 'id'>;
-  @Field(() => CardUpdateWithoutInstitutionConnectionInput, { nullable: false })
-  @Type(() => CardUpdateWithoutInstitutionConnectionInput)
-  update!: InstanceType<typeof CardUpdateWithoutInstitutionConnectionInput>;
-  @Field(() => CardCreateWithoutInstitutionConnectionInput, { nullable: false })
-  @Type(() => CardCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<typeof CardCreateWithoutInstitutionConnectionInput>;
+  @Field(() => CardUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => CardUpdateWithoutInstitutionLinkInput)
+  update!: InstanceType<typeof CardUpdateWithoutInstitutionLinkInput>;
+  @Field(() => CardCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => CardCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof CardCreateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -6277,16 +6120,14 @@ export class CardWhereUniqueInput {
   @Type(() => DecimalFilter)
   defaultLimit?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionRelationFilter
-  >;
+  @Field(() => InstitutionLinkRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkRelationFilter>;
   @Field(() => CardBillingListRelationFilter, { nullable: true })
   @Type(() => CardBillingListRelationFilter)
   billings?: InstanceType<typeof CardBillingListRelationFilter>;
@@ -6327,16 +6168,14 @@ export class CardWhereInput {
   @Type(() => DecimalFilter)
   defaultLimit?: InstanceType<typeof DecimalFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionRelationFilter
-  >;
+  @Field(() => InstitutionLinkRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkRelationFilter>;
   @Field(() => CardBillingListRelationFilter, { nullable: true })
   @Type(() => CardBillingListRelationFilter)
   billings?: InstanceType<typeof CardBillingListRelationFilter>;
@@ -6367,13 +6206,13 @@ export class Card {
   @Field(() => GraphQLDecimal, { nullable: false })
   defaultLimit!: Decimal;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
-  @Field(() => InstitutionConnection, { nullable: false })
-  institutionConnection?: InstanceType<typeof InstitutionConnection>;
+  @Field(() => InstitutionLink, { nullable: false })
+  institutionLink?: InstanceType<typeof InstitutionLink>;
   @Field(() => [CardBilling], { nullable: true })
   billings?: Array<CardBilling>;
   @Field(() => [Transaction], { nullable: true })
@@ -10507,7 +10346,7 @@ export class InstitutionCountOrderByAggregateInput {
 @ObjectType()
 export class InstitutionCount {
   @Field(() => Int, { nullable: false })
-  institutionConnections?: number;
+  institutionLinks?: number;
 }
 
 @InputType()
@@ -10531,20 +10370,18 @@ export class InstitutionCreateManyInput {
 }
 
 @InputType()
-export class InstitutionCreateNestedOneWithoutInstitutionConnectionsInput {
-  @Field(() => InstitutionCreateWithoutInstitutionConnectionsInput, {
+export class InstitutionCreateNestedOneWithoutInstitutionLinksInput {
+  @Field(() => InstitutionCreateWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => InstitutionCreateWithoutInstitutionConnectionsInput)
-  create?: InstanceType<
-    typeof InstitutionCreateWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => InstitutionCreateOrConnectWithoutInstitutionConnectionsInput, {
+  @Type(() => InstitutionCreateWithoutInstitutionLinksInput)
+  create?: InstanceType<typeof InstitutionCreateWithoutInstitutionLinksInput>;
+  @Field(() => InstitutionCreateOrConnectWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => InstitutionCreateOrConnectWithoutInstitutionConnectionsInput)
+  @Type(() => InstitutionCreateOrConnectWithoutInstitutionLinksInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionCreateOrConnectWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateOrConnectWithoutInstitutionLinksInput
   >;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
   @Type(() => InstitutionWhereUniqueInput)
@@ -10552,21 +10389,19 @@ export class InstitutionCreateNestedOneWithoutInstitutionConnectionsInput {
 }
 
 @InputType()
-export class InstitutionCreateOrConnectWithoutInstitutionConnectionsInput {
+export class InstitutionCreateOrConnectWithoutInstitutionLinksInput {
   @Field(() => InstitutionWhereUniqueInput, { nullable: false })
   @Type(() => InstitutionWhereUniqueInput)
   where!: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
-  @Field(() => InstitutionCreateWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => InstitutionCreateWithoutInstitutionConnectionsInput)
-  create!: InstanceType<
-    typeof InstitutionCreateWithoutInstitutionConnectionsInput
-  >;
+  @Type(() => InstitutionCreateWithoutInstitutionLinksInput)
+  create!: InstanceType<typeof InstitutionCreateWithoutInstitutionLinksInput>;
 }
 
 @InputType()
-export class InstitutionCreateWithoutInstitutionConnectionsInput {
+export class InstitutionCreateWithoutInstitutionLinksInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -10603,12 +10438,12 @@ export class InstitutionCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedManyWithoutInstitutionInput, {
+  @Field(() => InstitutionLinkCreateNestedManyWithoutInstitutionInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedManyWithoutInstitutionInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionCreateNestedManyWithoutInstitutionInput
+  @Type(() => InstitutionLinkCreateNestedManyWithoutInstitutionInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkCreateNestedManyWithoutInstitutionInput
   >;
 }
 
@@ -10819,12 +10654,10 @@ export class InstitutionOrderByWithRelationInput {
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
-  @Field(() => InstitutionConnectionOrderByRelationAggregateInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionOrderByRelationAggregateInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionOrderByRelationAggregateInput
+  @Field(() => InstitutionLinkOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => InstitutionLinkOrderByRelationAggregateInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkOrderByRelationAggregateInput
   >;
 }
 
@@ -10863,7 +10696,7 @@ export class InstitutionScalarWhereWithAggregatesInput {
 }
 
 @InputType()
-export class InstitutionUncheckedCreateWithoutInstitutionConnectionsInput {
+export class InstitutionUncheckedCreateWithoutInstitutionLinksInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -10901,14 +10734,12 @@ export class InstitutionUncheckedCreateInput {
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
   @Field(
-    () => InstitutionConnectionUncheckedCreateNestedManyWithoutInstitutionInput,
+    () => InstitutionLinkUncheckedCreateNestedManyWithoutInstitutionInput,
     { nullable: true },
   )
-  @Type(
-    () => InstitutionConnectionUncheckedCreateNestedManyWithoutInstitutionInput,
-  )
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedCreateNestedManyWithoutInstitutionInput
+  @Type(() => InstitutionLinkUncheckedCreateNestedManyWithoutInstitutionInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedCreateNestedManyWithoutInstitutionInput
   >;
 }
 
@@ -10933,7 +10764,7 @@ export class InstitutionUncheckedUpdateManyInput {
 }
 
 @InputType()
-export class InstitutionUncheckedUpdateWithoutInstitutionConnectionsInput {
+export class InstitutionUncheckedUpdateWithoutInstitutionLinksInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -10971,14 +10802,12 @@ export class InstitutionUncheckedUpdateInput {
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(
-    () => InstitutionConnectionUncheckedUpdateManyWithoutInstitutionNestedInput,
+    () => InstitutionLinkUncheckedUpdateManyWithoutInstitutionNestedInput,
     { nullable: true },
   )
-  @Type(
-    () => InstitutionConnectionUncheckedUpdateManyWithoutInstitutionNestedInput,
-  )
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedUpdateManyWithoutInstitutionNestedInput
+  @Type(() => InstitutionLinkUncheckedUpdateManyWithoutInstitutionNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedUpdateManyWithoutInstitutionNestedInput
   >;
 }
 
@@ -11003,57 +10832,50 @@ export class InstitutionUpdateManyMutationInput {
 }
 
 @InputType()
-export class InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput {
-  @Field(() => InstitutionCreateWithoutInstitutionConnectionsInput, {
+export class InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput {
+  @Field(() => InstitutionCreateWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => InstitutionCreateWithoutInstitutionConnectionsInput)
-  create?: InstanceType<
-    typeof InstitutionCreateWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => InstitutionCreateOrConnectWithoutInstitutionConnectionsInput, {
+  @Type(() => InstitutionCreateWithoutInstitutionLinksInput)
+  create?: InstanceType<typeof InstitutionCreateWithoutInstitutionLinksInput>;
+  @Field(() => InstitutionCreateOrConnectWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => InstitutionCreateOrConnectWithoutInstitutionConnectionsInput)
+  @Type(() => InstitutionCreateOrConnectWithoutInstitutionLinksInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionCreateOrConnectWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateOrConnectWithoutInstitutionLinksInput
   >;
-  @Field(() => InstitutionUpsertWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionUpsertWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => InstitutionUpsertWithoutInstitutionConnectionsInput)
-  upsert?: InstanceType<
-    typeof InstitutionUpsertWithoutInstitutionConnectionsInput
-  >;
+  @Type(() => InstitutionUpsertWithoutInstitutionLinksInput)
+  upsert?: InstanceType<typeof InstitutionUpsertWithoutInstitutionLinksInput>;
   @Field(() => InstitutionWhereUniqueInput, { nullable: true })
   @Type(() => InstitutionWhereUniqueInput)
   connect?: Prisma.AtLeast<InstitutionWhereUniqueInput, 'id'>;
-  @Field(
-    () => InstitutionUpdateToOneWithWhereWithoutInstitutionConnectionsInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionUpdateToOneWithWhereWithoutInstitutionConnectionsInput)
+  @Field(() => InstitutionUpdateToOneWithWhereWithoutInstitutionLinksInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionUpdateToOneWithWhereWithoutInstitutionLinksInput)
   update?: InstanceType<
-    typeof InstitutionUpdateToOneWithWhereWithoutInstitutionConnectionsInput
+    typeof InstitutionUpdateToOneWithWhereWithoutInstitutionLinksInput
   >;
 }
 
 @InputType()
-export class InstitutionUpdateToOneWithWhereWithoutInstitutionConnectionsInput {
+export class InstitutionUpdateToOneWithWhereWithoutInstitutionLinksInput {
   @Field(() => InstitutionWhereInput, { nullable: true })
   @Type(() => InstitutionWhereInput)
   where?: InstanceType<typeof InstitutionWhereInput>;
-  @Field(() => InstitutionUpdateWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionUpdateWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => InstitutionUpdateWithoutInstitutionConnectionsInput)
-  data!: InstanceType<
-    typeof InstitutionUpdateWithoutInstitutionConnectionsInput
-  >;
+  @Type(() => InstitutionUpdateWithoutInstitutionLinksInput)
+  data!: InstanceType<typeof InstitutionUpdateWithoutInstitutionLinksInput>;
 }
 
 @InputType()
-export class InstitutionUpdateWithoutInstitutionConnectionsInput {
+export class InstitutionUpdateWithoutInstitutionLinksInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -11090,12 +10912,12 @@ export class InstitutionUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateManyWithoutInstitutionNestedInput, {
+  @Field(() => InstitutionLinkUpdateManyWithoutInstitutionNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithoutInstitutionNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUpdateManyWithoutInstitutionNestedInput
+  @Type(() => InstitutionLinkUpdateManyWithoutInstitutionNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUpdateManyWithoutInstitutionNestedInput
   >;
 }
 
@@ -11108,21 +10930,17 @@ export class InstitutionUpdatetypesInput {
 }
 
 @InputType()
-export class InstitutionUpsertWithoutInstitutionConnectionsInput {
-  @Field(() => InstitutionUpdateWithoutInstitutionConnectionsInput, {
+export class InstitutionUpsertWithoutInstitutionLinksInput {
+  @Field(() => InstitutionUpdateWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => InstitutionUpdateWithoutInstitutionConnectionsInput)
-  update!: InstanceType<
-    typeof InstitutionUpdateWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => InstitutionCreateWithoutInstitutionConnectionsInput, {
+  @Type(() => InstitutionUpdateWithoutInstitutionLinksInput)
+  update!: InstanceType<typeof InstitutionUpdateWithoutInstitutionLinksInput>;
+  @Field(() => InstitutionCreateWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => InstitutionCreateWithoutInstitutionConnectionsInput)
-  create!: InstanceType<
-    typeof InstitutionCreateWithoutInstitutionConnectionsInput
-  >;
+  @Type(() => InstitutionCreateWithoutInstitutionLinksInput)
+  create!: InstanceType<typeof InstitutionCreateWithoutInstitutionLinksInput>;
   @Field(() => InstitutionWhereInput, { nullable: true })
   @Type(() => InstitutionWhereInput)
   where?: InstanceType<typeof InstitutionWhereInput>;
@@ -11152,11 +10970,9 @@ export class InstitutionWhereUniqueInput {
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionListRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionListRelationFilter)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionListRelationFilter
-  >;
+  @Field(() => InstitutionLinkListRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkListRelationFilter)
+  institutionLinks?: InstanceType<typeof InstitutionLinkListRelationFilter>;
 }
 
 @InputType()
@@ -11183,11 +10999,9 @@ export class InstitutionWhereInput {
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionListRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionListRelationFilter)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionListRelationFilter
-  >;
+  @Field(() => InstitutionLinkListRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkListRelationFilter)
+  institutionLinks?: InstanceType<typeof InstitutionLinkListRelationFilter>;
 }
 
 @ObjectType()
@@ -11208,8 +11022,8 @@ export class Institution {
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
-  @Field(() => [InstitutionConnection], { nullable: true })
-  institutionConnections?: Array<InstitutionConnection>;
+  @Field(() => [InstitutionLink], { nullable: true })
+  institutionLinks?: Array<InstitutionLink>;
   @Field(() => InstitutionCount, { nullable: false })
   _count?: InstanceType<typeof InstitutionCount>;
 }
@@ -11252,46 +11066,46 @@ export class UpsertOneInstitutionArgs {
 }
 
 @ObjectType()
-export class AggregateInstitutionConnection {
-  @Field(() => InstitutionConnectionCountAggregate, { nullable: true })
-  _count?: InstanceType<typeof InstitutionConnectionCountAggregate>;
-  @Field(() => InstitutionConnectionMinAggregate, { nullable: true })
-  _min?: InstanceType<typeof InstitutionConnectionMinAggregate>;
-  @Field(() => InstitutionConnectionMaxAggregate, { nullable: true })
-  _max?: InstanceType<typeof InstitutionConnectionMaxAggregate>;
+export class AggregateInstitutionLink {
+  @Field(() => InstitutionLinkCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof InstitutionLinkCountAggregate>;
+  @Field(() => InstitutionLinkMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof InstitutionLinkMinAggregate>;
+  @Field(() => InstitutionLinkMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof InstitutionLinkMaxAggregate>;
 }
 
 @ArgsType()
-export class CreateManyInstitutionConnectionArgs {
-  @Field(() => [InstitutionConnectionCreateManyInput], { nullable: false })
-  @Type(() => InstitutionConnectionCreateManyInput)
-  data!: Array<InstitutionConnectionCreateManyInput>;
+export class CreateManyInstitutionLinkArgs {
+  @Field(() => [InstitutionLinkCreateManyInput], { nullable: false })
+  @Type(() => InstitutionLinkCreateManyInput)
+  data!: Array<InstitutionLinkCreateManyInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @ArgsType()
-export class CreateOneInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionCreateInput, { nullable: false })
-  @Type(() => InstitutionConnectionCreateInput)
-  data!: InstanceType<typeof InstitutionConnectionCreateInput>;
+export class CreateOneInstitutionLinkArgs {
+  @Field(() => InstitutionLinkCreateInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateInput)
+  data!: InstanceType<typeof InstitutionLinkCreateInput>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
-export class DeleteManyInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class DeleteManyInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @ArgsType()
-export class DeleteOneInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class DeleteOneInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => RelationLoadStrategy, { nullable: true })
@@ -11299,83 +11113,77 @@ export class DeleteOneInstitutionConnectionArgs {
 }
 
 @ArgsType()
-export class FindFirstInstitutionConnectionOrThrowArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionOrderByWithRelationInput], {
-    nullable: true,
-  })
-  orderBy?: Array<InstitutionConnectionOrderByWithRelationInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
+export class FindFirstInstitutionLinkOrThrowArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<InstitutionLinkOrderByWithRelationInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
   cursor?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
   skip?: number;
-  @Field(() => [InstitutionConnectionScalarFieldEnum], { nullable: true })
-  distinct?: Array<keyof typeof InstitutionConnectionScalarFieldEnum>;
+  @Field(() => [InstitutionLinkScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InstitutionLinkScalarFieldEnum>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
-export class FindFirstInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionOrderByWithRelationInput], {
-    nullable: true,
-  })
-  orderBy?: Array<InstitutionConnectionOrderByWithRelationInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
+export class FindFirstInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<InstitutionLinkOrderByWithRelationInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
   cursor?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
   skip?: number;
-  @Field(() => [InstitutionConnectionScalarFieldEnum], { nullable: true })
-  distinct?: Array<keyof typeof InstitutionConnectionScalarFieldEnum>;
+  @Field(() => [InstitutionLinkScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InstitutionLinkScalarFieldEnum>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
-export class FindManyInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionOrderByWithRelationInput], {
-    nullable: true,
-  })
-  orderBy?: Array<InstitutionConnectionOrderByWithRelationInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
+export class FindManyInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<InstitutionLinkOrderByWithRelationInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
   cursor?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
   skip?: number;
-  @Field(() => [InstitutionConnectionScalarFieldEnum], { nullable: true })
-  distinct?: Array<keyof typeof InstitutionConnectionScalarFieldEnum>;
+  @Field(() => [InstitutionLinkScalarFieldEnum], { nullable: true })
+  distinct?: Array<keyof typeof InstitutionLinkScalarFieldEnum>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
 
 @ArgsType()
-export class FindUniqueInstitutionConnectionOrThrowArgs {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class FindUniqueInstitutionLinkOrThrowArgs {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => RelationLoadStrategy, { nullable: true })
@@ -11383,11 +11191,11 @@ export class FindUniqueInstitutionConnectionOrThrowArgs {
 }
 
 @ArgsType()
-export class FindUniqueInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class FindUniqueInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => RelationLoadStrategy, { nullable: true })
@@ -11395,33 +11203,31 @@ export class FindUniqueInstitutionConnectionArgs {
 }
 
 @ArgsType()
-export class InstitutionConnectionAggregateArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionOrderByWithRelationInput], {
-    nullable: true,
-  })
-  orderBy?: Array<InstitutionConnectionOrderByWithRelationInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
+export class InstitutionLinkAggregateArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkOrderByWithRelationInput], { nullable: true })
+  orderBy?: Array<InstitutionLinkOrderByWithRelationInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
   cursor?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
   skip?: number;
-  @Field(() => InstitutionConnectionCountAggregateInput, { nullable: true })
-  _count?: InstanceType<typeof InstitutionConnectionCountAggregateInput>;
-  @Field(() => InstitutionConnectionMinAggregateInput, { nullable: true })
-  _min?: InstanceType<typeof InstitutionConnectionMinAggregateInput>;
-  @Field(() => InstitutionConnectionMaxAggregateInput, { nullable: true })
-  _max?: InstanceType<typeof InstitutionConnectionMaxAggregateInput>;
+  @Field(() => InstitutionLinkCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof InstitutionLinkCountAggregateInput>;
+  @Field(() => InstitutionLinkMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof InstitutionLinkMinAggregateInput>;
+  @Field(() => InstitutionLinkMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof InstitutionLinkMaxAggregateInput>;
 }
 
 @InputType()
-export class InstitutionConnectionCountAggregateInput {
+export class InstitutionLinkCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
   @Field(() => Boolean, { nullable: true })
@@ -11437,7 +11243,7 @@ export class InstitutionConnectionCountAggregateInput {
 }
 
 @ObjectType()
-export class InstitutionConnectionCountAggregate {
+export class InstitutionLinkCountAggregate {
   @Field(() => Int, { nullable: false })
   id!: number;
   @Field(() => Int, { nullable: false })
@@ -11453,7 +11259,7 @@ export class InstitutionConnectionCountAggregate {
 }
 
 @InputType()
-export class InstitutionConnectionCountOrderByAggregateInput {
+export class InstitutionLinkCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -11467,7 +11273,7 @@ export class InstitutionConnectionCountOrderByAggregateInput {
 }
 
 @ObjectType()
-export class InstitutionConnectionCount {
+export class InstitutionLinkCount {
   @Field(() => Int, { nullable: false })
   cards?: number;
   @Field(() => Int, { nullable: false })
@@ -11475,18 +11281,16 @@ export class InstitutionConnectionCount {
 }
 
 @InputType()
-export class InstitutionConnectionCreateManyInstitutionInputEnvelope {
-  @Field(() => [InstitutionConnectionCreateManyInstitutionInput], {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionCreateManyInstitutionInput)
-  data!: Array<InstitutionConnectionCreateManyInstitutionInput>;
+export class InstitutionLinkCreateManyInstitutionInputEnvelope {
+  @Field(() => [InstitutionLinkCreateManyInstitutionInput], { nullable: false })
+  @Type(() => InstitutionLinkCreateManyInstitutionInput)
+  data!: Array<InstitutionLinkCreateManyInstitutionInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @InputType()
-export class InstitutionConnectionCreateManyInstitutionInput {
+export class InstitutionLinkCreateManyInstitutionInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -11498,16 +11302,16 @@ export class InstitutionConnectionCreateManyInstitutionInput {
 }
 
 @InputType()
-export class InstitutionConnectionCreateManyUserInputEnvelope {
-  @Field(() => [InstitutionConnectionCreateManyUserInput], { nullable: false })
-  @Type(() => InstitutionConnectionCreateManyUserInput)
-  data!: Array<InstitutionConnectionCreateManyUserInput>;
+export class InstitutionLinkCreateManyUserInputEnvelope {
+  @Field(() => [InstitutionLinkCreateManyUserInput], { nullable: false })
+  @Type(() => InstitutionLinkCreateManyUserInput)
+  data!: Array<InstitutionLinkCreateManyUserInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @InputType()
-export class InstitutionConnectionCreateManyUserInput {
+export class InstitutionLinkCreateManyUserInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -11519,7 +11323,7 @@ export class InstitutionConnectionCreateManyUserInput {
 }
 
 @InputType()
-export class InstitutionConnectionCreateManyInput {
+export class InstitutionLinkCreateManyInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -11533,467 +11337,423 @@ export class InstitutionConnectionCreateManyInput {
 }
 
 @InputType()
-export class InstitutionConnectionCreateNestedManyWithoutInstitutionInput {
-  @Field(() => [InstitutionConnectionCreateWithoutInstitutionInput], {
+export class InstitutionLinkCreateNestedManyWithoutInstitutionInput {
+  @Field(() => [InstitutionLinkCreateWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create?: Array<InstitutionConnectionCreateWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutInstitutionInput], {
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create?: Array<InstitutionLinkCreateWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInstitutionInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutInstitutionInput>;
-  @Field(() => InstitutionConnectionCreateManyInstitutionInputEnvelope, {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInstitutionInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutInstitutionInput>;
+  @Field(() => InstitutionLinkCreateManyInstitutionInputEnvelope, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateManyInstitutionInputEnvelope)
+  @Type(() => InstitutionLinkCreateManyInstitutionInputEnvelope)
   createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyInstitutionInputEnvelope
+    typeof InstitutionLinkCreateManyInstitutionInputEnvelope
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateNestedManyWithoutUserInput {
-  @Field(() => [InstitutionConnectionCreateWithoutUserInput], {
+export class InstitutionLinkCreateNestedManyWithoutUserInput {
+  @Field(() => [InstitutionLinkCreateWithoutUserInput], { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create?: Array<InstitutionLinkCreateWithoutUserInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create?: Array<InstitutionConnectionCreateWithoutUserInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutUserInput], {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutUserInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutUserInput>;
-  @Field(() => InstitutionConnectionCreateManyUserInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateManyUserInputEnvelope)
-  createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyUserInputEnvelope
-  >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutUserInput>;
+  @Field(() => InstitutionLinkCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => InstitutionLinkCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof InstitutionLinkCreateManyUserInputEnvelope>;
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateNestedOneWithoutAccountInput {
-  @Field(() => InstitutionConnectionCreateWithoutAccountInput, {
+export class InstitutionLinkCreateNestedOneWithoutAccountInput {
+  @Field(() => InstitutionLinkCreateWithoutAccountInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutAccountInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutAccountInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutAccountInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutAccountInput)
-  create?: InstanceType<typeof InstitutionConnectionCreateWithoutAccountInput>;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutAccountInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutAccountInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutAccountInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutAccountInput
+    typeof InstitutionLinkCreateOrConnectWithoutAccountInput
   >;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateNestedOneWithoutCardsInput {
-  @Field(() => InstitutionConnectionCreateWithoutCardsInput, { nullable: true })
-  @Type(() => InstitutionConnectionCreateWithoutCardsInput)
-  create?: InstanceType<typeof InstitutionConnectionCreateWithoutCardsInput>;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutCardsInput, {
+export class InstitutionLinkCreateNestedOneWithoutCardsInput {
+  @Field(() => InstitutionLinkCreateWithoutCardsInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutCardsInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutCardsInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutCardsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutCardsInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutCardsInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutCardsInput
+    typeof InstitutionLinkCreateOrConnectWithoutCardsInput
   >;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateNestedOneWithoutInvestmentsInput {
-  @Field(() => InstitutionConnectionCreateWithoutInvestmentsInput, {
+export class InstitutionLinkCreateNestedOneWithoutInvestmentsInput {
+  @Field(() => InstitutionLinkCreateWithoutInvestmentsInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutInvestmentsInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutInvestmentsInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutInvestmentsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInvestmentsInput)
-  create?: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInvestmentsInput
-  >;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutInvestmentsInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInvestmentsInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInvestmentsInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutInvestmentsInput
+    typeof InstitutionLinkCreateOrConnectWithoutInvestmentsInput
   >;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateOrConnectWithoutAccountInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkCreateOrConnectWithoutAccountInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionCreateWithoutAccountInput, {
+  @Field(() => InstitutionLinkCreateWithoutAccountInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutAccountInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutAccountInput>;
+}
+
+@InputType()
+export class InstitutionLinkCreateOrConnectWithoutCardsInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    InstitutionLinkWhereUniqueInput,
+    'id' | 'institutionId_userId'
+  >;
+  @Field(() => InstitutionLinkCreateWithoutCardsInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutCardsInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutCardsInput>;
+}
+
+@InputType()
+export class InstitutionLinkCreateOrConnectWithoutInstitutionInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
+  where!: Prisma.AtLeast<
+    InstitutionLinkWhereUniqueInput,
+    'id' | 'institutionId_userId'
+  >;
+  @Field(() => InstitutionLinkCreateWithoutInstitutionInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateWithoutAccountInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutAccountInput>;
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutInstitutionInput>;
 }
 
 @InputType()
-export class InstitutionConnectionCreateOrConnectWithoutCardsInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkCreateOrConnectWithoutInvestmentsInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionCreateWithoutCardsInput, {
+  @Field(() => InstitutionLinkCreateWithoutInvestmentsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateWithoutCardsInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutCardsInput>;
+  @Type(() => InstitutionLinkCreateWithoutInvestmentsInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutInvestmentsInput>;
 }
 
 @InputType()
-export class InstitutionConnectionCreateOrConnectWithoutInstitutionInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkCreateOrConnectWithoutUserInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionCreateWithoutInstitutionInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create!: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInstitutionInput
-  >;
+  @Field(() => InstitutionLinkCreateWithoutUserInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutUserInput>;
 }
 
 @InputType()
-export class InstitutionConnectionCreateOrConnectWithoutInvestmentsInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
-    'id' | 'institutionId_userId'
-  >;
-  @Field(() => InstitutionConnectionCreateWithoutInvestmentsInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionCreateWithoutInvestmentsInput)
-  create!: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInvestmentsInput
-  >;
-}
-
-@InputType()
-export class InstitutionConnectionCreateOrConnectWithoutUserInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
-  where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
-    'id' | 'institutionId_userId'
-  >;
-  @Field(() => InstitutionConnectionCreateWithoutUserInput, { nullable: false })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutUserInput>;
-}
-
-@InputType()
-export class InstitutionConnectionCreateWithoutAccountInput {
+export class InstitutionLinkCreateWithoutAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
   institution!: InstanceType<
-    typeof InstitutionCreateNestedOneWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateNestedOneWithoutInstitutionLinksInput
   >;
-  @Field(() => UserCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => UserCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => UserCreateNestedOneWithoutInstitutionConnectionsInput)
-  user!: InstanceType<
-    typeof UserCreateNestedOneWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => CardCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Type(() => UserCreateNestedOneWithoutInstitutionLinksInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInstitutionLinksInput>;
+  @Field(() => CardCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardCreateNestedManyWithoutInstitutionConnectionInput
-  >;
-  @Field(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Type(() => CardCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<typeof CardCreateNestedManyWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateWithoutCardsInput {
+export class InstitutionLinkCreateWithoutCardsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
   institution!: InstanceType<
-    typeof InstitutionCreateNestedOneWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateNestedOneWithoutInstitutionLinksInput
   >;
-  @Field(() => UserCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => UserCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => UserCreateNestedOneWithoutInstitutionConnectionsInput)
-  user!: InstanceType<
-    typeof UserCreateNestedOneWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => AccountCreateNestedOneWithoutInstitutionConnectionInput, {
+  @Type(() => UserCreateNestedOneWithoutInstitutionLinksInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInstitutionLinksInput>;
+  @Field(() => AccountCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateNestedOneWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateWithoutInstitutionInput {
+export class InstitutionLinkCreateWithoutInstitutionInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => UserCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => UserCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => UserCreateNestedOneWithoutInstitutionConnectionsInput)
-  user!: InstanceType<
-    typeof UserCreateNestedOneWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => AccountCreateNestedOneWithoutInstitutionConnectionInput, {
+  @Type(() => UserCreateNestedOneWithoutInstitutionLinksInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInstitutionLinksInput>;
+  @Field(() => AccountCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateNestedOneWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(() => CardCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => CardCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardCreateNestedManyWithoutInstitutionConnectionInput
-  >;
-  @Field(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Type(() => CardCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<typeof CardCreateNestedManyWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateWithoutInvestmentsInput {
+export class InstitutionLinkCreateWithoutInvestmentsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
   institution!: InstanceType<
-    typeof InstitutionCreateNestedOneWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateNestedOneWithoutInstitutionLinksInput
   >;
-  @Field(() => UserCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => UserCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => UserCreateNestedOneWithoutInstitutionConnectionsInput)
-  user!: InstanceType<
-    typeof UserCreateNestedOneWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => AccountCreateNestedOneWithoutInstitutionConnectionInput, {
+  @Type(() => UserCreateNestedOneWithoutInstitutionLinksInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInstitutionLinksInput>;
+  @Field(() => AccountCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateNestedOneWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(() => CardCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => CardCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardCreateNestedManyWithoutInstitutionConnectionInput
-  >;
+  @Type(() => CardCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<typeof CardCreateNestedManyWithoutInstitutionLinkInput>;
 }
 
 @InputType()
-export class InstitutionConnectionCreateWithoutUserInput {
+export class InstitutionLinkCreateWithoutUserInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
   institution!: InstanceType<
-    typeof InstitutionCreateNestedOneWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateNestedOneWithoutInstitutionLinksInput
   >;
-  @Field(() => AccountCreateNestedOneWithoutInstitutionConnectionInput, {
+  @Field(() => AccountCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateNestedOneWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(() => CardCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => CardCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardCreateNestedManyWithoutInstitutionConnectionInput
-  >;
-  @Field(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Type(() => CardCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<typeof CardCreateNestedManyWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionCreateInput {
+export class InstitutionLinkCreateInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => InstitutionCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
   institution!: InstanceType<
-    typeof InstitutionCreateNestedOneWithoutInstitutionConnectionsInput
+    typeof InstitutionCreateNestedOneWithoutInstitutionLinksInput
   >;
-  @Field(() => UserCreateNestedOneWithoutInstitutionConnectionsInput, {
+  @Field(() => UserCreateNestedOneWithoutInstitutionLinksInput, {
     nullable: false,
   })
-  @Type(() => UserCreateNestedOneWithoutInstitutionConnectionsInput)
-  user!: InstanceType<
-    typeof UserCreateNestedOneWithoutInstitutionConnectionsInput
-  >;
-  @Field(() => AccountCreateNestedOneWithoutInstitutionConnectionInput, {
+  @Type(() => UserCreateNestedOneWithoutInstitutionLinksInput)
+  user!: InstanceType<typeof UserCreateNestedOneWithoutInstitutionLinksInput>;
+  @Field(() => AccountCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => AccountCreateNestedOneWithoutInstitutionConnectionInput)
+  @Type(() => AccountCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(() => CardCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => CardCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardCreateNestedManyWithoutInstitutionConnectionInput
-  >;
-  @Field(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Type(() => CardCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<typeof CardCreateNestedManyWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => InvestmentCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @ArgsType()
-export class InstitutionConnectionGroupByArgs {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionOrderByWithAggregationInput], {
+export class InstitutionLinkGroupByArgs {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkOrderByWithAggregationInput], { nullable: true })
+  orderBy?: Array<InstitutionLinkOrderByWithAggregationInput>;
+  @Field(() => [InstitutionLinkScalarFieldEnum], { nullable: false })
+  by!: Array<keyof typeof InstitutionLinkScalarFieldEnum>;
+  @Field(() => InstitutionLinkScalarWhereWithAggregatesInput, {
     nullable: true,
   })
-  orderBy?: Array<InstitutionConnectionOrderByWithAggregationInput>;
-  @Field(() => [InstitutionConnectionScalarFieldEnum], { nullable: false })
-  by!: Array<keyof typeof InstitutionConnectionScalarFieldEnum>;
-  @Field(() => InstitutionConnectionScalarWhereWithAggregatesInput, {
-    nullable: true,
-  })
-  having?: InstanceType<
-    typeof InstitutionConnectionScalarWhereWithAggregatesInput
-  >;
+  having?: InstanceType<typeof InstitutionLinkScalarWhereWithAggregatesInput>;
   @Field(() => Int, { nullable: true })
   take?: number;
   @Field(() => Int, { nullable: true })
   skip?: number;
-  @Field(() => InstitutionConnectionCountAggregateInput, { nullable: true })
-  _count?: InstanceType<typeof InstitutionConnectionCountAggregateInput>;
-  @Field(() => InstitutionConnectionMinAggregateInput, { nullable: true })
-  _min?: InstanceType<typeof InstitutionConnectionMinAggregateInput>;
-  @Field(() => InstitutionConnectionMaxAggregateInput, { nullable: true })
-  _max?: InstanceType<typeof InstitutionConnectionMaxAggregateInput>;
+  @Field(() => InstitutionLinkCountAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof InstitutionLinkCountAggregateInput>;
+  @Field(() => InstitutionLinkMinAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof InstitutionLinkMinAggregateInput>;
+  @Field(() => InstitutionLinkMaxAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof InstitutionLinkMaxAggregateInput>;
 }
 
 @ObjectType()
-export class InstitutionConnectionGroupBy {
+export class InstitutionLinkGroupBy {
   @Field(() => String, { nullable: false })
   id!: string;
   @Field(() => String, { nullable: false })
@@ -12004,16 +11764,16 @@ export class InstitutionConnectionGroupBy {
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date | string;
-  @Field(() => InstitutionConnectionCountAggregate, { nullable: true })
-  _count?: InstanceType<typeof InstitutionConnectionCountAggregate>;
-  @Field(() => InstitutionConnectionMinAggregate, { nullable: true })
-  _min?: InstanceType<typeof InstitutionConnectionMinAggregate>;
-  @Field(() => InstitutionConnectionMaxAggregate, { nullable: true })
-  _max?: InstanceType<typeof InstitutionConnectionMaxAggregate>;
+  @Field(() => InstitutionLinkCountAggregate, { nullable: true })
+  _count?: InstanceType<typeof InstitutionLinkCountAggregate>;
+  @Field(() => InstitutionLinkMinAggregate, { nullable: true })
+  _min?: InstanceType<typeof InstitutionLinkMinAggregate>;
+  @Field(() => InstitutionLinkMaxAggregate, { nullable: true })
+  _max?: InstanceType<typeof InstitutionLinkMaxAggregate>;
 }
 
 @InputType()
-export class InstitutionConnectionInstitutionIdUserIdCompoundUniqueInput {
+export class InstitutionLinkInstitutionIdUserIdCompoundUniqueInput {
   @Field(() => String, { nullable: false })
   institutionId!: string;
   @Field(() => String, { nullable: false })
@@ -12021,17 +11781,17 @@ export class InstitutionConnectionInstitutionIdUserIdCompoundUniqueInput {
 }
 
 @InputType()
-export class InstitutionConnectionListRelationFilter {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  every?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  some?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  none?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class InstitutionLinkListRelationFilter {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  every?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  some?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  none?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionMaxAggregateInput {
+export class InstitutionLinkMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
   @Field(() => Boolean, { nullable: true })
@@ -12045,7 +11805,7 @@ export class InstitutionConnectionMaxAggregateInput {
 }
 
 @ObjectType()
-export class InstitutionConnectionMaxAggregate {
+export class InstitutionLinkMaxAggregate {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: true })
@@ -12059,7 +11819,7 @@ export class InstitutionConnectionMaxAggregate {
 }
 
 @InputType()
-export class InstitutionConnectionMaxOrderByAggregateInput {
+export class InstitutionLinkMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -12073,7 +11833,7 @@ export class InstitutionConnectionMaxOrderByAggregateInput {
 }
 
 @InputType()
-export class InstitutionConnectionMinAggregateInput {
+export class InstitutionLinkMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   id?: true;
   @Field(() => Boolean, { nullable: true })
@@ -12087,7 +11847,7 @@ export class InstitutionConnectionMinAggregateInput {
 }
 
 @ObjectType()
-export class InstitutionConnectionMinAggregate {
+export class InstitutionLinkMinAggregate {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: true })
@@ -12101,7 +11861,7 @@ export class InstitutionConnectionMinAggregate {
 }
 
 @InputType()
-export class InstitutionConnectionMinOrderByAggregateInput {
+export class InstitutionLinkMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -12115,21 +11875,21 @@ export class InstitutionConnectionMinOrderByAggregateInput {
 }
 
 @InputType()
-export class InstitutionConnectionNullableRelationFilter {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  is?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  isNot?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class InstitutionLinkNullableRelationFilter {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  is?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  isNot?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionOrderByRelationAggregateInput {
+export class InstitutionLinkOrderByRelationAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   _count?: keyof typeof SortOrder;
 }
 
 @InputType()
-export class InstitutionConnectionOrderByWithAggregationInput {
+export class InstitutionLinkOrderByWithAggregationInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -12140,22 +11900,16 @@ export class InstitutionConnectionOrderByWithAggregationInput {
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
-  @Field(() => InstitutionConnectionCountOrderByAggregateInput, {
-    nullable: true,
-  })
-  _count?: InstanceType<typeof InstitutionConnectionCountOrderByAggregateInput>;
-  @Field(() => InstitutionConnectionMaxOrderByAggregateInput, {
-    nullable: true,
-  })
-  _max?: InstanceType<typeof InstitutionConnectionMaxOrderByAggregateInput>;
-  @Field(() => InstitutionConnectionMinOrderByAggregateInput, {
-    nullable: true,
-  })
-  _min?: InstanceType<typeof InstitutionConnectionMinOrderByAggregateInput>;
+  @Field(() => InstitutionLinkCountOrderByAggregateInput, { nullable: true })
+  _count?: InstanceType<typeof InstitutionLinkCountOrderByAggregateInput>;
+  @Field(() => InstitutionLinkMaxOrderByAggregateInput, { nullable: true })
+  _max?: InstanceType<typeof InstitutionLinkMaxOrderByAggregateInput>;
+  @Field(() => InstitutionLinkMinOrderByAggregateInput, { nullable: true })
+  _min?: InstanceType<typeof InstitutionLinkMinOrderByAggregateInput>;
 }
 
 @InputType()
-export class InstitutionConnectionOrderByWithRelationInput {
+export class InstitutionLinkOrderByWithRelationInput {
   @Field(() => SortOrder, { nullable: true })
   id?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -12183,27 +11937,27 @@ export class InstitutionConnectionOrderByWithRelationInput {
 }
 
 @InputType()
-export class InstitutionConnectionRelationFilter {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  is?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  isNot?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class InstitutionLinkRelationFilter {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  is?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  isNot?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionScalarWhereWithAggregatesInput {
-  @Field(() => [InstitutionConnectionScalarWhereWithAggregatesInput], {
+export class InstitutionLinkScalarWhereWithAggregatesInput {
+  @Field(() => [InstitutionLinkScalarWhereWithAggregatesInput], {
     nullable: true,
   })
-  AND?: Array<InstitutionConnectionScalarWhereWithAggregatesInput>;
-  @Field(() => [InstitutionConnectionScalarWhereWithAggregatesInput], {
+  AND?: Array<InstitutionLinkScalarWhereWithAggregatesInput>;
+  @Field(() => [InstitutionLinkScalarWhereWithAggregatesInput], {
     nullable: true,
   })
-  OR?: Array<InstitutionConnectionScalarWhereWithAggregatesInput>;
-  @Field(() => [InstitutionConnectionScalarWhereWithAggregatesInput], {
+  OR?: Array<InstitutionLinkScalarWhereWithAggregatesInput>;
+  @Field(() => [InstitutionLinkScalarWhereWithAggregatesInput], {
     nullable: true,
   })
-  NOT?: Array<InstitutionConnectionScalarWhereWithAggregatesInput>;
+  NOT?: Array<InstitutionLinkScalarWhereWithAggregatesInput>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
   id?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
@@ -12217,13 +11971,13 @@ export class InstitutionConnectionScalarWhereWithAggregatesInput {
 }
 
 @InputType()
-export class InstitutionConnectionScalarWhereInput {
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  AND?: Array<InstitutionConnectionScalarWhereInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  OR?: Array<InstitutionConnectionScalarWhereInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  NOT?: Array<InstitutionConnectionScalarWhereInput>;
+export class InstitutionLinkScalarWhereInput {
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  AND?: Array<InstitutionLinkScalarWhereInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  OR?: Array<InstitutionLinkScalarWhereInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  NOT?: Array<InstitutionLinkScalarWhereInput>;
   @Field(() => StringFilter, { nullable: true })
   id?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
@@ -12237,65 +11991,59 @@ export class InstitutionConnectionScalarWhereInput {
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateNestedManyWithoutInstitutionInput {
-  @Field(() => [InstitutionConnectionCreateWithoutInstitutionInput], {
+export class InstitutionLinkUncheckedCreateNestedManyWithoutInstitutionInput {
+  @Field(() => [InstitutionLinkCreateWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create?: Array<InstitutionConnectionCreateWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutInstitutionInput], {
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create?: Array<InstitutionLinkCreateWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInstitutionInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutInstitutionInput>;
-  @Field(() => InstitutionConnectionCreateManyInstitutionInputEnvelope, {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInstitutionInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutInstitutionInput>;
+  @Field(() => InstitutionLinkCreateManyInstitutionInputEnvelope, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateManyInstitutionInputEnvelope)
+  @Type(() => InstitutionLinkCreateManyInstitutionInputEnvelope)
   createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyInstitutionInputEnvelope
+    typeof InstitutionLinkCreateManyInstitutionInputEnvelope
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput {
-  @Field(() => [InstitutionConnectionCreateWithoutUserInput], {
+export class InstitutionLinkUncheckedCreateNestedManyWithoutUserInput {
+  @Field(() => [InstitutionLinkCreateWithoutUserInput], { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create?: Array<InstitutionLinkCreateWithoutUserInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create?: Array<InstitutionConnectionCreateWithoutUserInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutUserInput], {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutUserInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutUserInput>;
-  @Field(() => InstitutionConnectionCreateManyUserInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateManyUserInputEnvelope)
-  createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyUserInputEnvelope
-  >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutUserInput>;
+  @Field(() => InstitutionLinkCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => InstitutionLinkCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof InstitutionLinkCreateManyUserInputEnvelope>;
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateWithoutAccountInput {
+export class InstitutionLinkUncheckedCreateWithoutAccountInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12306,27 +12054,24 @@ export class InstitutionConnectionUncheckedCreateWithoutAccountInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   cards?: InstanceType<
-    typeof CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof CardUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
-  @Field(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-  )
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateWithoutCardsInput {
+export class InstitutionLinkUncheckedCreateWithoutCardsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12337,28 +12082,24 @@ export class InstitutionConnectionUncheckedCreateWithoutCardsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(
-    () => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput)
+  @Field(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput)
   account?: InstanceType<
-    typeof AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput
+    typeof AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-  )
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateWithoutInstitutionInput {
+export class InstitutionLinkUncheckedCreateWithoutInstitutionInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12367,35 +12108,31 @@ export class InstitutionConnectionUncheckedCreateWithoutInstitutionInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(
-    () => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput)
-  account?: InstanceType<
-    typeof AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput
-  >;
-  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput)
+  account?: InstanceType<
+    typeof AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-  )
+  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<
+    typeof CardUncheckedCreateNestedManyWithoutInstitutionLinkInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateWithoutInvestmentsInput {
+export class InstitutionLinkUncheckedCreateWithoutInvestmentsInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12406,25 +12143,24 @@ export class InstitutionConnectionUncheckedCreateWithoutInvestmentsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(
-    () => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput)
-  account?: InstanceType<
-    typeof AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput
-  >;
-  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput)
+  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput)
+  account?: InstanceType<
+    typeof AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput
+  >;
+  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   cards?: InstanceType<
-    typeof CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof CardUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateWithoutUserInput {
+export class InstitutionLinkUncheckedCreateWithoutUserInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12433,35 +12169,31 @@ export class InstitutionConnectionUncheckedCreateWithoutUserInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(
-    () => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput)
-  account?: InstanceType<
-    typeof AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput
-  >;
-  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput)
+  account?: InstanceType<
+    typeof AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-  )
+  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<
+    typeof CardUncheckedCreateNestedManyWithoutInstitutionLinkInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedCreateInput {
+export class InstitutionLinkUncheckedCreateInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -12472,109 +12204,102 @@ export class InstitutionConnectionUncheckedCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(
-    () => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput)
-  account?: InstanceType<
-    typeof AccountUncheckedCreateNestedOneWithoutInstitutionConnectionInput
-  >;
-  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput, {
+  @Field(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput)
-  cards?: InstanceType<
-    typeof CardUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+  @Type(() => AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput)
+  account?: InstanceType<
+    typeof AccountUncheckedCreateNestedOneWithoutInstitutionLinkInput
   >;
-  @Field(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput,
-  )
+  @Field(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedCreateNestedManyWithoutInstitutionLinkInput)
+  cards?: InstanceType<
+    typeof CardUncheckedCreateNestedManyWithoutInstitutionLinkInput
+  >;
+  @Field(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput
+    typeof InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateManyWithoutInstitutionNestedInput {
-  @Field(() => [InstitutionConnectionCreateWithoutInstitutionInput], {
+export class InstitutionLinkUncheckedUpdateManyWithoutInstitutionNestedInput {
+  @Field(() => [InstitutionLinkCreateWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create?: Array<InstitutionConnectionCreateWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutInstitutionInput], {
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create?: Array<InstitutionLinkCreateWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInstitutionInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutInstitutionInput>;
-  @Field(
-    () => [InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput)
-  upsert?: Array<InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput>;
-  @Field(() => InstitutionConnectionCreateManyInstitutionInputEnvelope, {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInstitutionInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateManyInstitutionInputEnvelope)
+  @Type(() => InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput)
+  upsert?: Array<InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput>;
+  @Field(() => InstitutionLinkCreateManyInstitutionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkCreateManyInstitutionInputEnvelope)
   createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyInstitutionInputEnvelope
+    typeof InstitutionLinkCreateManyInstitutionInputEnvelope
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   set?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   disconnect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   delete?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(
-    () => [InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput)
-  update?: Array<InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput>;
-  @Field(
-    () => [InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput)
-  updateMany?: Array<InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  deleteMany?: Array<InstitutionConnectionScalarWhereInput>;
+  @Field(() => [InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput], {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput)
+  update?: Array<InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput], {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput)
+  updateMany?: Array<InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  deleteMany?: Array<InstitutionLinkScalarWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateManyWithoutInstitutionInput {
+export class InstitutionLinkUncheckedUpdateManyWithoutInstitutionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12586,78 +12311,72 @@ export class InstitutionConnectionUncheckedUpdateManyWithoutInstitutionInput {
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput {
-  @Field(() => [InstitutionConnectionCreateWithoutUserInput], {
+export class InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput {
+  @Field(() => [InstitutionLinkCreateWithoutUserInput], { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create?: Array<InstitutionLinkCreateWithoutUserInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create?: Array<InstitutionConnectionCreateWithoutUserInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutUserInput], {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutUserInput>;
+  @Field(() => [InstitutionLinkUpsertWithWhereUniqueWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutUserInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutUserInput>;
-  @Field(() => [InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput], {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput)
-  upsert?: Array<InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput>;
-  @Field(() => InstitutionConnectionCreateManyUserInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateManyUserInputEnvelope)
-  createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyUserInputEnvelope
-  >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Type(() => InstitutionLinkUpsertWithWhereUniqueWithoutUserInput)
+  upsert?: Array<InstitutionLinkUpsertWithWhereUniqueWithoutUserInput>;
+  @Field(() => InstitutionLinkCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => InstitutionLinkCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof InstitutionLinkCreateManyUserInputEnvelope>;
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   set?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   disconnect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   delete?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput], {
+  @Field(() => [InstitutionLinkUpdateWithWhereUniqueWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput)
-  update?: Array<InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput>;
-  @Field(() => [InstitutionConnectionUpdateManyWithWhereWithoutUserInput], {
+  @Type(() => InstitutionLinkUpdateWithWhereUniqueWithoutUserInput)
+  update?: Array<InstitutionLinkUpdateWithWhereUniqueWithoutUserInput>;
+  @Field(() => [InstitutionLinkUpdateManyWithWhereWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithWhereWithoutUserInput)
-  updateMany?: Array<InstitutionConnectionUpdateManyWithWhereWithoutUserInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  deleteMany?: Array<InstitutionConnectionScalarWhereInput>;
+  @Type(() => InstitutionLinkUpdateManyWithWhereWithoutUserInput)
+  updateMany?: Array<InstitutionLinkUpdateManyWithWhereWithoutUserInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  deleteMany?: Array<InstitutionLinkScalarWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateManyWithoutUserInput {
+export class InstitutionLinkUncheckedUpdateManyWithoutUserInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12669,21 +12388,7 @@ export class InstitutionConnectionUncheckedUpdateManyWithoutUserInput {
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateManyInput {
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
-  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-}
-
-@InputType()
-export class InstitutionConnectionUncheckedUpdateWithoutAccountInput {
+export class InstitutionLinkUncheckedUpdateManyInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12694,27 +12399,38 @@ export class InstitutionConnectionUncheckedUpdateWithoutAccountInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput, {
+}
+
+@InputType()
+export class InstitutionLinkUncheckedUpdateWithoutAccountInput {
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  institutionId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
+  userId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
+  @Field(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   cards?: InstanceType<
-    typeof CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
-  @Field(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-  )
+  @Field(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateWithoutCardsInput {
+export class InstitutionLinkUncheckedUpdateWithoutCardsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12725,28 +12441,24 @@ export class InstitutionConnectionUncheckedUpdateWithoutCardsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Field(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-  )
+  @Field(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateWithoutInstitutionInput {
+export class InstitutionLinkUncheckedUpdateWithoutInstitutionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12755,35 +12467,31 @@ export class InstitutionConnectionUncheckedUpdateWithoutInstitutionInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput)
-  account?: InstanceType<
-    typeof AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput)
+  account?: InstanceType<
+    typeof AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-  )
+  @Field(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<
+    typeof CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateWithoutInvestmentsInput {
+export class InstitutionLinkUncheckedUpdateWithoutInvestmentsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12794,25 +12502,24 @@ export class InstitutionConnectionUncheckedUpdateWithoutInvestmentsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput)
-  account?: InstanceType<
-    typeof AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput)
+  account?: InstanceType<
+    typeof AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput
+  >;
+  @Field(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   cards?: InstanceType<
-    typeof CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateWithoutUserInput {
+export class InstitutionLinkUncheckedUpdateWithoutUserInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12821,35 +12528,31 @@ export class InstitutionConnectionUncheckedUpdateWithoutUserInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput)
-  account?: InstanceType<
-    typeof AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput)
+  account?: InstanceType<
+    typeof AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-  )
+  @Field(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<
+    typeof CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUncheckedUpdateInput {
+export class InstitutionLinkUncheckedUpdateInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -12860,35 +12563,31 @@ export class InstitutionConnectionUncheckedUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput)
-  account?: InstanceType<
-    typeof AccountUncheckedUpdateOneWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+  @Type(() => AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput)
+  account?: InstanceType<
+    typeof AccountUncheckedUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-    { nullable: true },
-  )
-  @Type(
-    () => InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput,
-  )
+  @Field(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<
+    typeof CardUncheckedUpdateManyWithoutInstitutionLinkNestedInput
+  >;
+  @Field(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput, {
+    nullable: true,
+  })
+  @Type(() => InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateManyMutationInput {
+export class InstitutionLinkUpdateManyMutationInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -12898,697 +12597,632 @@ export class InstitutionConnectionUpdateManyMutationInput {
 }
 
 @InputType()
-export class InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput {
-  @Field(() => InstitutionConnectionScalarWhereInput, { nullable: false })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  where!: InstanceType<typeof InstitutionConnectionScalarWhereInput>;
-  @Field(() => InstitutionConnectionUpdateManyMutationInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateManyMutationInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateManyMutationInput>;
+export class InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput {
+  @Field(() => InstitutionLinkScalarWhereInput, { nullable: false })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  where!: InstanceType<typeof InstitutionLinkScalarWhereInput>;
+  @Field(() => InstitutionLinkUpdateManyMutationInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateManyMutationInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateManyMutationInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateManyWithWhereWithoutUserInput {
-  @Field(() => InstitutionConnectionScalarWhereInput, { nullable: false })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  where!: InstanceType<typeof InstitutionConnectionScalarWhereInput>;
-  @Field(() => InstitutionConnectionUpdateManyMutationInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateManyMutationInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateManyMutationInput>;
+export class InstitutionLinkUpdateManyWithWhereWithoutUserInput {
+  @Field(() => InstitutionLinkScalarWhereInput, { nullable: false })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  where!: InstanceType<typeof InstitutionLinkScalarWhereInput>;
+  @Field(() => InstitutionLinkUpdateManyMutationInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateManyMutationInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateManyMutationInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateManyWithoutInstitutionNestedInput {
-  @Field(() => [InstitutionConnectionCreateWithoutInstitutionInput], {
+export class InstitutionLinkUpdateManyWithoutInstitutionNestedInput {
+  @Field(() => [InstitutionLinkCreateWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create?: Array<InstitutionConnectionCreateWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutInstitutionInput], {
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create?: Array<InstitutionLinkCreateWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInstitutionInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutInstitutionInput>;
-  @Field(
-    () => [InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput)
-  upsert?: Array<InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput>;
-  @Field(() => InstitutionConnectionCreateManyInstitutionInputEnvelope, {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInstitutionInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateManyInstitutionInputEnvelope)
+  @Type(() => InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput)
+  upsert?: Array<InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput>;
+  @Field(() => InstitutionLinkCreateManyInstitutionInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkCreateManyInstitutionInputEnvelope)
   createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyInstitutionInputEnvelope
+    typeof InstitutionLinkCreateManyInstitutionInputEnvelope
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   set?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   disconnect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   delete?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(
-    () => [InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput)
-  update?: Array<InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput>;
-  @Field(
-    () => [InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput],
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput)
-  updateMany?: Array<InstitutionConnectionUpdateManyWithWhereWithoutInstitutionInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  deleteMany?: Array<InstitutionConnectionScalarWhereInput>;
+  @Field(() => [InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput], {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput)
+  update?: Array<InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput], {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput)
+  updateMany?: Array<InstitutionLinkUpdateManyWithWhereWithoutInstitutionInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  deleteMany?: Array<InstitutionLinkScalarWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateManyWithoutUserNestedInput {
-  @Field(() => [InstitutionConnectionCreateWithoutUserInput], {
+export class InstitutionLinkUpdateManyWithoutUserNestedInput {
+  @Field(() => [InstitutionLinkCreateWithoutUserInput], { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create?: Array<InstitutionLinkCreateWithoutUserInput>;
+  @Field(() => [InstitutionLinkCreateOrConnectWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create?: Array<InstitutionConnectionCreateWithoutUserInput>;
-  @Field(() => [InstitutionConnectionCreateOrConnectWithoutUserInput], {
+  @Type(() => InstitutionLinkCreateOrConnectWithoutUserInput)
+  connectOrCreate?: Array<InstitutionLinkCreateOrConnectWithoutUserInput>;
+  @Field(() => [InstitutionLinkUpsertWithWhereUniqueWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutUserInput)
-  connectOrCreate?: Array<InstitutionConnectionCreateOrConnectWithoutUserInput>;
-  @Field(() => [InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput], {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput)
-  upsert?: Array<InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput>;
-  @Field(() => InstitutionConnectionCreateManyUserInputEnvelope, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateManyUserInputEnvelope)
-  createMany?: InstanceType<
-    typeof InstitutionConnectionCreateManyUserInputEnvelope
-  >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Type(() => InstitutionLinkUpsertWithWhereUniqueWithoutUserInput)
+  upsert?: Array<InstitutionLinkUpsertWithWhereUniqueWithoutUserInput>;
+  @Field(() => InstitutionLinkCreateManyUserInputEnvelope, { nullable: true })
+  @Type(() => InstitutionLinkCreateManyUserInputEnvelope)
+  createMany?: InstanceType<typeof InstitutionLinkCreateManyUserInputEnvelope>;
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   set?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   disconnect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   delete?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionWhereUniqueInput], { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => [InstitutionLinkWhereUniqueInput], { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Array<
     Prisma.AtLeast<
-      InstitutionConnectionWhereUniqueInput,
+      InstitutionLinkWhereUniqueInput,
       'id' | 'institutionId_userId'
     >
   >;
-  @Field(() => [InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput], {
+  @Field(() => [InstitutionLinkUpdateWithWhereUniqueWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput)
-  update?: Array<InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput>;
-  @Field(() => [InstitutionConnectionUpdateManyWithWhereWithoutUserInput], {
+  @Type(() => InstitutionLinkUpdateWithWhereUniqueWithoutUserInput)
+  update?: Array<InstitutionLinkUpdateWithWhereUniqueWithoutUserInput>;
+  @Field(() => [InstitutionLinkUpdateManyWithWhereWithoutUserInput], {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithWhereWithoutUserInput)
-  updateMany?: Array<InstitutionConnectionUpdateManyWithWhereWithoutUserInput>;
-  @Field(() => [InstitutionConnectionScalarWhereInput], { nullable: true })
-  @Type(() => InstitutionConnectionScalarWhereInput)
-  deleteMany?: Array<InstitutionConnectionScalarWhereInput>;
+  @Type(() => InstitutionLinkUpdateManyWithWhereWithoutUserInput)
+  updateMany?: Array<InstitutionLinkUpdateManyWithWhereWithoutUserInput>;
+  @Field(() => [InstitutionLinkScalarWhereInput], { nullable: true })
+  @Type(() => InstitutionLinkScalarWhereInput)
+  deleteMany?: Array<InstitutionLinkScalarWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateOneRequiredWithoutAccountNestedInput {
-  @Field(() => InstitutionConnectionCreateWithoutAccountInput, {
+export class InstitutionLinkUpdateOneRequiredWithoutAccountNestedInput {
+  @Field(() => InstitutionLinkCreateWithoutAccountInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutAccountInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutAccountInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutAccountInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutAccountInput)
-  create?: InstanceType<typeof InstitutionConnectionCreateWithoutAccountInput>;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutAccountInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutAccountInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutAccountInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutAccountInput
+    typeof InstitutionLinkCreateOrConnectWithoutAccountInput
   >;
-  @Field(() => InstitutionConnectionUpsertWithoutAccountInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionUpsertWithoutAccountInput)
-  upsert?: InstanceType<typeof InstitutionConnectionUpsertWithoutAccountInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkUpsertWithoutAccountInput, { nullable: true })
+  @Type(() => InstitutionLinkUpsertWithoutAccountInput)
+  upsert?: InstanceType<typeof InstitutionLinkUpsertWithoutAccountInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateToOneWithWhereWithoutAccountInput, {
+  @Field(() => InstitutionLinkUpdateToOneWithWhereWithoutAccountInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateToOneWithWhereWithoutAccountInput)
+  @Type(() => InstitutionLinkUpdateToOneWithWhereWithoutAccountInput)
   update?: InstanceType<
-    typeof InstitutionConnectionUpdateToOneWithWhereWithoutAccountInput
+    typeof InstitutionLinkUpdateToOneWithWhereWithoutAccountInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateOneRequiredWithoutCardsNestedInput {
-  @Field(() => InstitutionConnectionCreateWithoutCardsInput, { nullable: true })
-  @Type(() => InstitutionConnectionCreateWithoutCardsInput)
-  create?: InstanceType<typeof InstitutionConnectionCreateWithoutCardsInput>;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutCardsInput, {
+export class InstitutionLinkUpdateOneRequiredWithoutCardsNestedInput {
+  @Field(() => InstitutionLinkCreateWithoutCardsInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutCardsInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutCardsInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutCardsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutCardsInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutCardsInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutCardsInput
+    typeof InstitutionLinkCreateOrConnectWithoutCardsInput
   >;
-  @Field(() => InstitutionConnectionUpsertWithoutCardsInput, { nullable: true })
-  @Type(() => InstitutionConnectionUpsertWithoutCardsInput)
-  upsert?: InstanceType<typeof InstitutionConnectionUpsertWithoutCardsInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkUpsertWithoutCardsInput, { nullable: true })
+  @Type(() => InstitutionLinkUpsertWithoutCardsInput)
+  upsert?: InstanceType<typeof InstitutionLinkUpsertWithoutCardsInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateToOneWithWhereWithoutCardsInput, {
+  @Field(() => InstitutionLinkUpdateToOneWithWhereWithoutCardsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateToOneWithWhereWithoutCardsInput)
+  @Type(() => InstitutionLinkUpdateToOneWithWhereWithoutCardsInput)
   update?: InstanceType<
-    typeof InstitutionConnectionUpdateToOneWithWhereWithoutCardsInput
+    typeof InstitutionLinkUpdateToOneWithWhereWithoutCardsInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput {
-  @Field(() => InstitutionConnectionCreateWithoutInvestmentsInput, {
+export class InstitutionLinkUpdateOneWithoutInvestmentsNestedInput {
+  @Field(() => InstitutionLinkCreateWithoutInvestmentsInput, { nullable: true })
+  @Type(() => InstitutionLinkCreateWithoutInvestmentsInput)
+  create?: InstanceType<typeof InstitutionLinkCreateWithoutInvestmentsInput>;
+  @Field(() => InstitutionLinkCreateOrConnectWithoutInvestmentsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInvestmentsInput)
-  create?: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInvestmentsInput
-  >;
-  @Field(() => InstitutionConnectionCreateOrConnectWithoutInvestmentsInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionCreateOrConnectWithoutInvestmentsInput)
+  @Type(() => InstitutionLinkCreateOrConnectWithoutInvestmentsInput)
   connectOrCreate?: InstanceType<
-    typeof InstitutionConnectionCreateOrConnectWithoutInvestmentsInput
+    typeof InstitutionLinkCreateOrConnectWithoutInvestmentsInput
   >;
-  @Field(() => InstitutionConnectionUpsertWithoutInvestmentsInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionUpsertWithoutInvestmentsInput)
-  upsert?: InstanceType<
-    typeof InstitutionConnectionUpsertWithoutInvestmentsInput
-  >;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  disconnect?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  delete?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+  @Field(() => InstitutionLinkUpsertWithoutInvestmentsInput, { nullable: true })
+  @Type(() => InstitutionLinkUpsertWithoutInvestmentsInput)
+  upsert?: InstanceType<typeof InstitutionLinkUpsertWithoutInvestmentsInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  disconnect?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  delete?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   connect?: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(
-    () => InstitutionConnectionUpdateToOneWithWhereWithoutInvestmentsInput,
-    { nullable: true },
-  )
-  @Type(() => InstitutionConnectionUpdateToOneWithWhereWithoutInvestmentsInput)
+  @Field(() => InstitutionLinkUpdateToOneWithWhereWithoutInvestmentsInput, {
+    nullable: true,
+  })
+  @Type(() => InstitutionLinkUpdateToOneWithWhereWithoutInvestmentsInput)
   update?: InstanceType<
-    typeof InstitutionConnectionUpdateToOneWithWhereWithoutInvestmentsInput
+    typeof InstitutionLinkUpdateToOneWithWhereWithoutInvestmentsInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateToOneWithWhereWithoutAccountInput {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionUpdateWithoutAccountInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateWithoutAccountInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateWithoutAccountInput>;
+export class InstitutionLinkUpdateToOneWithWhereWithoutAccountInput {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutAccountInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateWithoutAccountInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateToOneWithWhereWithoutCardsInput {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionUpdateWithoutCardsInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateWithoutCardsInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateWithoutCardsInput>;
+export class InstitutionLinkUpdateToOneWithWhereWithoutCardsInput {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkUpdateWithoutCardsInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutCardsInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateWithoutCardsInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateToOneWithWhereWithoutInvestmentsInput {
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
-  @Field(() => InstitutionConnectionUpdateWithoutInvestmentsInput, {
+export class InstitutionLinkUpdateToOneWithWhereWithoutInvestmentsInput {
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
+  @Field(() => InstitutionLinkUpdateWithoutInvestmentsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionUpdateWithoutInvestmentsInput)
-  data!: InstanceType<
-    typeof InstitutionConnectionUpdateWithoutInvestmentsInput
-  >;
+  @Type(() => InstitutionLinkUpdateWithoutInvestmentsInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateWithoutInvestmentsInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithWhereUniqueWithoutInstitutionInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkUpdateWithWhereUniqueWithoutInstitutionInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateWithoutInstitutionInput, {
+  @Field(() => InstitutionLinkUpdateWithoutInstitutionInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionUpdateWithoutInstitutionInput)
-  data!: InstanceType<
-    typeof InstitutionConnectionUpdateWithoutInstitutionInput
-  >;
+  @Type(() => InstitutionLinkUpdateWithoutInstitutionInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateWithoutInstitutionInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithWhereUniqueWithoutUserInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkUpdateWithWhereUniqueWithoutUserInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateWithoutUserInput, { nullable: false })
-  @Type(() => InstitutionConnectionUpdateWithoutUserInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateWithoutUserInput>;
+  @Field(() => InstitutionLinkUpdateWithoutUserInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutUserInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateWithoutUserInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithoutAccountInput {
+export class InstitutionLinkUpdateWithoutAccountInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput,
-    { nullable: true },
-  )
+  @Field(() => InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
+    nullable: true,
+  })
   institution?: InstanceType<
-    typeof InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput, {
+  @Field(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput)
+  @Type(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput)
   user?: InstanceType<
-    typeof UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof UserUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => CardUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => CardUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUpdateManyWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Type(() => CardUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<typeof CardUpdateManyWithoutInstitutionLinkNestedInput>;
+  @Field(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithoutCardsInput {
+export class InstitutionLinkUpdateWithoutCardsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput,
-    { nullable: true },
-  )
+  @Field(() => InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
+    nullable: true,
+  })
   institution?: InstanceType<
-    typeof InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput, {
+  @Field(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput)
+  @Type(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput)
   user?: InstanceType<
-    typeof UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof UserUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithoutInstitutionInput {
+export class InstitutionLinkUpdateWithoutInstitutionInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput, {
+  @Field(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput)
+  @Type(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput)
   user?: InstanceType<
-    typeof UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof UserUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(() => CardUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => CardUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUpdateManyWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Type(() => CardUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<typeof CardUpdateManyWithoutInstitutionLinkNestedInput>;
+  @Field(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithoutInvestmentsInput {
+export class InstitutionLinkUpdateWithoutInvestmentsInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput,
-    { nullable: true },
-  )
+  @Field(() => InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
+    nullable: true,
+  })
   institution?: InstanceType<
-    typeof InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput, {
+  @Field(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput)
+  @Type(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput)
   user?: InstanceType<
-    typeof UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof UserUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(() => CardUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => CardUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUpdateManyWithoutInstitutionConnectionNestedInput
-  >;
+  @Type(() => CardUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<typeof CardUpdateManyWithoutInstitutionLinkNestedInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateWithoutUserInput {
+export class InstitutionLinkUpdateWithoutUserInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput,
-    { nullable: true },
-  )
+  @Field(() => InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
+    nullable: true,
+  })
   institution?: InstanceType<
-    typeof InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(() => CardUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => CardUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUpdateManyWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Type(() => CardUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<typeof CardUpdateManyWithoutInstitutionLinkNestedInput>;
+  @Field(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpdateInput {
+export class InstitutionLinkUpdateInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(
-    () => InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput,
-    { nullable: true },
-  )
+  @Field(() => InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
+    nullable: true,
+  })
   institution?: InstanceType<
-    typeof InstitutionUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof InstitutionUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput, {
+  @Field(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput)
+  @Type(() => UserUpdateOneRequiredWithoutInstitutionLinksNestedInput)
   user?: InstanceType<
-    typeof UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput
+    typeof UserUpdateOneRequiredWithoutInstitutionLinksNestedInput
   >;
-  @Field(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput, {
+  @Field(() => AccountUpdateOneWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => AccountUpdateOneWithoutInstitutionConnectionNestedInput)
+  @Type(() => AccountUpdateOneWithoutInstitutionLinkNestedInput)
   account?: InstanceType<
-    typeof AccountUpdateOneWithoutInstitutionConnectionNestedInput
+    typeof AccountUpdateOneWithoutInstitutionLinkNestedInput
   >;
-  @Field(() => CardUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Field(() => CardUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => CardUpdateManyWithoutInstitutionConnectionNestedInput)
-  cards?: InstanceType<
-    typeof CardUpdateManyWithoutInstitutionConnectionNestedInput
-  >;
-  @Field(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput, {
+  @Type(() => CardUpdateManyWithoutInstitutionLinkNestedInput)
+  cards?: InstanceType<typeof CardUpdateManyWithoutInstitutionLinkNestedInput>;
+  @Field(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput, {
     nullable: true,
   })
-  @Type(() => InvestmentUpdateManyWithoutInstitutionConnectionNestedInput)
+  @Type(() => InvestmentUpdateManyWithoutInstitutionLinkNestedInput)
   investments?: InstanceType<
-    typeof InvestmentUpdateManyWithoutInstitutionConnectionNestedInput
+    typeof InvestmentUpdateManyWithoutInstitutionLinkNestedInput
   >;
 }
 
 @InputType()
-export class InstitutionConnectionUpsertWithWhereUniqueWithoutInstitutionInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkUpsertWithWhereUniqueWithoutInstitutionInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateWithoutInstitutionInput, {
+  @Field(() => InstitutionLinkUpdateWithoutInstitutionInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionUpdateWithoutInstitutionInput)
-  update!: InstanceType<
-    typeof InstitutionConnectionUpdateWithoutInstitutionInput
-  >;
-  @Field(() => InstitutionConnectionCreateWithoutInstitutionInput, {
+  @Type(() => InstitutionLinkUpdateWithoutInstitutionInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateWithoutInstitutionInput>;
+  @Field(() => InstitutionLinkCreateWithoutInstitutionInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInstitutionInput)
-  create!: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInstitutionInput
-  >;
+  @Type(() => InstitutionLinkCreateWithoutInstitutionInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutInstitutionInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpsertWithWhereUniqueWithoutUserInput {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class InstitutionLinkUpsertWithWhereUniqueWithoutUserInput {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionUpdateWithoutUserInput, { nullable: false })
-  @Type(() => InstitutionConnectionUpdateWithoutUserInput)
-  update!: InstanceType<typeof InstitutionConnectionUpdateWithoutUserInput>;
-  @Field(() => InstitutionConnectionCreateWithoutUserInput, { nullable: false })
-  @Type(() => InstitutionConnectionCreateWithoutUserInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutUserInput>;
+  @Field(() => InstitutionLinkUpdateWithoutUserInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutUserInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateWithoutUserInput>;
+  @Field(() => InstitutionLinkCreateWithoutUserInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutUserInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutUserInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpsertWithoutAccountInput {
-  @Field(() => InstitutionConnectionUpdateWithoutAccountInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateWithoutAccountInput)
-  update!: InstanceType<typeof InstitutionConnectionUpdateWithoutAccountInput>;
-  @Field(() => InstitutionConnectionCreateWithoutAccountInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionCreateWithoutAccountInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutAccountInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class InstitutionLinkUpsertWithoutAccountInput {
+  @Field(() => InstitutionLinkUpdateWithoutAccountInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutAccountInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateWithoutAccountInput>;
+  @Field(() => InstitutionLinkCreateWithoutAccountInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutAccountInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutAccountInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpsertWithoutCardsInput {
-  @Field(() => InstitutionConnectionUpdateWithoutCardsInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateWithoutCardsInput)
-  update!: InstanceType<typeof InstitutionConnectionUpdateWithoutCardsInput>;
-  @Field(() => InstitutionConnectionCreateWithoutCardsInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionCreateWithoutCardsInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateWithoutCardsInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class InstitutionLinkUpsertWithoutCardsInput {
+  @Field(() => InstitutionLinkUpdateWithoutCardsInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateWithoutCardsInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateWithoutCardsInput>;
+  @Field(() => InstitutionLinkCreateWithoutCardsInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateWithoutCardsInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutCardsInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionUpsertWithoutInvestmentsInput {
-  @Field(() => InstitutionConnectionUpdateWithoutInvestmentsInput, {
+export class InstitutionLinkUpsertWithoutInvestmentsInput {
+  @Field(() => InstitutionLinkUpdateWithoutInvestmentsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionUpdateWithoutInvestmentsInput)
-  update!: InstanceType<
-    typeof InstitutionConnectionUpdateWithoutInvestmentsInput
-  >;
-  @Field(() => InstitutionConnectionCreateWithoutInvestmentsInput, {
+  @Type(() => InstitutionLinkUpdateWithoutInvestmentsInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateWithoutInvestmentsInput>;
+  @Field(() => InstitutionLinkCreateWithoutInvestmentsInput, {
     nullable: false,
   })
-  @Type(() => InstitutionConnectionCreateWithoutInvestmentsInput)
-  create!: InstanceType<
-    typeof InstitutionConnectionCreateWithoutInvestmentsInput
-  >;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
+  @Type(() => InstitutionLinkCreateWithoutInvestmentsInput)
+  create!: InstanceType<typeof InstitutionLinkCreateWithoutInvestmentsInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @InputType()
-export class InstitutionConnectionWhereUniqueInput {
+export class InstitutionLinkWhereUniqueInput {
   @Field(() => String, { nullable: true })
   id?: string;
-  @Field(() => InstitutionConnectionInstitutionIdUserIdCompoundUniqueInput, {
+  @Field(() => InstitutionLinkInstitutionIdUserIdCompoundUniqueInput, {
     nullable: true,
   })
   institutionId_userId?: InstanceType<
-    typeof InstitutionConnectionInstitutionIdUserIdCompoundUniqueInput
+    typeof InstitutionLinkInstitutionIdUserIdCompoundUniqueInput
   >;
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  AND?: Array<InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  OR?: Array<InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  NOT?: Array<InstitutionConnectionWhereInput>;
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  AND?: Array<InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  OR?: Array<InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  NOT?: Array<InstitutionLinkWhereInput>;
   @Field(() => StringFilter, { nullable: true })
   institutionId?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
@@ -13614,13 +13248,13 @@ export class InstitutionConnectionWhereUniqueInput {
 }
 
 @InputType()
-export class InstitutionConnectionWhereInput {
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  AND?: Array<InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  OR?: Array<InstitutionConnectionWhereInput>;
-  @Field(() => [InstitutionConnectionWhereInput], { nullable: true })
-  NOT?: Array<InstitutionConnectionWhereInput>;
+export class InstitutionLinkWhereInput {
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  AND?: Array<InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  OR?: Array<InstitutionLinkWhereInput>;
+  @Field(() => [InstitutionLinkWhereInput], { nullable: true })
+  NOT?: Array<InstitutionLinkWhereInput>;
   @Field(() => StringFilter, { nullable: true })
   id?: InstanceType<typeof StringFilter>;
   @Field(() => StringFilter, { nullable: true })
@@ -13648,7 +13282,7 @@ export class InstitutionConnectionWhereInput {
 }
 
 @ObjectType()
-export class InstitutionConnection {
+export class InstitutionLink {
   @Field(() => ID, { nullable: false })
   id!: string;
   @Field(() => String, { nullable: false })
@@ -13669,31 +13303,29 @@ export class InstitutionConnection {
   cards?: Array<Card>;
   @Field(() => [Investment], { nullable: true })
   investments?: Array<Investment>;
-  @Field(() => InstitutionConnectionCount, { nullable: false })
-  _count?: InstanceType<typeof InstitutionConnectionCount>;
+  @Field(() => InstitutionLinkCount, { nullable: false })
+  _count?: InstanceType<typeof InstitutionLinkCount>;
 }
 
 @ArgsType()
-export class UpdateManyInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionUpdateManyMutationInput, {
-    nullable: false,
-  })
-  @Type(() => InstitutionConnectionUpdateManyMutationInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateManyMutationInput>;
-  @Field(() => InstitutionConnectionWhereInput, { nullable: true })
-  @Type(() => InstitutionConnectionWhereInput)
-  where?: InstanceType<typeof InstitutionConnectionWhereInput>;
+export class UpdateManyInstitutionLinkArgs {
+  @Field(() => InstitutionLinkUpdateManyMutationInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateManyMutationInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateManyMutationInput>;
+  @Field(() => InstitutionLinkWhereInput, { nullable: true })
+  @Type(() => InstitutionLinkWhereInput)
+  where?: InstanceType<typeof InstitutionLinkWhereInput>;
 }
 
 @ArgsType()
-export class UpdateOneInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionUpdateInput, { nullable: false })
-  @Type(() => InstitutionConnectionUpdateInput)
-  data!: InstanceType<typeof InstitutionConnectionUpdateInput>;
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class UpdateOneInstitutionLinkArgs {
+  @Field(() => InstitutionLinkUpdateInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateInput)
+  data!: InstanceType<typeof InstitutionLinkUpdateInput>;
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
   @Field(() => RelationLoadStrategy, { nullable: true })
@@ -13701,19 +13333,19 @@ export class UpdateOneInstitutionConnectionArgs {
 }
 
 @ArgsType()
-export class UpsertOneInstitutionConnectionArgs {
-  @Field(() => InstitutionConnectionWhereUniqueInput, { nullable: false })
-  @Type(() => InstitutionConnectionWhereUniqueInput)
+export class UpsertOneInstitutionLinkArgs {
+  @Field(() => InstitutionLinkWhereUniqueInput, { nullable: false })
+  @Type(() => InstitutionLinkWhereUniqueInput)
   where!: Prisma.AtLeast<
-    InstitutionConnectionWhereUniqueInput,
+    InstitutionLinkWhereUniqueInput,
     'id' | 'institutionId_userId'
   >;
-  @Field(() => InstitutionConnectionCreateInput, { nullable: false })
-  @Type(() => InstitutionConnectionCreateInput)
-  create!: InstanceType<typeof InstitutionConnectionCreateInput>;
-  @Field(() => InstitutionConnectionUpdateInput, { nullable: false })
-  @Type(() => InstitutionConnectionUpdateInput)
-  update!: InstanceType<typeof InstitutionConnectionUpdateInput>;
+  @Field(() => InstitutionLinkCreateInput, { nullable: false })
+  @Type(() => InstitutionLinkCreateInput)
+  create!: InstanceType<typeof InstitutionLinkCreateInput>;
+  @Field(() => InstitutionLinkUpdateInput, { nullable: false })
+  @Type(() => InstitutionLinkUpdateInput)
+  update!: InstanceType<typeof InstitutionLinkUpdateInput>;
   @Field(() => RelationLoadStrategy, { nullable: true })
   relationLoadStrategy?: keyof typeof RelationLoadStrategy;
 }
@@ -13933,7 +13565,7 @@ export class InvestmentCountAggregateInput {
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -13967,7 +13599,7 @@ export class InvestmentCountAggregate {
   @Field(() => Int, { nullable: false })
   regimePercentage!: number;
   @Field(() => Int, { nullable: false })
-  institutionConnectionId!: number;
+  institutionLinkId!: number;
   @Field(() => Int, { nullable: false })
   createdAt!: number;
   @Field(() => Int, { nullable: false })
@@ -14001,7 +13633,7 @@ export class InvestmentCountOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -14015,18 +13647,16 @@ export class InvestmentCount {
 }
 
 @InputType()
-export class InvestmentCreateManyInstitutionConnectionInputEnvelope {
-  @Field(() => [InvestmentCreateManyInstitutionConnectionInput], {
-    nullable: false,
-  })
-  @Type(() => InvestmentCreateManyInstitutionConnectionInput)
-  data!: Array<InvestmentCreateManyInstitutionConnectionInput>;
+export class InvestmentCreateManyInstitutionLinkInputEnvelope {
+  @Field(() => [InvestmentCreateManyInstitutionLinkInput], { nullable: false })
+  @Type(() => InvestmentCreateManyInstitutionLinkInput)
+  data!: Array<InvestmentCreateManyInstitutionLinkInput>;
   @Field(() => Boolean, { nullable: true })
   skipDuplicates?: boolean;
 }
 
 @InputType()
-export class InvestmentCreateManyInstitutionConnectionInput {
+export class InvestmentCreateManyInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Float, { nullable: false })
@@ -14080,7 +13710,7 @@ export class InvestmentCreateManyInput {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -14088,23 +13718,23 @@ export class InvestmentCreateManyInput {
 }
 
 @InputType()
-export class InvestmentCreateNestedManyWithoutInstitutionConnectionInput {
-  @Field(() => [InvestmentCreateWithoutInstitutionConnectionInput], {
+export class InvestmentCreateNestedManyWithoutInstitutionLinkInput {
+  @Field(() => [InvestmentCreateWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create?: Array<InvestmentCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create?: Array<InvestmentCreateWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => InvestmentCreateManyInstitutionConnectionInputEnvelope, {
+  @Type(() => InvestmentCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateManyInstitutionLinkInputEnvelope, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateManyInstitutionConnectionInputEnvelope)
+  @Type(() => InvestmentCreateManyInstitutionLinkInputEnvelope)
   createMany?: InstanceType<
-    typeof InvestmentCreateManyInstitutionConnectionInputEnvelope
+    typeof InvestmentCreateManyInstitutionLinkInputEnvelope
   >;
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
@@ -14129,17 +13759,13 @@ export class InvestmentCreateNestedOneWithoutTransactionsInput {
 }
 
 @InputType()
-export class InvestmentCreateOrConnectWithoutInstitutionConnectionInput {
+export class InvestmentCreateOrConnectWithoutInstitutionLinkInput {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
-  @Field(() => InvestmentCreateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<
-    typeof InvestmentCreateWithoutInstitutionConnectionInput
-  >;
+  @Field(() => InvestmentCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -14153,7 +13779,7 @@ export class InvestmentCreateOrConnectWithoutTransactionsInput {
 }
 
 @InputType()
-export class InvestmentCreateWithoutInstitutionConnectionInput {
+export class InvestmentCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Float, { nullable: false })
@@ -14217,12 +13843,12 @@ export class InvestmentCreateWithoutTransactionsInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutInvestmentsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutInvestmentsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutInvestmentsInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutInvestmentsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutInvestmentsInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutInvestmentsInput
   >;
 }
 
@@ -14254,12 +13880,12 @@ export class InvestmentCreateInput {
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
   updatedAt?: Date | string;
-  @Field(() => InstitutionConnectionCreateNestedOneWithoutInvestmentsInput, {
+  @Field(() => InstitutionLinkCreateNestedOneWithoutInvestmentsInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedOneWithoutInvestmentsInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionCreateNestedOneWithoutInvestmentsInput
+  @Type(() => InstitutionLinkCreateNestedOneWithoutInvestmentsInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkCreateNestedOneWithoutInvestmentsInput
   >;
   @Field(() => InvestmentTransactionCreateNestedManyWithoutInvestmentInput, {
     nullable: true,
@@ -14322,7 +13948,7 @@ export class InvestmentGroupBy {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date | string;
   @Field(() => Date, { nullable: false })
@@ -14374,7 +14000,7 @@ export class InvestmentMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -14406,7 +14032,7 @@ export class InvestmentMaxAggregate {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -14438,7 +14064,7 @@ export class InvestmentMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -14470,7 +14096,7 @@ export class InvestmentMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   regimePercentage?: true;
   @Field(() => Boolean, { nullable: true })
-  institutionConnectionId?: true;
+  institutionLinkId?: true;
   @Field(() => Boolean, { nullable: true })
   createdAt?: true;
   @Field(() => Boolean, { nullable: true })
@@ -14502,7 +14128,7 @@ export class InvestmentMinAggregate {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: true })
-  institutionConnectionId?: string;
+  institutionLinkId?: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -14534,7 +14160,7 @@ export class InvestmentMinOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   regimePercentage?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -14572,7 +14198,7 @@ export class InvestmentOrderByWithAggregationInput {
   @Field(() => SortOrderInput, { nullable: true })
   regimePercentage?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -14614,17 +14240,15 @@ export class InvestmentOrderByWithRelationInput {
   @Field(() => SortOrderInput, { nullable: true })
   regimePercentage?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
-  institutionConnectionId?: keyof typeof SortOrder;
+  institutionLinkId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   createdAt?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   updatedAt?: keyof typeof SortOrder;
-  @Field(() => InstitutionConnectionOrderByWithRelationInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionOrderByWithRelationInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionOrderByWithRelationInput
+  @Field(() => InstitutionLinkOrderByWithRelationInput, { nullable: true })
+  @Type(() => InstitutionLinkOrderByWithRelationInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkOrderByWithRelationInput
   >;
   @Field(() => InvestmentTransactionOrderByRelationAggregateInput, {
     nullable: true,
@@ -14674,7 +14298,7 @@ export class InvestmentScalarWhereWithAggregatesInput {
   @Field(() => FloatNullableWithAggregatesFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableWithAggregatesFilter>;
   @Field(() => StringWithAggregatesFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringWithAggregatesFilter>;
+  institutionLinkId?: InstanceType<typeof StringWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
@@ -14712,7 +14336,7 @@ export class InvestmentScalarWhereInput {
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
@@ -14762,23 +14386,23 @@ export class InvestmentSumOrderByAggregateInput {
 }
 
 @InputType()
-export class InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInput {
-  @Field(() => [InvestmentCreateWithoutInstitutionConnectionInput], {
+export class InvestmentUncheckedCreateNestedManyWithoutInstitutionLinkInput {
+  @Field(() => [InvestmentCreateWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create?: Array<InvestmentCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create?: Array<InvestmentCreateWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(() => InvestmentCreateManyInstitutionConnectionInputEnvelope, {
+  @Type(() => InvestmentCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateManyInstitutionLinkInputEnvelope, {
     nullable: true,
   })
-  @Type(() => InvestmentCreateManyInstitutionConnectionInputEnvelope)
+  @Type(() => InvestmentCreateManyInstitutionLinkInputEnvelope)
   createMany?: InstanceType<
-    typeof InvestmentCreateManyInstitutionConnectionInputEnvelope
+    typeof InvestmentCreateManyInstitutionLinkInputEnvelope
   >;
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
@@ -14786,7 +14410,7 @@ export class InvestmentUncheckedCreateNestedManyWithoutInstitutionConnectionInpu
 }
 
 @InputType()
-export class InvestmentUncheckedCreateWithoutInstitutionConnectionInput {
+export class InvestmentUncheckedCreateWithoutInstitutionLinkInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => Float, { nullable: false })
@@ -14850,7 +14474,7 @@ export class InvestmentUncheckedCreateWithoutTransactionsInput {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -14882,7 +14506,7 @@ export class InvestmentUncheckedCreateInput {
   @Field(() => Float, { nullable: true })
   regimePercentage?: number;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -14900,29 +14524,28 @@ export class InvestmentUncheckedCreateInput {
 }
 
 @InputType()
-export class InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInput {
-  @Field(() => [InvestmentCreateWithoutInstitutionConnectionInput], {
+export class InvestmentUncheckedUpdateManyWithoutInstitutionLinkNestedInput {
+  @Field(() => [InvestmentCreateWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create?: Array<InvestmentCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create?: Array<InvestmentCreateWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(
-    () => [InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput)
-  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => InvestmentCreateManyInstitutionConnectionInputEnvelope, {
+  @Type(() => InvestmentCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateManyInstitutionConnectionInputEnvelope)
+  @Type(() => InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput)
+  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateManyInstitutionLinkInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateManyInstitutionLinkInputEnvelope)
   createMany?: InstanceType<
-    typeof InvestmentCreateManyInstitutionConnectionInputEnvelope
+    typeof InvestmentCreateManyInstitutionLinkInputEnvelope
   >;
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
@@ -14936,25 +14559,23 @@ export class InvestmentUncheckedUpdateManyWithoutInstitutionConnectionNestedInpu
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
-  @Field(
-    () => [InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput)
-  update?: Array<InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(
-    () => [InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput)
-  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput>;
+  @Field(() => [InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput)
+  update?: Array<InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput)
+  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput>;
   @Field(() => [InvestmentScalarWhereInput], { nullable: true })
   @Type(() => InvestmentScalarWhereInput)
   deleteMany?: Array<InvestmentScalarWhereInput>;
 }
 
 @InputType()
-export class InvestmentUncheckedUpdateManyWithoutInstitutionConnectionInput {
+export class InvestmentUncheckedUpdateManyWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
@@ -15024,9 +14645,7 @@ export class InvestmentUncheckedUpdateManyInput {
     typeof NullableFloatFieldUpdateOperationsInput
   >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -15034,7 +14653,7 @@ export class InvestmentUncheckedUpdateManyInput {
 }
 
 @InputType()
-export class InvestmentUncheckedUpdateWithoutInstitutionConnectionInput {
+export class InvestmentUncheckedUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
@@ -15114,9 +14733,7 @@ export class InvestmentUncheckedUpdateWithoutTransactionsInput {
     typeof NullableFloatFieldUpdateOperationsInput
   >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -15156,9 +14773,7 @@ export class InvestmentUncheckedUpdateInput {
     typeof NullableFloatFieldUpdateOperationsInput
   >;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
-  institutionConnectionId?: InstanceType<
-    typeof StringFieldUpdateOperationsInput
-  >;
+  institutionLinkId?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -15214,7 +14829,7 @@ export class InvestmentUpdateManyMutationInput {
 }
 
 @InputType()
-export class InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput {
+export class InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput {
   @Field(() => InvestmentScalarWhereInput, { nullable: false })
   @Type(() => InvestmentScalarWhereInput)
   where!: InstanceType<typeof InvestmentScalarWhereInput>;
@@ -15224,29 +14839,28 @@ export class InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput {
 }
 
 @InputType()
-export class InvestmentUpdateManyWithoutInstitutionConnectionNestedInput {
-  @Field(() => [InvestmentCreateWithoutInstitutionConnectionInput], {
+export class InvestmentUpdateManyWithoutInstitutionLinkNestedInput {
+  @Field(() => [InvestmentCreateWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create?: Array<InvestmentCreateWithoutInstitutionConnectionInput>;
-  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionConnectionInput], {
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create?: Array<InvestmentCreateWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentCreateOrConnectWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateOrConnectWithoutInstitutionConnectionInput)
-  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionConnectionInput>;
-  @Field(
-    () => [InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput)
-  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(() => InvestmentCreateManyInstitutionConnectionInputEnvelope, {
+  @Type(() => InvestmentCreateOrConnectWithoutInstitutionLinkInput)
+  connectOrCreate?: Array<InvestmentCreateOrConnectWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput], {
     nullable: true,
   })
-  @Type(() => InvestmentCreateManyInstitutionConnectionInputEnvelope)
+  @Type(() => InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput)
+  upsert?: Array<InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateManyInstitutionLinkInputEnvelope, {
+    nullable: true,
+  })
+  @Type(() => InvestmentCreateManyInstitutionLinkInputEnvelope)
   createMany?: InstanceType<
-    typeof InvestmentCreateManyInstitutionConnectionInputEnvelope
+    typeof InvestmentCreateManyInstitutionLinkInputEnvelope
   >;
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
@@ -15260,18 +14874,16 @@ export class InvestmentUpdateManyWithoutInstitutionConnectionNestedInput {
   @Field(() => [InvestmentWhereUniqueInput], { nullable: true })
   @Type(() => InvestmentWhereUniqueInput)
   connect?: Array<Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>>;
-  @Field(
-    () => [InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput)
-  update?: Array<InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput>;
-  @Field(
-    () => [InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput],
-    { nullable: true },
-  )
-  @Type(() => InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput)
-  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutInstitutionConnectionInput>;
+  @Field(() => [InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput)
+  update?: Array<InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput>;
+  @Field(() => [InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput], {
+    nullable: true,
+  })
+  @Type(() => InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput)
+  updateMany?: Array<InvestmentUpdateManyWithWhereWithoutInstitutionLinkInput>;
   @Field(() => [InvestmentScalarWhereInput], { nullable: true })
   @Type(() => InvestmentScalarWhereInput)
   deleteMany?: Array<InvestmentScalarWhereInput>;
@@ -15315,19 +14927,17 @@ export class InvestmentUpdateToOneWithWhereWithoutTransactionsInput {
 }
 
 @InputType()
-export class InvestmentUpdateWithWhereUniqueWithoutInstitutionConnectionInput {
+export class InvestmentUpdateWithWhereUniqueWithoutInstitutionLinkInput {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
-  @Field(() => InvestmentUpdateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => InvestmentUpdateWithoutInstitutionConnectionInput)
-  data!: InstanceType<typeof InvestmentUpdateWithoutInstitutionConnectionInput>;
+  @Field(() => InvestmentUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutInstitutionLinkInput)
+  data!: InstanceType<typeof InvestmentUpdateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
-export class InvestmentUpdateWithoutInstitutionConnectionInput {
+export class InvestmentUpdateWithoutInstitutionLinkInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => FloatFieldUpdateOperationsInput, { nullable: true })
@@ -15407,12 +15017,12 @@ export class InvestmentUpdateWithoutTransactionsInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneWithoutInvestmentsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput
+  @Type(() => InstitutionLinkUpdateOneWithoutInvestmentsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneWithoutInvestmentsNestedInput
   >;
 }
 
@@ -15452,12 +15062,12 @@ export class InvestmentUpdateInput {
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
-  @Field(() => InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput, {
+  @Field(() => InstitutionLinkUpdateOneWithoutInvestmentsNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionUpdateOneWithoutInvestmentsNestedInput
+  @Type(() => InstitutionLinkUpdateOneWithoutInvestmentsNestedInput)
+  institutionLink?: InstanceType<
+    typeof InstitutionLinkUpdateOneWithoutInvestmentsNestedInput
   >;
   @Field(() => InvestmentTransactionUpdateManyWithoutInvestmentNestedInput, {
     nullable: true,
@@ -15469,24 +15079,16 @@ export class InvestmentUpdateInput {
 }
 
 @InputType()
-export class InvestmentUpsertWithWhereUniqueWithoutInstitutionConnectionInput {
+export class InvestmentUpsertWithWhereUniqueWithoutInstitutionLinkInput {
   @Field(() => InvestmentWhereUniqueInput, { nullable: false })
   @Type(() => InvestmentWhereUniqueInput)
   where!: Prisma.AtLeast<InvestmentWhereUniqueInput, 'id'>;
-  @Field(() => InvestmentUpdateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => InvestmentUpdateWithoutInstitutionConnectionInput)
-  update!: InstanceType<
-    typeof InvestmentUpdateWithoutInstitutionConnectionInput
-  >;
-  @Field(() => InvestmentCreateWithoutInstitutionConnectionInput, {
-    nullable: false,
-  })
-  @Type(() => InvestmentCreateWithoutInstitutionConnectionInput)
-  create!: InstanceType<
-    typeof InvestmentCreateWithoutInstitutionConnectionInput
-  >;
+  @Field(() => InvestmentUpdateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => InvestmentUpdateWithoutInstitutionLinkInput)
+  update!: InstanceType<typeof InvestmentUpdateWithoutInstitutionLinkInput>;
+  @Field(() => InvestmentCreateWithoutInstitutionLinkInput, { nullable: false })
+  @Type(() => InvestmentCreateWithoutInstitutionLinkInput)
+  create!: InstanceType<typeof InvestmentCreateWithoutInstitutionLinkInput>;
 }
 
 @InputType()
@@ -15533,16 +15135,14 @@ export class InvestmentWhereUniqueInput {
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionNullableRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionNullableRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionNullableRelationFilter
-  >;
+  @Field(() => InstitutionLinkNullableRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkNullableRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkNullableRelationFilter>;
   @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
   @Type(() => InvestmentTransactionListRelationFilter)
   transactions?: InstanceType<typeof InvestmentTransactionListRelationFilter>;
@@ -15579,16 +15179,14 @@ export class InvestmentWhereInput {
   @Field(() => FloatNullableFilter, { nullable: true })
   regimePercentage?: InstanceType<typeof FloatNullableFilter>;
   @Field(() => StringFilter, { nullable: true })
-  institutionConnectionId?: InstanceType<typeof StringFilter>;
+  institutionLinkId?: InstanceType<typeof StringFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFilter>;
   @Field(() => DateTimeFilter, { nullable: true })
   updatedAt?: InstanceType<typeof DateTimeFilter>;
-  @Field(() => InstitutionConnectionNullableRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionNullableRelationFilter)
-  institutionConnection?: InstanceType<
-    typeof InstitutionConnectionNullableRelationFilter
-  >;
+  @Field(() => InstitutionLinkNullableRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkNullableRelationFilter)
+  institutionLink?: InstanceType<typeof InstitutionLinkNullableRelationFilter>;
   @Field(() => InvestmentTransactionListRelationFilter, { nullable: true })
   @Type(() => InvestmentTransactionListRelationFilter)
   transactions?: InstanceType<typeof InvestmentTransactionListRelationFilter>;
@@ -15619,13 +15217,13 @@ export class Investment {
   @Field(() => Float, { nullable: true, defaultValue: 100 })
   regimePercentage!: number | null;
   @Field(() => String, { nullable: false })
-  institutionConnectionId!: string;
+  institutionLinkId!: string;
   @Field(() => Date, { nullable: false })
   createdAt!: Date;
   @Field(() => Date, { nullable: false })
   updatedAt!: Date;
-  @Field(() => InstitutionConnection, { nullable: true })
-  institutionConnection?: InstanceType<typeof InstitutionConnection> | null;
+  @Field(() => InstitutionLink, { nullable: true })
+  institutionLink?: InstanceType<typeof InstitutionLink> | null;
   @Field(() => [InvestmentTransaction], { nullable: true })
   transactions?: Array<InvestmentTransaction>;
   @Field(() => InvestmentCount, { nullable: false })
@@ -31650,7 +31248,7 @@ export class UserCount {
   @Field(() => Int, { nullable: false })
   recurringTransactions?: number;
   @Field(() => Int, { nullable: false })
-  institutionConnections?: number;
+  institutionLinks?: number;
 }
 
 @InputType()
@@ -31689,16 +31287,16 @@ export class UserCreateNestedOneWithoutAuthUserProvidersInput {
 }
 
 @InputType()
-export class UserCreateNestedOneWithoutInstitutionConnectionsInput {
-  @Field(() => UserCreateWithoutInstitutionConnectionsInput, { nullable: true })
-  @Type(() => UserCreateWithoutInstitutionConnectionsInput)
-  create?: InstanceType<typeof UserCreateWithoutInstitutionConnectionsInput>;
-  @Field(() => UserCreateOrConnectWithoutInstitutionConnectionsInput, {
+export class UserCreateNestedOneWithoutInstitutionLinksInput {
+  @Field(() => UserCreateWithoutInstitutionLinksInput, { nullable: true })
+  @Type(() => UserCreateWithoutInstitutionLinksInput)
+  create?: InstanceType<typeof UserCreateWithoutInstitutionLinksInput>;
+  @Field(() => UserCreateOrConnectWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => UserCreateOrConnectWithoutInstitutionConnectionsInput)
+  @Type(() => UserCreateOrConnectWithoutInstitutionLinksInput)
   connectOrCreate?: InstanceType<
-    typeof UserCreateOrConnectWithoutInstitutionConnectionsInput
+    typeof UserCreateOrConnectWithoutInstitutionLinksInput
   >;
   @Field(() => UserWhereUniqueInput, { nullable: true })
   @Type(() => UserWhereUniqueInput)
@@ -31748,15 +31346,13 @@ export class UserCreateOrConnectWithoutAuthUserProvidersInput {
 }
 
 @InputType()
-export class UserCreateOrConnectWithoutInstitutionConnectionsInput {
+export class UserCreateOrConnectWithoutInstitutionLinksInput {
   @Field(() => UserWhereUniqueInput, { nullable: false })
   @Type(() => UserWhereUniqueInput)
   where!: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
-  @Field(() => UserCreateWithoutInstitutionConnectionsInput, {
-    nullable: false,
-  })
-  @Type(() => UserCreateWithoutInstitutionConnectionsInput)
-  create!: InstanceType<typeof UserCreateWithoutInstitutionConnectionsInput>;
+  @Field(() => UserCreateWithoutInstitutionLinksInput, { nullable: false })
+  @Type(() => UserCreateWithoutInstitutionLinksInput)
+  create!: InstanceType<typeof UserCreateWithoutInstitutionLinksInput>;
 }
 
 @InputType()
@@ -31807,17 +31403,17 @@ export class UserCreateWithoutAuthUserProvidersInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkCreateNestedManyWithoutUserInput
   >;
 }
 
 @InputType()
-export class UserCreateWithoutInstitutionConnectionsInput {
+export class UserCreateWithoutInstitutionLinksInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -31879,12 +31475,12 @@ export class UserCreateWithoutRecurringTransactionsInput {
   transactions?: InstanceType<
     typeof TransactionCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -31917,12 +31513,12 @@ export class UserCreateWithoutTransactionsInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -31960,12 +31556,12 @@ export class UserCreateInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -32180,12 +31776,10 @@ export class UserOrderByWithRelationInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionOrderByRelationAggregateInput
   >;
-  @Field(() => InstitutionConnectionOrderByRelationAggregateInput, {
-    nullable: true,
-  })
-  @Type(() => InstitutionConnectionOrderByRelationAggregateInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionOrderByRelationAggregateInput
+  @Field(() => InstitutionLinkOrderByRelationAggregateInput, { nullable: true })
+  @Type(() => InstitutionLinkOrderByRelationAggregateInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkOrderByRelationAggregateInput
   >;
 }
 
@@ -32251,17 +31845,17 @@ export class UserUncheckedCreateWithoutAuthUserProvidersInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedCreateNestedManyWithoutUserInput
   >;
 }
 
 @InputType()
-export class UserUncheckedCreateWithoutInstitutionConnectionsInput {
+export class UserUncheckedCreateWithoutInstitutionLinksInput {
   @Field(() => String, { nullable: true })
   id?: string;
   @Field(() => String, { nullable: false })
@@ -32327,12 +31921,12 @@ export class UserUncheckedCreateWithoutRecurringTransactionsInput {
   transactions?: InstanceType<
     typeof TransactionUncheckedCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -32365,12 +31959,12 @@ export class UserUncheckedCreateWithoutTransactionsInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -32410,12 +32004,12 @@ export class UserUncheckedCreateInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedCreateNestedManyWithoutUserInput
   >;
-  @Field(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput, {
+  @Field(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedCreateNestedManyWithoutUserInput
+  @Type(() => InstitutionLinkUncheckedCreateNestedManyWithoutUserInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedCreateNestedManyWithoutUserInput
   >;
 }
 
@@ -32467,17 +32061,17 @@ export class UserUncheckedUpdateWithoutAuthUserProvidersInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput
   >;
 }
 
 @InputType()
-export class UserUncheckedUpdateWithoutInstitutionConnectionsInput {
+export class UserUncheckedUpdateWithoutInstitutionLinksInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -32543,12 +32137,12 @@ export class UserUncheckedUpdateWithoutRecurringTransactionsInput {
   transactions?: InstanceType<
     typeof TransactionUncheckedUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -32581,12 +32175,12 @@ export class UserUncheckedUpdateWithoutTransactionsInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -32626,12 +32220,12 @@ export class UserUncheckedUpdateInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUncheckedUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUncheckedUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUncheckedUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -32681,29 +32275,29 @@ export class UserUpdateOneRequiredWithoutAuthUserProvidersNestedInput {
 }
 
 @InputType()
-export class UserUpdateOneRequiredWithoutInstitutionConnectionsNestedInput {
-  @Field(() => UserCreateWithoutInstitutionConnectionsInput, { nullable: true })
-  @Type(() => UserCreateWithoutInstitutionConnectionsInput)
-  create?: InstanceType<typeof UserCreateWithoutInstitutionConnectionsInput>;
-  @Field(() => UserCreateOrConnectWithoutInstitutionConnectionsInput, {
+export class UserUpdateOneRequiredWithoutInstitutionLinksNestedInput {
+  @Field(() => UserCreateWithoutInstitutionLinksInput, { nullable: true })
+  @Type(() => UserCreateWithoutInstitutionLinksInput)
+  create?: InstanceType<typeof UserCreateWithoutInstitutionLinksInput>;
+  @Field(() => UserCreateOrConnectWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => UserCreateOrConnectWithoutInstitutionConnectionsInput)
+  @Type(() => UserCreateOrConnectWithoutInstitutionLinksInput)
   connectOrCreate?: InstanceType<
-    typeof UserCreateOrConnectWithoutInstitutionConnectionsInput
+    typeof UserCreateOrConnectWithoutInstitutionLinksInput
   >;
-  @Field(() => UserUpsertWithoutInstitutionConnectionsInput, { nullable: true })
-  @Type(() => UserUpsertWithoutInstitutionConnectionsInput)
-  upsert?: InstanceType<typeof UserUpsertWithoutInstitutionConnectionsInput>;
+  @Field(() => UserUpsertWithoutInstitutionLinksInput, { nullable: true })
+  @Type(() => UserUpsertWithoutInstitutionLinksInput)
+  upsert?: InstanceType<typeof UserUpsertWithoutInstitutionLinksInput>;
   @Field(() => UserWhereUniqueInput, { nullable: true })
   @Type(() => UserWhereUniqueInput)
   connect?: Prisma.AtLeast<UserWhereUniqueInput, 'id' | 'email'>;
-  @Field(() => UserUpdateToOneWithWhereWithoutInstitutionConnectionsInput, {
+  @Field(() => UserUpdateToOneWithWhereWithoutInstitutionLinksInput, {
     nullable: true,
   })
-  @Type(() => UserUpdateToOneWithWhereWithoutInstitutionConnectionsInput)
+  @Type(() => UserUpdateToOneWithWhereWithoutInstitutionLinksInput)
   update?: InstanceType<
-    typeof UserUpdateToOneWithWhereWithoutInstitutionConnectionsInput
+    typeof UserUpdateToOneWithWhereWithoutInstitutionLinksInput
   >;
 }
 
@@ -32770,15 +32364,13 @@ export class UserUpdateToOneWithWhereWithoutAuthUserProvidersInput {
 }
 
 @InputType()
-export class UserUpdateToOneWithWhereWithoutInstitutionConnectionsInput {
+export class UserUpdateToOneWithWhereWithoutInstitutionLinksInput {
   @Field(() => UserWhereInput, { nullable: true })
   @Type(() => UserWhereInput)
   where?: InstanceType<typeof UserWhereInput>;
-  @Field(() => UserUpdateWithoutInstitutionConnectionsInput, {
-    nullable: false,
-  })
-  @Type(() => UserUpdateWithoutInstitutionConnectionsInput)
-  data!: InstanceType<typeof UserUpdateWithoutInstitutionConnectionsInput>;
+  @Field(() => UserUpdateWithoutInstitutionLinksInput, { nullable: false })
+  @Type(() => UserUpdateWithoutInstitutionLinksInput)
+  data!: InstanceType<typeof UserUpdateWithoutInstitutionLinksInput>;
 }
 
 @InputType()
@@ -32829,17 +32421,17 @@ export class UserUpdateWithoutAuthUserProvidersInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUpdateManyWithoutUserNestedInput
   >;
 }
 
 @InputType()
-export class UserUpdateWithoutInstitutionConnectionsInput {
+export class UserUpdateWithoutInstitutionLinksInput {
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
   id?: InstanceType<typeof StringFieldUpdateOperationsInput>;
   @Field(() => StringFieldUpdateOperationsInput, { nullable: true })
@@ -32901,12 +32493,12 @@ export class UserUpdateWithoutRecurringTransactionsInput {
   transactions?: InstanceType<
     typeof TransactionUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -32939,12 +32531,12 @@ export class UserUpdateWithoutTransactionsInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -32982,12 +32574,12 @@ export class UserUpdateInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionUpdateManyWithoutUserNestedInput
   >;
-  @Field(() => InstitutionConnectionUpdateManyWithoutUserNestedInput, {
+  @Field(() => InstitutionLinkUpdateManyWithoutUserNestedInput, {
     nullable: true,
   })
-  @Type(() => InstitutionConnectionUpdateManyWithoutUserNestedInput)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionUpdateManyWithoutUserNestedInput
+  @Type(() => InstitutionLinkUpdateManyWithoutUserNestedInput)
+  institutionLinks?: InstanceType<
+    typeof InstitutionLinkUpdateManyWithoutUserNestedInput
   >;
 }
 
@@ -33005,17 +32597,13 @@ export class UserUpsertWithoutAuthUserProvidersInput {
 }
 
 @InputType()
-export class UserUpsertWithoutInstitutionConnectionsInput {
-  @Field(() => UserUpdateWithoutInstitutionConnectionsInput, {
-    nullable: false,
-  })
-  @Type(() => UserUpdateWithoutInstitutionConnectionsInput)
-  update!: InstanceType<typeof UserUpdateWithoutInstitutionConnectionsInput>;
-  @Field(() => UserCreateWithoutInstitutionConnectionsInput, {
-    nullable: false,
-  })
-  @Type(() => UserCreateWithoutInstitutionConnectionsInput)
-  create!: InstanceType<typeof UserCreateWithoutInstitutionConnectionsInput>;
+export class UserUpsertWithoutInstitutionLinksInput {
+  @Field(() => UserUpdateWithoutInstitutionLinksInput, { nullable: false })
+  @Type(() => UserUpdateWithoutInstitutionLinksInput)
+  update!: InstanceType<typeof UserUpdateWithoutInstitutionLinksInput>;
+  @Field(() => UserCreateWithoutInstitutionLinksInput, { nullable: false })
+  @Type(() => UserCreateWithoutInstitutionLinksInput)
+  create!: InstanceType<typeof UserCreateWithoutInstitutionLinksInput>;
   @Field(() => UserWhereInput, { nullable: true })
   @Type(() => UserWhereInput)
   where?: InstanceType<typeof UserWhereInput>;
@@ -33079,11 +32667,9 @@ export class UserWhereUniqueInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionListRelationFilter
   >;
-  @Field(() => InstitutionConnectionListRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionListRelationFilter)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionListRelationFilter
-  >;
+  @Field(() => InstitutionLinkListRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkListRelationFilter)
+  institutionLinks?: InstanceType<typeof InstitutionLinkListRelationFilter>;
 }
 
 @InputType()
@@ -33118,11 +32704,9 @@ export class UserWhereInput {
   recurringTransactions?: InstanceType<
     typeof RecurringTransactionListRelationFilter
   >;
-  @Field(() => InstitutionConnectionListRelationFilter, { nullable: true })
-  @Type(() => InstitutionConnectionListRelationFilter)
-  institutionConnections?: InstanceType<
-    typeof InstitutionConnectionListRelationFilter
-  >;
+  @Field(() => InstitutionLinkListRelationFilter, { nullable: true })
+  @Type(() => InstitutionLinkListRelationFilter)
+  institutionLinks?: InstanceType<typeof InstitutionLinkListRelationFilter>;
 }
 
 @ObjectType()
@@ -33147,8 +32731,8 @@ export class User {
   transactions?: Array<Transaction>;
   @Field(() => [RecurringTransaction], { nullable: true })
   recurringTransactions?: Array<RecurringTransaction>;
-  @Field(() => [InstitutionConnection], { nullable: true })
-  institutionConnections?: Array<InstitutionConnection>;
+  @Field(() => [InstitutionLink], { nullable: true })
+  institutionLinks?: Array<InstitutionLink>;
   @Field(() => UserCount, { nullable: false })
   _count?: InstanceType<typeof UserCount>;
 }

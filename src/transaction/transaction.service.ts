@@ -1026,19 +1026,19 @@ export class TransactionService {
       include: {
         sourceAccount: {
           include: {
-            institutionConnection: { include: { institution: true } },
+            institutionLink: { include: { institution: true } },
           },
         },
         destinyAccount: {
           include: {
-            institutionConnection: { include: { institution: true } },
+            institutionLink: { include: { institution: true } },
           },
         },
         billingPayment: {
           include: {
             card: {
               include: {
-                institutionConnection: { include: { institution: true } },
+                institutionLink: { include: { institution: true } },
               },
             },
           },
