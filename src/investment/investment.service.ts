@@ -5,6 +5,7 @@ import { OrderDirection } from '@/utils/args/ordenation.args';
 import {
   Investment,
   InvestmentTransactionRole,
+  Prisma,
   Regime as RegimePrisma,
   TransactionStatus,
   TransactionType,
@@ -420,13 +421,13 @@ export class InvestmentService {
     institutionLinkId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
-    const whereClause = {
-      userId,
-      ...(institutionLinkId && {
-        institutionLink: {
+    const whereClause: Prisma.InvestmentWhereInput = {
+      institutionLink: {
+        userId,
+        ...(institutionLinkId && {
           id: institutionLinkId,
-        },
-      }),
+        }),
+      },
     };
 
     // Get all investments grouped by regime
