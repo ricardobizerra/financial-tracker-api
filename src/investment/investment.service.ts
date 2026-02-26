@@ -71,8 +71,10 @@ export class InvestmentService {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
-    const whereClause = {
-      userId,
+    const whereClause: Prisma.InvestmentWhereInput = {
+      institutionLink: {
+        userId,
+      },
       ...(regime && { regimeName: regime }),
       ...(accountIds && { accountId: { in: accountIds } }),
     };
