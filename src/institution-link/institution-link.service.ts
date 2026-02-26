@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { InstitutionLink } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
@@ -12,10 +12,15 @@ import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { selectObject } from '@/utils/select-object';
+import { AccountService } from '@/account/account.service';
 
 @Injectable()
 export class InstitutionLinkService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => AccountService))
+    private readonly accountService: AccountService,
+  ) {}
 
   async create({
     userId,
@@ -137,9 +142,57 @@ export class InstitutionLinkService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      select: selectObject<InstitutionLink, InstitutionLinkModel>(
-        queriedFields,
-      ),
+      select: (() => {
+        const select = selectObject<InstitutionLink, InstitutionLinkModel>(
+          queriedFields,
+        ) as any;
+
+        if (select.account?.select) {
+          if (select.account.select.balance) {
+            delete select.account.select.balance;
+            select.account.select.initialBalance = true;
+            select.account.select.sourceTransactions = {
+              select: { amount: true, date: true, status: true },
+            };
+            select.account.select.destinyTransactions = {
+              select: { amount: true, date: true, status: true },
+            };
+          }
+          if (select.account.select.currentBillingAmount) {
+            delete select.account.select.currentBillingAmount;
+            select.account.select.type = true;
+            select.account.select.accountCard = {
+              select: {
+                billings: {
+                  where: {
+                    status: {
+                      in: ['PENDING', 'CLOSED', 'OVERDUE'],
+                    },
+                  },
+                  select: {
+                    status: true,
+                    transactions: {
+                      where: { status: { not: 'CANCELED' } },
+                      select: { amount: true },
+                    },
+                  },
+                  orderBy: { periodStart: 'desc' },
+                  take: 1,
+                },
+              },
+            };
+          }
+          if (select.account.select.totalInvested) {
+            delete select.account.select.totalInvested;
+            select.account.select.type = true;
+            select.account.select.investments = {
+              where: { status: 'OPEN' },
+              select: { amount: true },
+            };
+          }
+        }
+        return select;
+      })(),
       where: queryWhere,
     });
 
@@ -175,7 +228,36 @@ export class InstitutionLinkService {
 
       return {
         cursor: bufferedCursor,
-        node: connection,
+        node: {
+          ...connection,
+          ...(connection.account && {
+            account: {
+              ...connection.account,
+              ...((queriedFields as string[]).includes('account.balance') && {
+                balance: this.accountService.calculateBalance(
+                  (connection.account as any).sourceTransactions,
+                  (connection.account as any).destinyTransactions,
+                  (connection.account as any).initialBalance,
+                ),
+              }),
+              ...((queriedFields as string[]).includes(
+                'account.currentBillingAmount',
+              ) && {
+                currentBillingAmount:
+                  this.accountService.calculateCurrentBillingAmount(
+                    connection.account as any,
+                  ),
+              }),
+              ...((queriedFields as string[]).includes(
+                'account.totalInvested',
+              ) && {
+                totalInvested: this.accountService.calculateTotalInvested(
+                  connection.account as any,
+                ),
+              }),
+            } as any,
+          }),
+        },
       };
     });
 

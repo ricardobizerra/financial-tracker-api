@@ -1,3 +1,4 @@
+import { AccountModel } from '@/account/account.model';
 import { InstitutionLink, InstitutionType } from '@/lib/graphql/prisma-client';
 import { Ordenation } from '@/utils/args/ordenation.args';
 import { Connection } from '@/utils/models/connection.model';
@@ -19,7 +20,10 @@ export class CreateInstitutionLinkInput {
 export class InstitutionLinkModel extends OmitType(InstitutionLink, [
   'user',
   'userId',
-] as const) {}
+] as const) {
+  @Field(() => AccountModel, { nullable: true })
+  account?: AccountModel | null;
+}
 
 @ObjectType()
 export class InstitutionLinkConnection extends Connection(

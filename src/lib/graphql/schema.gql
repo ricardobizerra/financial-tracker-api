@@ -1300,7 +1300,7 @@ type InstitutionLinkModel {
   createdAt: DateTime!
   updatedAt: DateTime!
   institution: Institution!
-  account: Account
+  account: AccountModel
   cards: [Card!]
   investments: [Investment!]
   _count: InstitutionLinkCount!
