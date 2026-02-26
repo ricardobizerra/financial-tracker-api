@@ -1,7 +1,19 @@
 import { InstitutionLink, InstitutionType } from '@/lib/graphql/prisma-client';
 import { Ordenation } from '@/utils/args/ordenation.args';
 import { Connection } from '@/utils/models/connection.model';
-import { Field, ObjectType, OmitType, ArgsType } from '@nestjs/graphql';
+import {
+  Field,
+  ObjectType,
+  OmitType,
+  ArgsType,
+  InputType,
+} from '@nestjs/graphql';
+
+@InputType()
+export class CreateInstitutionLinkInput {
+  @Field()
+  institutionId: string;
+}
 
 @ObjectType()
 export class InstitutionLinkModel extends OmitType(InstitutionLink, [

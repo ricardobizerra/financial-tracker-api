@@ -3,6 +3,7 @@ import { PrismaService } from '@/lib/prisma/prisma.service';
 import { InstitutionLink } from '@/lib/graphql/prisma-client';
 import { Prisma } from '@prisma/client';
 import {
+  CreateInstitutionLinkInput,
   InstitutionLinkFilterArgs,
   InstitutionLinkModel,
   OrdenationInstitutionLinkArgs,
@@ -15,6 +16,35 @@ import { selectObject } from '@/utils/select-object';
 @Injectable()
 export class InstitutionLinkService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  async create({
+    userId,
+    data,
+  }: {
+    userId: string;
+    data: CreateInstitutionLinkInput;
+  }) {
+    // Check if link already exists to avoid Prisma unhandled unique constraint errors
+    const existing = await this.prismaService.institutionLink.findUnique({
+      where: {
+        institutionId_userId: {
+          userId,
+          institutionId: data.institutionId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new Error('Você já possui um vínculo com esta instituição.');
+    }
+
+    return this.prismaService.institutionLink.create({
+      data: {
+        userId,
+        institutionId: data.institutionId,
+      },
+    });
+  }
 
   async find(
     where: Prisma.InstitutionLinkWhereUniqueInput,

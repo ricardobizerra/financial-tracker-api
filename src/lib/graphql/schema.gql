@@ -1593,6 +1593,7 @@ type Mutation {
   cancelTransaction(id: String!): TransactionModel!
   rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
   updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
+  createInstitutionLink(data: CreateInstitutionLinkInput!): InstitutionLinkModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
   updateRecurringTransactionFromDate(id: String!, fromDate: DateTime!, data: UpdateRecurringTransactionInput!): RecurringTransactionModel!
   pauseRecurringTransaction(id: String!): RecurringTransactionModel!
@@ -4292,6 +4293,10 @@ enum UpdateRecurringScope {
   THIS_ONLY
   THIS_AND_FUTURE
   ALL_PLANNED
+}
+
+input CreateInstitutionLinkInput {
+  institutionId: String!
 }
 
 input CreateRecurringTransactionInput {
