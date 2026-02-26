@@ -26,9 +26,15 @@ import { format } from 'date-fns';
 export class CardService {
   constructor(private prisma: PrismaService) {}
 
-  async find(where: Prisma.CardWhereUniqueInput): Promise<Card | null> {
+  async find(
+    where: Prisma.CardWhereUniqueInput,
+    queriedFields?: (keyof Card)[],
+  ): Promise<Card | null> {
     const card = await this.prisma.card.findUnique({
       where,
+      select: queriedFields
+        ? selectObject<Card, Card>(queriedFields)
+        : undefined,
     });
 
     return card;

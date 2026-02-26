@@ -1398,7 +1398,7 @@ type Query {
   investmentAccounts(regime: Regime!): [AccountWithInvestmentCount!]!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
   account(id: ID!): AccountModel!
-  accountCard(id: String!): Card
+  card(id: ID!): Card
   billing(accountId: ID!, id: ID): CardBillingOnDate!
   billingTransactions(billingId: ID!): [TransactionModel!]!
   transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionConnection!

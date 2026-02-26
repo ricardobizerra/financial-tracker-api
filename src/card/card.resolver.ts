@@ -20,9 +20,13 @@ export class CardResolver {
   ) {}
 
   @Auth()
-  @Query(() => Card, { nullable: true })
-  async accountCard(@Args('id') id: string): Promise<Card> {
-    return this.cardService.find({ id });
+  @Query(() => Card, { name: 'card', nullable: true })
+  async card(
+    @Info() info: GraphQLResolveInfo,
+    @Args('id', { type: () => ID! }) id: string,
+  ): Promise<Card> {
+    const queriedFields = getQueriedFields<Card>(info, 'card', false);
+    return this.cardService.find({ id }, queriedFields);
   }
 
   @Auth()
