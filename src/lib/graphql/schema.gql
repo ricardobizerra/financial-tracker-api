@@ -1142,6 +1142,16 @@ type CardBillingOnDate {
   previousBillingId: String
 }
 
+type CardConnection {
+  edges: [CardEdge!]
+  pageInfo: PageInfo
+}
+
+type CardEdge {
+  cursor: String!
+  node: Card!
+}
+
 type TransactionModel {
   id: ID!
   description: String!
@@ -1399,6 +1409,7 @@ type Query {
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
   account(id: ID!): AccountModel!
   card(id: ID!): Card
+  cards(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationCard, orderDirection: OrderDirection, institutionLinkId: String, types: [CardType!]): CardConnection!
   billing(accountId: ID!, id: ID): CardBillingOnDate!
   billingTransactions(billingId: ID!): [TransactionModel!]!
   transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionConnection!
@@ -1479,6 +1490,18 @@ enum OrdenationAccountModel {
   balance
   currentBillingAmount
   totalInvested
+}
+
+enum OrdenationCard {
+  id
+  name
+  lastFourDigits
+  billingCycleDay
+  billingPaymentDay
+  type
+  defaultLimit
+  institutionLinkId
+  createdAt
 }
 
 enum OrdenationTransactionModel {

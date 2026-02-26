@@ -11,16 +11,25 @@ import { TransactionModel } from '@/transaction/transaction.model';
 import {
   Account,
   CardBillingStatus,
+  CardType,
   PaymentMethod,
   Prisma,
   Transaction,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
-import { CardBillingModel, CardBillingOnDate } from './card.model';
+import {
+  CardBillingModel,
+  CardBillingOnDate,
+  CardFilterArgs,
+  OrdenationCardArgs,
+} from './card.model';
 import { selectObject } from '@/utils/select-object';
 import { Decimal } from '@prisma/client/runtime/library';
 import { format } from 'date-fns';
+import { PaginationArgs } from '@/utils/args/pagination.args';
+import { SearchArgs } from '@/utils/args/search.args';
+import { OrderDirection } from '@/utils/args/ordenation.args';
 
 @Injectable()
 export class CardService {
@@ -38,6 +47,177 @@ export class CardService {
     });
 
     return card;
+  }
+
+  async findMany({
+    userId,
+    queriedFields,
+    paginationArgs,
+    searchArgs,
+    ordenationArgs,
+    filterArgs,
+  }: {
+    userId: string;
+    queriedFields: (keyof Card)[];
+    paginationArgs: PaginationArgs;
+    searchArgs: SearchArgs;
+    ordenationArgs: OrdenationCardArgs;
+    filterArgs: CardFilterArgs;
+  }) {
+    const { after, before, first, last } = paginationArgs;
+    const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+
+    const unbufferedCursor = after
+      ? Number(Buffer.from(after, 'base64').toString('utf-8'))
+      : before
+        ? Number(Buffer.from(before, 'base64').toString('utf-8'))
+        : 0;
+
+    const queryWhere: Prisma.CardWhereInput = {
+      institutionLink: {
+        userId,
+        ...(filterArgs.institutionLinkId && {
+          id: filterArgs.institutionLinkId,
+        }),
+      },
+      ...(filterArgs.types?.length && {
+        type: { in: filterArgs.types },
+      }),
+      ...(!!searchArgs.search && {
+        name: {
+          contains: searchArgs.search,
+          mode: 'insensitive' as const,
+        },
+      }),
+    };
+
+    const lengthQuery = last
+      ? await this.prisma.card.count({ where: queryWhere })
+      : undefined;
+
+    const length = !!lengthQuery ? Number(lengthQuery) : undefined;
+
+    const cards = await this.prisma.card.findMany({
+      take: last
+        ? unbufferedCursor
+          ? last
+          : length % last === 0
+            ? last
+            : length % last
+        : first
+          ? first
+          : undefined,
+      skip: unbufferedCursor
+        ? last
+          ? length - unbufferedCursor + 1
+          : unbufferedCursor
+        : last
+          ? 0
+          : undefined,
+      orderBy: orderBy
+        ? {
+            [orderBy]: last
+              ? orderDirection === OrderDirection.Asc
+                ? OrderDirection.Desc
+                : OrderDirection.Asc
+              : orderDirection === OrderDirection.Asc
+                ? OrderDirection.Asc
+                : OrderDirection.Desc,
+          }
+        : undefined,
+      select: selectObject<Card, Card>(queriedFields),
+      where: queryWhere,
+    });
+
+    if (last) {
+      cards.reverse();
+    }
+
+    if (cards.length === 0) {
+      return {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          hasPreviousPage: !!after,
+          startCursor: null,
+          endCursor: null,
+        },
+      };
+    }
+
+    const edges = cards.map((card, index) => {
+      const cursorIndex =
+        index +
+        1 +
+        (last
+          ? unbufferedCursor
+            ? unbufferedCursor - last - 1
+            : length - cards.length
+          : unbufferedCursor || 0);
+
+      const bufferedCursor = Buffer.from(cursorIndex.toString())
+        .toString('base64')
+        .split('=')[0];
+
+      return {
+        cursor: bufferedCursor,
+        node: card,
+      };
+    });
+
+    const startCursor = edges[0].cursor;
+    const endCursor = edges[edges.length - 1].cursor;
+
+    if (!first && !last) {
+      return {
+        edges,
+        pageInfo: {
+          hasNextPage: false,
+          hasPreviousPage: !!after,
+          startCursor,
+          endCursor,
+        },
+      };
+    }
+
+    const extraItem = !(
+      last && Number(Buffer.from(startCursor, 'base64').toString('utf-8')) <= 1
+    )
+      ? await this.prisma.card.findFirst({
+          take: 1,
+          skip: last
+            ? Number(Buffer.from(startCursor, 'base64').toString('utf-8')) - 2
+            : first
+              ? Number(Buffer.from(endCursor, 'base64').toString('utf-8'))
+              : unbufferedCursor,
+          orderBy: orderBy
+            ? {
+                [orderBy]: last
+                  ? orderDirection === OrderDirection.Asc
+                    ? OrderDirection.Desc
+                    : OrderDirection.Asc
+                  : orderDirection === OrderDirection.Asc
+                    ? OrderDirection.Asc
+                    : OrderDirection.Desc,
+              }
+            : undefined,
+          select: { id: true },
+          where: queryWhere,
+        })
+      : undefined;
+
+    const hasNextPage = last ? !!before : !!extraItem;
+    const hasPreviousPage = last ? !!extraItem : !!after;
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage,
+        startCursor,
+        endCursor,
+      },
+    };
   }
 
   async $transaction<T>(

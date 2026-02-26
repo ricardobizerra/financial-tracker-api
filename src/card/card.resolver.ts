@@ -2,7 +2,12 @@ import { Resolver, Query, Args, Info, Mutation, ID } from '@nestjs/graphql';
 import { CardService } from './card.service';
 import { Card, CardBilling, CardType, User } from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
-import { CardBillingOnDate } from './card.model';
+import {
+  CardBillingOnDate,
+  CardConnection,
+  CardFilterArgs,
+  OrdenationCardArgs,
+} from './card.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { AccountService } from '@/account/account.service';
 import { NotFoundException } from '@nestjs/common';
@@ -11,6 +16,9 @@ import { getQueriedFields } from '@/utils/get-queried-fields';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TransactionModel } from '@/transaction/transaction.model';
 import { CreateCardInput } from './create-card.input';
+import { PaginationArgs } from '@/utils/args/pagination.args';
+import { SearchArgs } from '@/utils/args/search.args';
+import { UserModel } from '@/user/models/user.model';
 
 @Resolver(() => Card)
 export class CardResolver {
@@ -27,6 +35,28 @@ export class CardResolver {
   ): Promise<Card> {
     const queriedFields = getQueriedFields<Card>(info, 'card', false);
     return this.cardService.find({ id }, queriedFields);
+  }
+
+  @Auth()
+  @Query(() => CardConnection, { name: 'cards' })
+  async findMany(
+    @Args() paginationArgs: PaginationArgs,
+    @Args() searchArgs: SearchArgs,
+    @Args() ordenationArgs: OrdenationCardArgs,
+    @Args() filterArgs: CardFilterArgs,
+    @Info() info: GraphQLResolveInfo,
+    @CurrentUser() user: UserModel,
+  ) {
+    const queriedFields = getQueriedFields<Card>(info, 'cards');
+
+    return this.cardService.findMany({
+      userId: user.id,
+      queriedFields,
+      paginationArgs,
+      searchArgs,
+      ordenationArgs,
+      filterArgs,
+    });
   }
 
   @Auth()
