@@ -59,14 +59,14 @@ export class InvestmentService {
     ordenationArgs,
     userId,
     regime,
-    accountIds,
+    institutionLinkIds,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
     regime: Regime | null;
-    accountIds?: string[] | null;
+    institutionLinkIds?: string[] | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
@@ -75,8 +75,10 @@ export class InvestmentService {
       institutionLink: {
         userId,
       },
-      ...(regime && { regimeName: regime }),
-      ...(accountIds && { accountId: { in: accountIds } }),
+      regimeName: regime ?? undefined,
+      institutionLinkId: institutionLinkIds?.length
+        ? { in: institutionLinkIds }
+        : undefined,
     };
 
     const unbufferedCursor = after
