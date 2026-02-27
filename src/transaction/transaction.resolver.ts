@@ -942,21 +942,30 @@ export class TransactionResolver {
         endDate.setDate(endDate.getDate() + 90);
     }
 
-    // Obter saldo inicial da conta (se especificada)
-    let initialBalance = 0;
-    if (args.accountId) {
-      const account = await this.accountService.find({ id: args.accountId });
-      if (account) {
-        initialBalance = Number(account.initialBalance || 0);
-      }
-    }
+    // Obter todas as contas relevantes com saldo inicial e data de início
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        institutionLink: { userId: user.id },
+        ...(args.accountId && { id: args.accountId }),
+      },
+      select: {
+        id: true,
+        initialBalance: true,
+        startDate: true,
+      },
+    });
+
+    const accountBalances = accounts.map((a) => ({
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
 
     return this.transactionService.getBalanceForecast({
       userId: user.id,
       accountId: args.accountId,
       startDate,
       endDate,
-      initialBalance,
+      accountBalances,
     });
   }
 

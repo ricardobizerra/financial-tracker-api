@@ -508,19 +508,55 @@ export class TransactionService {
     accountId,
     startDate,
     endDate,
-    initialBalance,
+    accountBalances,
   }: {
     userId: string;
     accountId?: string;
     startDate: Date;
     endDate: Date;
-    initialBalance: number;
+    accountBalances: { initialBalance: number; startDate: Date | null }[];
   }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const chartStart = new Date(startDate);
+    chartStart.setHours(0, 0, 0, 0);
+
+    // Separar contas em dois grupos:
+    // 1. startDate antes da janela → saldo inicial já está ativo, somar ao runningBalance inicial
+    // 2. startDate dentro da janela → saldo inicial entra em um dia específico do gráfico
+    // 3. sem startDate (legado) → tratar como se já estivesse ativo
+    const preWindowAccounts = accountBalances.filter((a) => {
+      if (!a.startDate) return true; // sem data → considera já ativo
+      const d = new Date(a.startDate);
+      d.setHours(0, 0, 0, 0);
+      return d < chartStart;
+    });
+
+    const inWindowAccounts = accountBalances.filter((a) => {
+      if (!a.startDate) return false;
+      const d = new Date(a.startDate);
+      d.setHours(0, 0, 0, 0);
+      return d >= chartStart;
+    });
+
+    // Saldo de partida = soma dos saldos iniciais das contas já ativas antes da janela
+    const seedBalance = preWindowAccounts.reduce(
+      (sum, a) => sum + a.initialBalance,
+      0,
+    );
+
+    // Indexar entradas em-janela por chave de data (YYYY-MM-DD)
+    const inWindowByDate = new Map<string, number>();
+    inWindowAccounts.forEach((a) => {
+      const key = new Date(a.startDate!).toISOString().split('T')[0];
+      inWindowByDate.set(
+        key,
+        (inWindowByDate.get(key) || 0) + a.initialBalance,
+      );
+    });
+
     // Buscar todas as transações no período
-    // Inclui cardBillingId e sourceAccount.type para filtrar transações de cartão de crédito
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
@@ -572,6 +608,7 @@ export class TransactionService {
       incomeAmount: number;
       expenseAmount: number;
       transactionCount: number;
+      isInitialBalance?: boolean;
       transactions: {
         id: string;
         description: string;
@@ -581,15 +618,35 @@ export class TransactionService {
       }[];
     }[] = [];
 
-    let runningBalance = initialBalance;
+    let runningBalance = seedBalance;
     const currentDate = new Date(startDate);
-    let currentBalance = initialBalance;
-    let projectedBalance = initialBalance;
+    let currentBalance = seedBalance;
+    let projectedBalance = seedBalance;
+    // Controla se o primeiro evento real já ocorreu; dias vazios anteriores são omitidos
+    let chartStarted = false;
 
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0];
       const dayTransactions = transactionsByDate.get(dateKey) || [];
       const isProjected = currentDate > today;
+
+      // Verificar se alguma conta tem startDate neste exato dia
+      const inWindowAmount = inWindowByDate.get(dateKey);
+      if (inWindowAmount) {
+        // Emitir um ponto de âncora do saldo inicial antes das transações do dia
+        chartStarted = true;
+        dataPoints.push({
+          date: new Date(currentDate),
+          balance: runningBalance + inWindowAmount,
+          isProjected,
+          incomeAmount: 0,
+          expenseAmount: 0,
+          transactionCount: 0,
+          isInitialBalance: true,
+          transactions: [],
+        });
+        runningBalance += inWindowAmount;
+      }
 
       let incomeAmount = 0;
       let expenseAmount = 0;
@@ -604,12 +661,9 @@ export class TransactionService {
 
       dayTransactions.forEach((tx) => {
         // Pular transações que fazem parte de faturas de cartão de crédito
-        // Essas transações afetam o fluxo de caixa apenas quando a fatura é paga
-        // (via transação de pagamento da fatura)
         if (tx.cardBillingId) return;
 
-        // Pular despesas de cartão de crédito que ainda não foram associadas a uma fatura
-        // (também serão capturadas via transação de pagamento da fatura)
+        // Pular despesas de cartão de crédito não associadas a uma fatura
         if (
           tx.type === TransactionType.EXPENSE &&
           tx.sourceCard &&
@@ -667,15 +721,22 @@ export class TransactionService {
         }
       });
 
-      dataPoints.push({
-        date: new Date(currentDate),
-        balance: runningBalance,
-        isProjected,
-        incomeAmount,
-        expenseAmount,
-        transactionCount: dayTxList.length,
-        transactions: dayTxList,
-      });
+      // Emitir ponto do dia se houve transações, ou se o gráfico já começou (mantém linha plana)
+      // Dias antes do primeiro evento real são omitidos
+      if (dayTxList.length > 0) {
+        chartStarted = true;
+      }
+      if (chartStarted) {
+        dataPoints.push({
+          date: new Date(currentDate),
+          balance: runningBalance,
+          isProjected,
+          incomeAmount,
+          expenseAmount,
+          transactionCount: dayTxList.length,
+          transactions: dayTxList,
+        });
+      }
 
       // Guardar saldo atual e projetado
       if (

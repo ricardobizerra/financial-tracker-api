@@ -1232,6 +1232,7 @@ type BalanceForecastPointModel {
   expenseAmount: Float!
   transactionCount: Float!
   transactions: [BalanceForecastTransactionModel!]!
+  isInitialBalance: Boolean
 }
 
 type BalanceForecastModel {

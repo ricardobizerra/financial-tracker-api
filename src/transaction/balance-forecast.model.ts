@@ -60,6 +60,9 @@ export class BalanceForecastPointModel {
 
   @Field(() => [BalanceForecastTransactionModel])
   transactions: BalanceForecastTransactionModel[];
+
+  @Field({ nullable: true })
+  isInitialBalance?: boolean;
 }
 
 @ObjectType()
