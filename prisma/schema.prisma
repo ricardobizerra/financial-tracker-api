@@ -74,11 +74,12 @@ model InstitutionLink {
 }
 
 model Account {
-  id             String  @id @default(uuid())
+  id             String    @id @default(uuid())
   name           String
-  initialBalance Decimal @default(0)
+  initialBalance Decimal   @default(0)
+  startDate      DateTime?
   description    String?
-  isActive       Boolean @default(true)
+  isActive       Boolean   @default(true)
 
   institutionLink   InstitutionLink @relation(fields: [institutionLinkId], references: [id], onDelete: Cascade)
   institutionLinkId String          @unique

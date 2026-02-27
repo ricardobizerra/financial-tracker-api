@@ -16,6 +16,9 @@ export class CreateAccountInput {
   @Field(() => GraphQLDecimal)
   initialBalance: Decimal;
 
+  @Field(() => Date, { nullable: true })
+  startDate: Date | string;
+
   @Field(() => Boolean)
   isActive: boolean;
 }

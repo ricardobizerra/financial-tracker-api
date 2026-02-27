@@ -13,6 +13,7 @@ type AccountCountAggregate {
   id: Int!
   name: Int!
   initialBalance: Int!
+  startDate: Int!
   description: Int!
   isActive: Int!
   institutionLinkId: Int!
@@ -32,6 +33,7 @@ type AccountMaxAggregate {
   id: String
   name: String
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   institutionLinkId: String
@@ -48,6 +50,7 @@ type AccountMinAggregate {
   id: String
   name: String
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   institutionLinkId: String
@@ -63,6 +66,7 @@ type Account {
   id: ID!
   name: String!
   initialBalance: Decimal!
+  startDate: DateTime
   description: String
   isActive: Boolean!
   institutionLinkId: String!
@@ -1089,6 +1093,7 @@ type AccountModel {
   id: ID!
   name: String!
   initialBalance: Decimal!
+  startDate: DateTime
   description: String
   isActive: Boolean!
   institutionLinkId: String!
@@ -1477,6 +1482,7 @@ enum InvestmentEvolutionPeriod {
 enum OrdenationAccountModel {
   name
   initialBalance
+  startDate
   isActive
   institutionLinkId
   createdAt
@@ -2017,6 +2023,7 @@ input AccountWhereInput {
   id: StringFilter
   name: StringFilter
   initialBalance: DecimalFilter
+  startDate: DateTimeNullableFilter
   description: StringNullableFilter
   isActive: BoolFilter
   institutionLinkId: StringFilter
@@ -2537,6 +2544,7 @@ input AccountCreateWithoutSourceTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2665,6 +2673,7 @@ input AccountCreateWithoutSourceRecurringTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2715,6 +2724,7 @@ input AccountCreateWithoutDestinyTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2767,6 +2777,7 @@ input AccountCreateWithoutDestinyRecurringTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2854,6 +2865,7 @@ input AccountCreateWithoutInstitutionLinkInput {
   id: String
   name: String!
   initialBalance: Decimal
+  startDate: DateTime
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -3991,6 +4003,7 @@ input AccountWhereUniqueInput {
   NOT: [AccountWhereInput!]
   name: StringFilter
   initialBalance: DecimalFilter
+  startDate: DateTimeNullableFilter
   description: StringNullableFilter
   isActive: BoolFilter
   createdAt: DateTimeFilter
@@ -4230,6 +4243,7 @@ input CreateAccountInput {
   description: String
   institutionLinkId: ID!
   initialBalance: Decimal!
+  startDate: DateTime
   isActive: Boolean!
 }
 

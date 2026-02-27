@@ -14,6 +14,8 @@ import { UserModel } from '@/user/models/user.model';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
 import { CreateAccountInput } from './create-account.input';
+import { Decimal } from '@prisma/client/runtime/library';
+import { BadRequestException } from '@nestjs/common';
 
 @Resolver()
 export class AccountResolver {
@@ -75,6 +77,12 @@ export class AccountResolver {
     @Args('data') data: CreateAccountInput,
     @CurrentUser() user: UserModel,
   ) {
+    if (!data.initialBalance.isZero() && !data.startDate) {
+      throw new BadRequestException(
+        'startDate is required when initialBalance is not 0',
+      );
+    }
+
     const createdAccount = await this.accountService.create({
       name: data.name,
       description: data.description,
@@ -84,6 +92,7 @@ export class AccountResolver {
         },
       },
       initialBalance: data.initialBalance,
+      startDate: data.startDate,
       isActive: data.isActive,
     });
 
