@@ -771,7 +771,7 @@ export class CardService {
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23, 59, 59, 999);
+      periodEnd.setHours(12, 0, 0, 0);
     } else {
       // A transação está no próximo ciclo
       // periodStart é o dia após o fechamento do mês atual
@@ -779,7 +779,7 @@ export class CardService {
 
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23, 59, 59, 999);
+      periodEnd.setHours(12, 0, 0, 0);
     }
 
     // Calcular data de pagamento - deve ser baseada em periodEnd, não periodStart
@@ -796,7 +796,7 @@ export class CardService {
       paymentDate.setMonth(periodEnd.getMonth());
     }
     paymentDate.setDate(cardBillingPaymentDay);
-    paymentDate.setHours(23, 59, 59, 999);
+    paymentDate.setHours(12, 0, 0, 0);
 
     const billing = await transactionClient.cardBilling.create({
       data: {
