@@ -63,7 +63,7 @@ export class CardResolver {
   @Query(() => CardBillingOnDate)
   async billing(
     @Info() info: GraphQLResolveInfo,
-    @Args('accountId', { type: () => ID! }) accountId: string,
+    @Args('cardId', { type: () => ID! }) cardId: string,
     @CurrentUser() user: User,
     @Args('id', { type: () => ID, nullable: true }) id?: string,
   ): Promise<CardBillingOnDate> {
@@ -73,18 +73,18 @@ export class CardResolver {
       false,
     );
 
-    const account = await this.accountService.find({
-      id: accountId,
+    const card = await this.cardService.find({
+      id: cardId,
       institutionLink: { userId: user.id },
     });
 
-    if (!account) {
-      throw new NotFoundException('Account not found');
+    if (!card) {
+      throw new NotFoundException('Card not found');
     }
 
     return this.cardService.findCurrentBilling(
       queriedFields,
-      accountId,
+      cardId,
       user.id,
       id,
     );
