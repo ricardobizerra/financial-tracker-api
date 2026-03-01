@@ -63,9 +63,9 @@ export class RecurringTransactionService {
     ) {
       // Monthly/Yearly with SPECIFIC_DAY requires dayOfMonth
       if (dayMode === DayMode.SPECIFIC_DAY) {
-        if (!data.dayOfMonth || data.dayOfMonth < 1 || data.dayOfMonth > 28) {
+        if (!data.dayOfMonth || data.dayOfMonth < 1 || data.dayOfMonth > 31) {
           throw new Error(
-            'Day of month (1-28) is required for specific day mode',
+            'Day of month (1-31) is required for specific day mode',
           );
         }
       }
@@ -427,8 +427,10 @@ export class RecurringTransactionService {
     weekOfMonth?: number | null,
   ): Date | null {
     switch (dayMode) {
-      case DayMode.SPECIFIC_DAY:
-        return new Date(year, month, dayOfMonth ?? 1);
+      case DayMode.SPECIFIC_DAY: {
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        return new Date(year, month, Math.min(dayOfMonth ?? 1, lastDay));
+      }
 
       case DayMode.LAST_DAY:
         return this.getLastDayOfMonth(year, month);
