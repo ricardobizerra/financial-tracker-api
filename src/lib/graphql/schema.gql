@@ -1613,6 +1613,7 @@ type Mutation {
   resetPassword(token: String!, newPassword: String!): Boolean!
   createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
+  redeemInvestment(data: RedeemInvestmentInput!): Investment!
   createAccount(data: CreateAccountInput!): AccountModel!
   createCard(data: CreateCardInput!): Card!
   closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
@@ -4237,6 +4238,11 @@ input CreateInvestmentInput {
   createdAt: DateTime
   updatedAt: DateTime
   institutionLinkId: ID!
+}
+
+input RedeemInvestmentInput {
+  investmentId: ID!
+  finishedAt: DateTime
 }
 
 input CreateAccountInput {

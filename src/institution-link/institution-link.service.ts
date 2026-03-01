@@ -151,12 +151,14 @@ export class InstitutionLinkService {
           if (select.account.select.balance) {
             delete select.account.select.balance;
             select.account.select.initialBalance = true;
+            select.account.select.startDate = true;
             select.account.select.sourceTransactions = {
               select: { amount: true, date: true, status: true },
             };
             select.account.select.destinyTransactions = {
               select: { amount: true, date: true, status: true },
             };
+            select.account.select.institutionLinkId = true;
           }
           if (select.account.select.currentBillingAmount) {
             delete select.account.select.currentBillingAmount;
@@ -212,6 +214,42 @@ export class InstitutionLinkService {
       };
     }
 
+    // Batch-fetch investment transactions for balance calculation
+    const needsBalance = (queriedFields as string[]).includes(
+      'account.balance',
+    );
+    const investmentsByLinkId = new Map<string, any[]>();
+    if (needsBalance) {
+      const linkIds = connections
+        .map((c: any) => c.account?.institutionLinkId)
+        .filter(Boolean);
+      if (linkIds.length > 0) {
+        const investments = await this.prismaService.investment.findMany({
+          where: {
+            institutionLinkId: { in: linkIds },
+          },
+          select: {
+            institutionLinkId: true,
+            startDate: true,
+            finishedAt: true,
+            transactions: {
+              where: {
+                role: {
+                  in: ['FUNDING', 'REDEMPTION'],
+                },
+              },
+              select: { amount: true, role: true },
+            },
+          },
+        });
+        for (const inv of investments) {
+          const existing = investmentsByLinkId.get(inv.institutionLinkId) || [];
+          existing.push(inv);
+          investmentsByLinkId.set(inv.institutionLinkId, existing);
+        }
+      }
+    }
+
     const edges = connections.map((connection, index) => {
       const cursorIndex =
         index +
@@ -233,11 +271,18 @@ export class InstitutionLinkService {
           ...(connection.account && {
             account: {
               ...connection.account,
-              ...((queriedFields as string[]).includes('account.balance') && {
+              ...(needsBalance && {
                 balance: this.accountService.calculateBalance(
                   (connection.account as any).sourceTransactions,
                   (connection.account as any).destinyTransactions,
                   (connection.account as any).initialBalance,
+                  this.accountService.mapInvestmentTransactions({
+                    ...connection.account,
+                    _investments:
+                      investmentsByLinkId.get(
+                        (connection.account as any).institutionLinkId,
+                      ) || [],
+                  }),
                 ),
               }),
               ...((queriedFields as string[]).includes(

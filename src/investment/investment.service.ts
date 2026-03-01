@@ -1,5 +1,9 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import {
@@ -414,6 +418,79 @@ export class InvestmentService {
     return {
       id: investment.id,
     };
+  }
+
+  async redeem(investmentId: string, userId: string, finishedAt?: Date) {
+    const investment = await this.prismaService.investment.findUnique({
+      where: {
+        id: investmentId,
+        institutionLink: {
+          userId,
+        },
+      },
+    });
+
+    if (!investment) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    if (investment.status === 'CLOSED') {
+      throw new BadRequestException('Investment is already redeemed');
+    }
+
+    const redeemDate = finishedAt || new Date();
+
+    // Get the latest corrected amounts
+    let lastDate: string;
+    if (investment.regimeName === Regime.CDI) {
+      lastDate = await this.redisCacheService.get(
+        'external-ipeadata-cdi-last-date',
+        async () => {
+          const cdiValues = await this.ipeadataService.getCdiValues();
+          return cdiValues?.[cdiValues?.length - 1]?.date;
+        },
+      );
+    } else {
+      lastDate = await this.redisCacheService.get(
+        'external-bacen-poupanca-last-date',
+        async () => {
+          const poupancaValues = await this.bacenService.getPoupancaValues();
+          return poupancaValues?.[poupancaValues?.length - 1]?.data;
+        },
+      );
+    }
+
+    const correctionResult = await this.correctInvestmentAmount(
+      investment,
+      lastDate,
+    );
+
+    const taxedAmount = correctionResult.taxedAmount;
+
+    // Update investment to CLOSED
+    const updatedInvestment = await this.prismaService.investment.update({
+      where: { id: investmentId },
+      data: {
+        status: 'CLOSED',
+        finishedAt: redeemDate,
+        correctedAmount: correctionResult.correctedAmount,
+        taxedAmount: correctionResult.taxedAmount,
+      },
+    });
+
+    // Create REDEMPTION transaction with the taxed (net) amount
+    const redemptionTransaction =
+      await this.prismaService.investmentTransaction.create({
+        data: {
+          amount: taxedAmount,
+          role: InvestmentTransactionRole.REDEMPTION,
+          investment: {
+            connect: { id: investmentId },
+          },
+        },
+      });
+
+    return { investment: updatedInvestment, redemptionTransaction };
   }
 
   async getInvestmentRegimes({

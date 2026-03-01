@@ -509,12 +509,18 @@ export class TransactionService {
     startDate,
     endDate,
     accountBalances,
+    investmentEvents,
   }: {
     userId: string;
     accountId?: string;
     startDate: Date;
     endDate: Date;
     accountBalances: { initialBalance: number; startDate: Date | null }[];
+    investmentEvents?: {
+      date: Date;
+      amount: number;
+      type: 'FUNDING' | 'REDEMPTION';
+    }[];
   }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -555,6 +561,36 @@ export class TransactionService {
         (inWindowByDate.get(key) || 0) + a.initialBalance,
       );
     });
+
+    // Indexar investment events por data
+    const investmentEventsByDate = new Map<
+      string,
+      { amount: number; type: 'FUNDING' | 'REDEMPTION' }[]
+    >();
+    if (investmentEvents) {
+      for (const event of investmentEvents) {
+        const key = event.date.toISOString().split('T')[0];
+        const existing = investmentEventsByDate.get(key) || [];
+        existing.push({ amount: event.amount, type: event.type });
+        investmentEventsByDate.set(key, existing);
+      }
+    }
+
+    // Pre-compute investment balance impact before chart window starts
+    let preWindowInvestmentBalance = 0;
+    if (investmentEvents) {
+      for (const event of investmentEvents) {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(0, 0, 0, 0);
+        if (eventDate < chartStart) {
+          if (event.type === 'FUNDING') {
+            preWindowInvestmentBalance -= event.amount;
+          } else if (event.type === 'REDEMPTION') {
+            preWindowInvestmentBalance += event.amount;
+          }
+        }
+      }
+    }
 
     // Buscar todas as transações no período
     const transactions = await this.prismaService.transaction.findMany({
@@ -618,16 +654,17 @@ export class TransactionService {
       }[];
     }[] = [];
 
-    let runningBalance = seedBalance;
+    let runningBalance = seedBalance + preWindowInvestmentBalance;
     const currentDate = new Date(startDate);
-    let currentBalance = seedBalance;
-    let projectedBalance = seedBalance;
+    let currentBalance = seedBalance + preWindowInvestmentBalance;
+    let projectedBalance = seedBalance + preWindowInvestmentBalance;
     // Controla se o primeiro evento real já ocorreu; dias vazios anteriores são omitidos
     let chartStarted = false;
 
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0];
       const dayTransactions = transactionsByDate.get(dateKey) || [];
+      const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
       const isProjected = currentDate > today;
 
       // Verificar se alguma conta tem startDate neste exato dia
@@ -720,6 +757,31 @@ export class TransactionService {
           });
         }
       });
+
+      // Apply investment events for this day
+      for (const invEvent of dayInvestmentEvents) {
+        if (invEvent.type === 'FUNDING') {
+          runningBalance -= invEvent.amount;
+          expenseAmount += invEvent.amount;
+          dayTxList.push({
+            id: `inv-funding-${dateKey}`,
+            description: 'Investimento (aporte)',
+            amount: invEvent.amount,
+            type: 'INVESTMENT_FUNDING',
+            isIncome: false,
+          });
+        } else if (invEvent.type === 'REDEMPTION') {
+          runningBalance += invEvent.amount;
+          incomeAmount += invEvent.amount;
+          dayTxList.push({
+            id: `inv-redemption-${dateKey}`,
+            description: 'Investimento (resgate)',
+            amount: invEvent.amount,
+            type: 'INVESTMENT_REDEMPTION',
+            isIncome: true,
+          });
+        }
+      }
 
       // Emitir ponto do dia se houve transações, ou se o gráfico já começou (mantém linha plana)
       // Dias antes do primeiro evento real são omitidos

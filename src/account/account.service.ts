@@ -4,6 +4,7 @@ import { Account, AccountCreateInput } from '@/lib/graphql/prisma-client';
 import {
   CardBillingStatus,
   InvestmentStatus,
+  InvestmentTransactionRole,
   Prisma,
   TransactionStatus,
 } from '@prisma/client';
@@ -108,6 +109,8 @@ export class AccountService {
           destinyTransactions: {
             select: { amount: true, date: true, status: true },
           },
+          startDate: true,
+          institutionLinkId: true,
         }),
         // Garantir dados para currentBillingAmount
         ...(queriedFields.includes('currentBillingAmount') && {
@@ -177,6 +180,42 @@ export class AccountService {
       };
     }
 
+    // Batch-fetch investment transactions for balance calculation
+    const investmentsByLinkId = new Map<string, any[]>();
+    if (queriedFields.includes('balance')) {
+      const linkIds = accounts
+        .map((a: any) => a.institutionLinkId)
+        .filter(Boolean);
+      if (linkIds.length > 0) {
+        const investments = await this.prismaService.investment.findMany({
+          where: {
+            institutionLinkId: { in: linkIds },
+          },
+          select: {
+            institutionLinkId: true,
+            startDate: true,
+            finishedAt: true,
+            transactions: {
+              where: {
+                role: {
+                  in: [
+                    InvestmentTransactionRole.FUNDING,
+                    InvestmentTransactionRole.REDEMPTION,
+                  ],
+                },
+              },
+              select: { amount: true, role: true },
+            },
+          },
+        });
+        for (const inv of investments) {
+          const existing = investmentsByLinkId.get(inv.institutionLinkId) || [];
+          existing.push(inv);
+          investmentsByLinkId.set(inv.institutionLinkId, existing);
+        }
+      }
+    }
+
     const edges = accounts.map((account, index) => {
       const cursorIndex =
         index +
@@ -191,6 +230,13 @@ export class AccountService {
         .toString('base64')
         .split('=')[0];
 
+      const accountWithInvestments = {
+        ...account,
+        _investments: (account as any).institutionLinkId
+          ? investmentsByLinkId.get((account as any).institutionLinkId) || []
+          : [],
+      };
+
       return {
         cursor: bufferedCursor,
         node: {
@@ -199,6 +245,7 @@ export class AccountService {
             account.sourceTransactions,
             account.destinyTransactions,
             account.initialBalance,
+            this.mapInvestmentTransactions(accountWithInvestments),
           ),
         },
       };
@@ -304,10 +351,37 @@ export class AccountService {
             destinyTransactions: {
               select: { amount: true, date: true, status: true },
             },
+            startDate: true,
+            institutionLinkId: true,
           }),
         },
       }),
     });
+
+    // Fetch investment transactions separately to avoid overriding institutionLink select
+    if (needsBalance && account?.institutionLinkId) {
+      const investments = await this.prismaService.investment.findMany({
+        where: {
+          institutionLinkId: account.institutionLinkId,
+        },
+        select: {
+          startDate: true,
+          finishedAt: true,
+          transactions: {
+            where: {
+              role: {
+                in: [
+                  InvestmentTransactionRole.FUNDING,
+                  InvestmentTransactionRole.REDEMPTION,
+                ],
+              },
+            },
+            select: { amount: true, role: true },
+          },
+        },
+      });
+      (account as any)._investments = investments;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return account as any;
@@ -325,6 +399,59 @@ export class AccountService {
     return this.prismaService.account.delete({ where: { id } });
   }
 
+  /**
+   * Maps investment data (from _investments or institutionLink.investments) into
+   * a flat array of investment transactions with effective dates.
+   */
+  mapInvestmentTransactions(account: any): {
+    role: InvestmentTransactionRole;
+    amount: Decimal;
+    date: Date;
+  }[] {
+    // Support both the batch-queried _investments and nested institutionLink.investments
+    const investments =
+      account?._investments || account?.institutionLink?.investments;
+    if (!investments) return [];
+
+    const accountStartDate = account.startDate
+      ? new Date(account.startDate)
+      : null;
+
+    const result: {
+      role: InvestmentTransactionRole;
+      amount: Decimal;
+      date: Date;
+    }[] = [];
+
+    for (const inv of investments) {
+      const invStartDate = new Date(inv.startDate);
+
+      // Only consider investments whose startDate >= account startDate
+      if (accountStartDate && invStartDate < accountStartDate) continue;
+
+      for (const tx of inv.transactions || []) {
+        if (tx.role === InvestmentTransactionRole.FUNDING) {
+          result.push({
+            role: tx.role,
+            amount: new Decimal(tx.amount),
+            date: invStartDate,
+          });
+        } else if (
+          tx.role === InvestmentTransactionRole.REDEMPTION &&
+          inv.finishedAt
+        ) {
+          result.push({
+            role: tx.role,
+            amount: new Decimal(tx.amount),
+            date: new Date(inv.finishedAt),
+          });
+        }
+      }
+    }
+
+    return result;
+  }
+
   calculateBalance(
     sourceTransactions: {
       amount: Decimal;
@@ -337,6 +464,11 @@ export class AccountService {
       status: TransactionStatus;
     }[],
     initialBalance: Decimal,
+    investmentTransactions?: {
+      role: InvestmentTransactionRole;
+      amount: Decimal;
+      date: Date;
+    }[],
   ): Decimal {
     const now = new Date();
 
@@ -366,7 +498,24 @@ export class AccountService {
       new Decimal(0),
     );
 
-    return initialBalance.plus(incomingAmount).minus(outgoingAmount);
+    let balance = initialBalance.plus(incomingAmount).minus(outgoingAmount);
+
+    // Apply investment transactions impact
+    if (investmentTransactions) {
+      for (const invTx of investmentTransactions) {
+        if (invTx.date > now) continue; // Only apply past/current events
+
+        if (invTx.role === InvestmentTransactionRole.FUNDING) {
+          // Money left the account → subtract
+          balance = balance.minus(invTx.amount);
+        } else if (invTx.role === InvestmentTransactionRole.REDEMPTION) {
+          // Money returned to the account → add
+          balance = balance.plus(invTx.amount);
+        }
+      }
+    }
+
+    return balance;
   }
 
   calculateCurrentBillingAmount(account: {

@@ -918,12 +918,72 @@ export class TransactionResolver {
       startDate: a.startDate ? new Date(a.startDate) : null,
     }));
 
+    // Query investment transactions (FUNDING/REDEMPTION) for balance forecast
+    const investmentTransactions =
+      await this.prismaService.investmentTransaction.findMany({
+        where: {
+          role: { in: ['FUNDING', 'REDEMPTION'] },
+          investment: {
+            institutionLink: {
+              userId: user.id,
+              ...(args.accountId && { account: { id: args.accountId } }),
+            },
+          },
+        },
+        select: {
+          amount: true,
+          role: true,
+          investment: {
+            select: {
+              startDate: true,
+              finishedAt: true,
+              institutionLink: {
+                select: {
+                  account: {
+                    select: { startDate: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+    // Map investment transactions into balance events
+    const investmentEvents = investmentTransactions
+      .filter((tx) => {
+        // Only include investments whose startDate >= account startDate
+        const accountStart = tx.investment.institutionLink?.account?.startDate;
+        if (!accountStart) return false;
+        return new Date(tx.investment.startDate) >= new Date(accountStart);
+      })
+      .map((tx) => ({
+        date:
+          tx.role === 'FUNDING'
+            ? new Date(tx.investment.startDate)
+            : tx.investment.finishedAt
+              ? new Date(tx.investment.finishedAt)
+              : null,
+        amount: Number(tx.amount),
+        type: tx.role as 'FUNDING' | 'REDEMPTION',
+      }))
+      .filter(
+        (
+          event,
+        ): event is {
+          date: Date;
+          amount: number;
+          type: 'FUNDING' | 'REDEMPTION';
+        } => event.date !== null,
+      );
+
     return this.transactionService.getBalanceForecast({
       userId: user.id,
       accountId: args.accountId,
       startDate,
       endDate,
       accountBalances,
+      investmentEvents,
     });
   }
 

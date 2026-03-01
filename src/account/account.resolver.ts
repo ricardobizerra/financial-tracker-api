@@ -66,6 +66,7 @@ export class AccountResolver {
           account.sourceTransactions,
           account.destinyTransactions,
           account.initialBalance,
+          this.accountService.mapInvestmentTransactions(account),
         ),
       }),
     };

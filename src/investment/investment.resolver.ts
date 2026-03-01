@@ -27,6 +27,7 @@ import {
   InvestmentEvolutionArgs,
 } from './investment-evolution.model';
 import { InstitutionLinkService } from '@/institution-link/institution-link.service';
+import { RedeemInvestmentInput } from './input/redeem-investment.input';
 
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
@@ -125,6 +126,21 @@ export class InvestmentResolver {
     const deletedInvestment = await this.investmentService.delete(id, user?.id);
 
     return deletedInvestment.id;
+  }
+
+  @Auth()
+  @Mutation(() => Investment, { name: 'redeemInvestment' })
+  async redeemInvestment(
+    @Args('data') data: RedeemInvestmentInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const result = await this.investmentService.redeem(
+      data.investmentId,
+      user.id,
+      data.finishedAt,
+    );
+
+    return result.investment;
   }
 
   @Auth()
