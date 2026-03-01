@@ -161,6 +161,11 @@ export class RecurringTransactionService {
       );
     }
 
+    // Preserve the time component from startDate in all occurrences
+    // This prevents timezone-related off-by-one-day bugs (e.g. midnight UTC
+    // showing as previous day in UTC-3)
+    occurrences = this.normalizeOccurrenceTimes(occurrences, data.startDate);
+
     if (occurrences.length === 0) {
       throw new Error(
         'No occurrences could be generated for the given parameters',
@@ -559,7 +564,7 @@ export class RecurringTransactionService {
 
       if (lastTransaction && lastTransaction.date < newMaxDate) {
         // Generate new transactions from last date to new max
-        const newOccurrences = this.calculateOccurrences(
+        let newOccurrences = this.calculateOccurrences(
           this.addMonths(
             lastTransaction.date,
             recurring.frequency === RecurrenceFrequency.MONTHLY ? 1 : 0,
@@ -572,6 +577,11 @@ export class RecurringTransactionService {
           recurring.weekOfMonth,
           recurring.monthOfYear,
         ).filter((d) => d > lastTransaction.date);
+
+        newOccurrences = this.normalizeOccurrenceTimes(
+          newOccurrences,
+          recurring.startDate,
+        );
 
         const baseStatus = await this.determineStatus(
           recurring.type,
@@ -605,7 +615,7 @@ export class RecurringTransactionService {
       });
     } else if (newEndDate > oldEndDate) {
       // Extending - add transactions from old end date to new end date
-      const newOccurrences = this.calculateOccurrences(
+      let newOccurrences = this.calculateOccurrences(
         oldEndDate,
         newEndDate,
         recurring.frequency,
@@ -615,6 +625,11 @@ export class RecurringTransactionService {
         recurring.weekOfMonth,
         recurring.monthOfYear,
       ).filter((d) => d > oldEndDate);
+
+      newOccurrences = this.normalizeOccurrenceTimes(
+        newOccurrences,
+        recurring.startDate,
+      );
 
       const baseStatus = await this.determineStatus(
         recurring.type,
@@ -908,5 +923,27 @@ export class RecurringTransactionService {
     if (daysToAdd <= 0) daysToAdd += 7;
     result.setDate(result.getDate() + daysToAdd);
     return result;
+  }
+
+  /**
+   * Copies the time component (hours, minutes, seconds, ms) from a reference
+   * date into each occurrence date. This prevents timezone-related
+   * off-by-one-day bugs: dates constructed via `new Date(year, month, day)`
+   * default to midnight in the server's local timezone (UTC in Docker).
+   * A user in UTC-3 would see that as 21:00 of the *previous day*.
+   * By copying the time from startDate (which carries the user's timezone
+   * offset), the day is preserved correctly.
+   */
+  private normalizeOccurrenceTimes(dates: Date[], referenceDate: Date): Date[] {
+    const hours = referenceDate.getUTCHours();
+    const minutes = referenceDate.getUTCMinutes();
+    const seconds = referenceDate.getUTCSeconds();
+    const ms = referenceDate.getUTCMilliseconds();
+
+    return dates.map((d) => {
+      const normalized = new Date(d);
+      normalized.setUTCHours(hours, minutes, seconds, ms);
+      return normalized;
+    });
   }
 }
