@@ -66,7 +66,7 @@ type Account {
   id: ID!
   name: String!
   initialBalance: Decimal!
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean!
   institutionLinkId: String!
@@ -1093,7 +1093,7 @@ type AccountModel {
   id: ID!
   name: String!
   initialBalance: Decimal!
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean!
   institutionLinkId: String!
@@ -2024,7 +2024,7 @@ input AccountWhereInput {
   id: StringFilter
   name: StringFilter
   initialBalance: DecimalFilter
-  startDate: DateTimeNullableFilter
+  startDate: DateTimeFilter
   description: StringNullableFilter
   isActive: BoolFilter
   institutionLinkId: StringFilter
@@ -2545,7 +2545,7 @@ input AccountCreateWithoutSourceTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2674,7 +2674,7 @@ input AccountCreateWithoutSourceRecurringTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2725,7 +2725,7 @@ input AccountCreateWithoutDestinyTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2778,7 +2778,7 @@ input AccountCreateWithoutDestinyRecurringTransactionsInput {
   id: String
   name: String!
   initialBalance: Decimal
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -2866,7 +2866,7 @@ input AccountCreateWithoutInstitutionLinkInput {
   id: String
   name: String!
   initialBalance: Decimal
-  startDate: DateTime
+  startDate: DateTime!
   description: String
   isActive: Boolean
   createdAt: DateTime
@@ -4004,7 +4004,7 @@ input AccountWhereUniqueInput {
   NOT: [AccountWhereInput!]
   name: StringFilter
   initialBalance: DecimalFilter
-  startDate: DateTimeNullableFilter
+  startDate: DateTimeFilter
   description: StringNullableFilter
   isActive: BoolFilter
   createdAt: DateTimeFilter

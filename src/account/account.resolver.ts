@@ -77,12 +77,6 @@ export class AccountResolver {
     @Args('data') data: CreateAccountInput,
     @CurrentUser() user: UserModel,
   ) {
-    if (!data.initialBalance.isZero() && !data.startDate) {
-      throw new BadRequestException(
-        'startDate is required when initialBalance is not 0',
-      );
-    }
-
     const createdAccount = await this.accountService.create({
       name: data.name,
       description: data.description,

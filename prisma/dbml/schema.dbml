@@ -49,7 +49,7 @@ Table Account {
   id String [pk]
   name String [not null]
   initialBalance Decimal [not null, default: 0]
-  startDate DateTime
+  startDate DateTime [not null]
   description String
   isActive Boolean [not null, default: true]
   institutionLink InstitutionLink [not null]

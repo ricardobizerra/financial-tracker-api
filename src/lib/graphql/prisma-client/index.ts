@@ -562,8 +562,8 @@ export class AccountCreateManyInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -739,8 +739,8 @@ export class AccountCreateWithoutDestinyRecurringTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -789,8 +789,8 @@ export class AccountCreateWithoutDestinyTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -839,8 +839,8 @@ export class AccountCreateWithoutInstitutionLinkInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -889,8 +889,8 @@ export class AccountCreateWithoutSourceRecurringTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -939,8 +939,8 @@ export class AccountCreateWithoutSourceTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -989,8 +989,8 @@ export class AccountCreateInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1078,8 +1078,8 @@ export class AccountGroupBy {
   name!: string;
   @Field(() => GraphQLDecimal, { nullable: false })
   initialBalance!: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: false })
@@ -1252,8 +1252,8 @@ export class AccountOrderByWithAggregationInput {
   name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   initialBalance?: keyof typeof SortOrder;
-  @Field(() => SortOrderInput, { nullable: true })
-  startDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  startDate?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   description?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -1289,8 +1289,8 @@ export class AccountOrderByWithRelationInput {
   name?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   initialBalance?: keyof typeof SortOrder;
-  @Field(() => SortOrderInput, { nullable: true })
-  startDate?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrder, { nullable: true })
+  startDate?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   description?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrder, { nullable: true })
@@ -1350,8 +1350,8 @@ export class AccountScalarWhereWithAggregatesInput {
   @Field(() => DecimalWithAggregatesFilter, { nullable: true })
   @Type(() => DecimalWithAggregatesFilter)
   initialBalance?: InstanceType<typeof DecimalWithAggregatesFilter>;
-  @Field(() => DateTimeNullableWithAggregatesFilter, { nullable: true })
-  startDate?: InstanceType<typeof DateTimeNullableWithAggregatesFilter>;
+  @Field(() => DateTimeWithAggregatesFilter, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => BoolWithAggregatesFilter, { nullable: true })
@@ -1409,8 +1409,8 @@ export class AccountUncheckedCreateWithoutDestinyRecurringTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1459,8 +1459,8 @@ export class AccountUncheckedCreateWithoutDestinyTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1514,8 +1514,8 @@ export class AccountUncheckedCreateWithoutInstitutionLinkInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1574,8 +1574,8 @@ export class AccountUncheckedCreateWithoutSourceRecurringTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1624,8 +1624,8 @@ export class AccountUncheckedCreateWithoutSourceTransactionsInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1679,8 +1679,8 @@ export class AccountUncheckedCreateInput {
   @Type(() => Object)
   @Transform(transformToDecimal)
   initialBalance?: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate?: Date | string;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date | string;
   @Field(() => String, { nullable: true })
   description?: string;
   @Field(() => Boolean, { nullable: true })
@@ -1740,8 +1740,8 @@ export class AccountUncheckedUpdateManyInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1796,8 +1796,8 @@ export class AccountUncheckedUpdateWithoutDestinyRecurringTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1845,8 +1845,8 @@ export class AccountUncheckedUpdateWithoutDestinyTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1899,8 +1899,8 @@ export class AccountUncheckedUpdateWithoutInstitutionLinkInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -1958,8 +1958,8 @@ export class AccountUncheckedUpdateWithoutSourceRecurringTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2007,8 +2007,8 @@ export class AccountUncheckedUpdateWithoutSourceTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2061,8 +2061,8 @@ export class AccountUncheckedUpdateInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2122,8 +2122,8 @@ export class AccountUpdateManyMutationInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2390,8 +2390,8 @@ export class AccountUpdateWithoutDestinyRecurringTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2439,8 +2439,8 @@ export class AccountUpdateWithoutDestinyTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2488,8 +2488,8 @@ export class AccountUpdateWithoutInstitutionLinkInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2537,8 +2537,8 @@ export class AccountUpdateWithoutSourceRecurringTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2586,8 +2586,8 @@ export class AccountUpdateWithoutSourceTransactionsInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2635,8 +2635,8 @@ export class AccountUpdateInput {
   @Field(() => DecimalFieldUpdateOperationsInput, { nullable: true })
   @Type(() => DecimalFieldUpdateOperationsInput)
   initialBalance?: InstanceType<typeof DecimalFieldUpdateOperationsInput>;
-  @Field(() => NullableDateTimeFieldUpdateOperationsInput, { nullable: true })
-  startDate?: InstanceType<typeof NullableDateTimeFieldUpdateOperationsInput>;
+  @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   description?: InstanceType<typeof NullableStringFieldUpdateOperationsInput>;
   @Field(() => BoolFieldUpdateOperationsInput, { nullable: true })
@@ -2787,8 +2787,8 @@ export class AccountWhereUniqueInput {
   @Field(() => DecimalFilter, { nullable: true })
   @Type(() => DecimalFilter)
   initialBalance?: InstanceType<typeof DecimalFilter>;
-  @Field(() => DateTimeNullableFilter, { nullable: true })
-  startDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableFilter>;
   @Field(() => BoolFilter, { nullable: true })
@@ -2836,8 +2836,8 @@ export class AccountWhereInput {
   @Field(() => DecimalFilter, { nullable: true })
   @Type(() => DecimalFilter)
   initialBalance?: InstanceType<typeof DecimalFilter>;
-  @Field(() => DateTimeNullableFilter, { nullable: true })
-  startDate?: InstanceType<typeof DateTimeNullableFilter>;
+  @Field(() => DateTimeFilter, { nullable: true })
+  startDate?: InstanceType<typeof DateTimeFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   description?: InstanceType<typeof StringNullableFilter>;
   @Field(() => BoolFilter, { nullable: true })
@@ -2877,8 +2877,8 @@ export class Account {
   name!: string;
   @Field(() => GraphQLDecimal, { nullable: false, defaultValue: 0 })
   initialBalance!: Decimal;
-  @Field(() => Date, { nullable: true })
-  startDate!: Date | null;
+  @Field(() => Date, { nullable: false })
+  startDate!: Date;
   @Field(() => String, { nullable: true })
   description!: string | null;
   @Field(() => Boolean, { nullable: false, defaultValue: true })
