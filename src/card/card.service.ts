@@ -762,9 +762,10 @@ export class CardService {
     const periodEnd = new Date(periodStart);
     const paymentDate = new Date(periodStart);
 
-    // Se a data está antes ou no dia de fechamento, pertence ao ciclo atual
-    // Se está depois, pertence ao próximo ciclo
-    if (periodStart.getDate() <= cardBillingCycleDay) {
+    // Se a data está antes do dia de fechamento, pertence ao ciclo atual
+    // Se está no dia de fechamento ou depois, pertence ao próximo ciclo
+    // (transações NO dia de fechamento vão para a fatura corrente que está fechando)
+    if (periodStart.getDate() < cardBillingCycleDay) {
       // A transação está no ciclo atual
       // periodStart deve ser o dia após o fechamento do mês anterior
       calculatedPeriodStart.setMonth(calculatedPeriodStart.getMonth() - 1);
@@ -773,7 +774,7 @@ export class CardService {
       periodEnd.setDate(cardBillingCycleDay);
       periodEnd.setHours(12, 0, 0, 0);
     } else {
-      // A transação está no próximo ciclo
+      // A transação está no dia de fechamento ou depois → próximo ciclo
       // periodStart é o dia após o fechamento do mês atual
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
@@ -869,6 +870,11 @@ export class CardService {
         },
         paymentTransaction: true,
         transactions: true,
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
       },
     });
 
@@ -917,6 +923,25 @@ export class CardService {
           cardBillingId: nextBilling.id,
         },
       });
+    }
+
+    // Move installments after closing date to new billing
+    if (billing.installments && billing.installments.length > 0) {
+      const installmentsForNextBilling = billing.installments.filter(
+        (i) =>
+          i.transaction && new Date(i.transaction.date) > closeDateNormalized,
+      );
+
+      if (installmentsForNextBilling.length > 0) {
+        await this.prisma.transactionInstallment.updateMany({
+          where: {
+            id: { in: installmentsForNextBilling.map((i) => i.id) },
+          },
+          data: {
+            cardBillingId: nextBilling.id,
+          },
+        });
+      }
     }
 
     // Garantir que a transação de pagamento existe e atualizar com o valor correto
@@ -973,6 +998,17 @@ export class CardService {
       throw new NotFoundException('Billing not found');
     }
 
+    // Rejeitar pagamento para faturas PENDING ou já PAID
+    if (billing.status === CardBillingStatus.PENDING) {
+      throw new Error(
+        'Não é possível pagar uma fatura que ainda não foi fechada.',
+      );
+    }
+
+    if (billing.status === CardBillingStatus.PAID) {
+      throw new Error('Esta fatura já foi paga.');
+    }
+
     if (!billing.paymentTransaction) {
       throw new NotFoundException(
         'Payment transaction not found for this billing',
@@ -997,8 +1033,11 @@ export class CardService {
         },
       });
 
-      // Update the billing status to PAID if it's currently CLOSED
-      if (billing.status === CardBillingStatus.CLOSED) {
+      // Update the billing status to PAID if it's CLOSED or OVERDUE
+      if (
+        billing.status === CardBillingStatus.CLOSED ||
+        billing.status === CardBillingStatus.OVERDUE
+      ) {
         await Promise.all([
           tx.cardBilling.update({
             where: { id: billingId },

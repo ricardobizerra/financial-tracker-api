@@ -69,14 +69,15 @@ export class TransactionResolver {
     @Args('data') data: CreateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
+    // Calcular datas para comparação
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const transactionDate = new Date(data.date);
+    transactionDate.setHours(0, 0, 0, 0);
+
     // Calcular status baseado na data se não foi informado
     let calculatedStatus = data.status;
     if (!calculatedStatus) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const transactionDate = new Date(data.date);
-      transactionDate.setHours(0, 0, 0, 0);
-
       if (transactionDate > today) {
         // Data futura -> PLANNED
         calculatedStatus = TransactionStatus.PLANNED;
@@ -94,6 +95,25 @@ export class TransactionResolver {
     if (calculatedStatus === TransactionStatus.OVERDUE) {
       throw new Error(
         'OVERDUE status cannot be set manually. It is calculated by the system.',
+      );
+    }
+
+    // Rejeitar COMPLETED para datas futuras e PLANNED para datas passadas
+    if (
+      calculatedStatus === TransactionStatus.COMPLETED &&
+      transactionDate > today
+    ) {
+      throw new Error(
+        'Transactions with future dates cannot be marked as COMPLETED.',
+      );
+    }
+
+    if (
+      calculatedStatus === TransactionStatus.PLANNED &&
+      transactionDate < today
+    ) {
+      throw new Error(
+        'Transactions with past dates cannot be marked as PLANNED.',
       );
     }
 
@@ -196,86 +216,14 @@ export class TransactionResolver {
       calculatedPaymentMethod === PaymentMethod.CREDIT_CARD ||
       calculatedPaymentMethod === PaymentMethod.DEBIT_CARD;
 
-    if (isCardPaymentMethod) {
-      if (sourceCard && sourceCard.type === CardType.CREDIT) {
-        throw new Error(
-          'Credit card and debit card payment methods can only be used with card-type accounts.',
-        );
-      }
+    if (isCardPaymentMethod && !sourceCard) {
+      throw new Error(
+        'Credit card and debit card payment methods can only be used with card-type accounts.',
+      );
     }
-
-    let cardBillingId: string | null = null;
 
     // Cartões de débito não usam billing/fatura - débito é imediato na conta
-    if (
-      data.type === TransactionType.EXPENSE &&
-      sourceCard &&
-      sourceCard.type === CardType.DEBIT
-    ) {
-      const card = await this.cardService.find({
-        id: sourceCard.id,
-      });
-
-      if (!card) {
-        throw new Error('Card not found');
-      }
-
-      const billing = await this.prismaService.cardBilling.findFirst({
-        where: {
-          card: {
-            id: card.id,
-          },
-          periodStart: {
-            lte: data.date,
-          },
-          status: CardBillingStatus.PENDING,
-        },
-        orderBy: {
-          periodStart: 'desc',
-        },
-      });
-
-      if (billing) {
-        cardBillingId = billing.id;
-      } else {
-        const billing = await this.prismaService.cardBilling.findFirst({
-          where: {
-            card: {
-              id: card.id,
-            },
-            periodStart: {
-              gte: data.date,
-            },
-            status: CardBillingStatus.PENDING,
-          },
-        });
-
-        if (billing) {
-          cardBillingId = billing.id;
-        } else {
-          const lastBilling = await this.prismaService.cardBilling.findFirst({
-            where: {
-              card: {
-                id: card.id,
-              },
-            },
-            orderBy: {
-              periodEnd: 'desc',
-            },
-          });
-
-          const billing = await this.cardService.createBilling({
-            cardId: card.id,
-            cardBillingCycleDay: card.billingCycleDay,
-            cardBillingPaymentDay: card.billingPaymentDay,
-            periodStart: lastBilling?.periodEnd,
-            limit: card.defaultLimit,
-          });
-
-          cardBillingId = billing.id;
-        }
-      }
-    }
+    const cardBillingId: string | null = null;
 
     const transaction = await this.transactionService.create({
       amount: data.amount,
@@ -521,13 +469,23 @@ export class TransactionResolver {
 
     // Transição automática de status se a data for alterada
     if (data.date !== undefined) {
-      if (transactionDate <= today) {
-        // Data passada ou hoje -> COMPLETED
+      if (transactionDate < today) {
+        // Data passada -> COMPLETED
         if (
           existingTransaction.status === TransactionStatus.PLANNED ||
           existingTransaction.status === TransactionStatus.OVERDUE
         ) {
           newStatus = TransactionStatus.COMPLETED;
+        }
+      } else if (transactionDate.getTime() === today.getTime()) {
+        // Data é hoje -> depende do isCompleted enviado pelo usuário
+        if (
+          existingTransaction.status === TransactionStatus.PLANNED ||
+          existingTransaction.status === TransactionStatus.OVERDUE
+        ) {
+          newStatus = data.isCompleted
+            ? TransactionStatus.COMPLETED
+            : existingTransaction.status;
         }
       } else {
         // Data futura -> PLANNED
@@ -759,6 +717,11 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
+    // Verificar se é transação recorrente
+    if (!transaction.recurringTransactionId) {
+      throw new Error('Transação não faz parte de uma recorrência');
+    }
+
     // THIS_ONLY: usa updateTransaction existente
     if (data.scope === UpdateRecurringScope.THIS_ONLY) {
       const updatedTransaction = await this.transactionService.update(
@@ -774,11 +737,6 @@ export class TransactionResolver {
         },
       );
       return updatedTransaction;
-    }
-
-    // Verificar se é transação recorrente
-    if (!transaction.recurringTransactionId) {
-      throw new Error('Transação não faz parte de uma recorrência');
     }
 
     // Construir dados de atualização

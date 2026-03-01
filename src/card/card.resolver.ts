@@ -128,8 +128,8 @@ export class CardResolver {
         {
           name: data.name,
           type: data.type,
-          billingCycleDay: data.billingCycleDay ?? 1,
-          billingPaymentDay: data.billingPaymentDay ?? 1,
+          billingCycleDay: data.billingCycleDay,
+          billingPaymentDay: data.billingPaymentDay,
           institutionLink: {
             connect: {
               id: data.institutionLinkId,

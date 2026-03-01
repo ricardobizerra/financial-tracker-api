@@ -1239,7 +1239,7 @@ export class TransactionService {
 
   /**
    * Cron job que roda diariamente à meia-noite para atualizar status de transações.
-   * Transações PLANNED com data no passado são marcadas como COMPLETED.
+   * Transações PLANNED com data no passado são marcadas como OVERDUE.
    */
   @Cron('0 0 0 * * *') // Every day at midnight
   async updateTransactionStatuses(): Promise<void> {
@@ -1252,13 +1252,13 @@ export class TransactionService {
         date: { lt: today },
       },
       data: {
-        status: TransactionStatus.COMPLETED,
+        status: TransactionStatus.OVERDUE,
       },
     });
 
     if (result.count > 0) {
       this.logger.log(
-        `Updated ${result.count} transactions from PLANNED to COMPLETED`,
+        `Updated ${result.count} transactions from PLANNED to OVERDUE`,
       );
     }
   }
