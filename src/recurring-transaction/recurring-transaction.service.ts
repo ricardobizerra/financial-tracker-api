@@ -164,7 +164,7 @@ export class RecurringTransactionService {
     // Preserve the time component from startDate in all occurrences
     // This prevents timezone-related off-by-one-day bugs (e.g. midnight UTC
     // showing as previous day in UTC-3)
-    occurrences = this.normalizeOccurrenceTimes(occurrences, data.startDate);
+    occurrences = this.normalizeOccurrenceTimes(occurrences);
 
     if (occurrences.length === 0) {
       throw new Error(
@@ -578,10 +578,7 @@ export class RecurringTransactionService {
           recurring.monthOfYear,
         ).filter((d) => d > lastTransaction.date);
 
-        newOccurrences = this.normalizeOccurrenceTimes(
-          newOccurrences,
-          recurring.startDate,
-        );
+        newOccurrences = this.normalizeOccurrenceTimes(newOccurrences);
 
         const baseStatus = await this.determineStatus(
           recurring.type,
@@ -626,10 +623,7 @@ export class RecurringTransactionService {
         recurring.monthOfYear,
       ).filter((d) => d > oldEndDate);
 
-      newOccurrences = this.normalizeOccurrenceTimes(
-        newOccurrences,
-        recurring.startDate,
-      );
+      newOccurrences = this.normalizeOccurrenceTimes(newOccurrences);
 
       const baseStatus = await this.determineStatus(
         recurring.type,
@@ -926,23 +920,16 @@ export class RecurringTransactionService {
   }
 
   /**
-   * Copies the time component (hours, minutes, seconds, ms) from a reference
-   * date into each occurrence date. This prevents timezone-related
-   * off-by-one-day bugs: dates constructed via `new Date(year, month, day)`
-   * default to midnight in the server's local timezone (UTC in Docker).
-   * A user in UTC-3 would see that as 21:00 of the *previous day*.
-   * By copying the time from startDate (which carries the user's timezone
-   * offset), the day is preserved correctly.
+   * Sets the time component of each occurrence date to 3am UTC (03:00).
+   * This prevents timezone-related off-by-one-day bugs: dates constructed
+   * via `new Date(year, month, day)` default to midnight in the server's
+   * local timezone (UTC in Docker). A user in UTC-3 would see midnight UTC
+   * as 21:00 of the *previous day*.
    */
-  private normalizeOccurrenceTimes(dates: Date[], referenceDate: Date): Date[] {
-    const hours = referenceDate.getUTCHours();
-    const minutes = referenceDate.getUTCMinutes();
-    const seconds = referenceDate.getUTCSeconds();
-    const ms = referenceDate.getUTCMilliseconds();
-
+  private normalizeOccurrenceTimes(dates: Date[]): Date[] {
     return dates.map((d) => {
       const normalized = new Date(d);
-      normalized.setUTCHours(hours, minutes, seconds, ms);
+      normalized.setUTCHours(3, 0, 0, 0);
       return normalized;
     });
   }

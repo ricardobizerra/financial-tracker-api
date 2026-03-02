@@ -523,10 +523,10 @@ export class TransactionService {
     }[];
   }) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(3, 0, 0, 0);
 
     const chartStart = new Date(startDate);
-    chartStart.setHours(0, 0, 0, 0);
+    chartStart.setHours(3, 0, 0, 0);
 
     // Separar contas em dois grupos:
     // 1. startDate antes da janela → saldo inicial já está ativo, somar ao runningBalance inicial
@@ -535,14 +535,14 @@ export class TransactionService {
     const preWindowAccounts = accountBalances.filter((a) => {
       if (!a.startDate) return true; // sem data → considera já ativo
       const d = new Date(a.startDate);
-      d.setHours(0, 0, 0, 0);
+      d.setHours(3, 0, 0, 0);
       return d < chartStart;
     });
 
     const inWindowAccounts = accountBalances.filter((a) => {
       if (!a.startDate) return false;
       const d = new Date(a.startDate);
-      d.setHours(0, 0, 0, 0);
+      d.setHours(3, 0, 0, 0);
       return d >= chartStart;
     });
 
@@ -581,7 +581,7 @@ export class TransactionService {
     if (investmentEvents) {
       for (const event of investmentEvents) {
         const eventDate = new Date(event.date);
-        eventDate.setHours(0, 0, 0, 0);
+        eventDate.setHours(3, 0, 0, 0);
         if (eventDate < chartStart) {
           if (event.type === 'FUNDING') {
             preWindowInvestmentBalance -= event.amount;
@@ -656,6 +656,7 @@ export class TransactionService {
 
     let runningBalance = seedBalance + preWindowInvestmentBalance;
     const currentDate = new Date(startDate);
+    currentDate.setHours(3, 0, 0, 0);
     let currentBalance = seedBalance + preWindowInvestmentBalance;
     let projectedBalance = seedBalance + preWindowInvestmentBalance;
     // Controla se o primeiro evento real já ocorreu; dias vazios anteriores são omitidos
@@ -665,7 +666,7 @@ export class TransactionService {
       const dateKey = currentDate.toISOString().split('T')[0];
       const dayTransactions = transactionsByDate.get(dateKey) || [];
       const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
-      const isProjected = currentDate > today;
+      const isProjected = currentDate >= today;
 
       // Verificar se alguma conta tem startDate neste exato dia
       const inWindowAmount = inWindowByDate.get(dateKey);
@@ -673,7 +674,7 @@ export class TransactionService {
         // Emitir um ponto de âncora do saldo inicial antes das transações do dia
         chartStarted = true;
         dataPoints.push({
-          date: new Date(currentDate),
+          date: new Date(`${dateKey}T03:00:00.000Z`),
           balance: runningBalance + inWindowAmount,
           isProjected,
           incomeAmount: 0,
@@ -790,7 +791,7 @@ export class TransactionService {
       }
       if (chartStarted) {
         dataPoints.push({
-          date: new Date(currentDate),
+          date: new Date(`${dateKey}T03:00:00.000Z`),
           balance: runningBalance,
           isProjected,
           incomeAmount,
