@@ -508,14 +508,14 @@ export class TransactionService {
     accountId,
     startDate,
     endDate,
-    accountBalances,
+    accountBalance,
     investmentEvents,
   }: {
     userId: string;
     accountId?: string;
     startDate: Date;
     endDate: Date;
-    accountBalances: { initialBalance: number; startDate: Date | null }[];
+    accountBalance: { initialBalance: number; startDate: Date | null };
     investmentEvents?: {
       date: Date;
       amount: number;
@@ -528,39 +528,25 @@ export class TransactionService {
     const chartStart = new Date(startDate);
     chartStart.setHours(3, 0, 0, 0);
 
-    // Separar contas em dois grupos:
-    // 1. startDate antes da janela → saldo inicial já está ativo, somar ao runningBalance inicial
-    // 2. startDate dentro da janela → saldo inicial entra em um dia específico do gráfico
-    // 3. sem startDate (legado) → tratar como se já estivesse ativo
-    const preWindowAccounts = accountBalances.filter((a) => {
-      if (!a.startDate) return true; // sem data → considera já ativo
-      const d = new Date(a.startDate);
-      d.setHours(3, 0, 0, 0);
-      return d < chartStart;
-    });
-
-    const inWindowAccounts = accountBalances.filter((a) => {
-      if (!a.startDate) return false;
-      const d = new Date(a.startDate);
-      d.setHours(3, 0, 0, 0);
-      return d >= chartStart;
-    });
-
-    // Saldo de partida = soma dos saldos iniciais das contas já ativas antes da janela
-    const seedBalance = preWindowAccounts.reduce(
-      (sum, a) => sum + a.initialBalance,
-      0,
-    );
-
-    // Indexar entradas em-janela por chave de data (YYYY-MM-DD)
+    let seedBalance = 0;
     const inWindowByDate = new Map<string, number>();
-    inWindowAccounts.forEach((a) => {
-      const key = new Date(a.startDate!).toISOString().split('T')[0];
-      inWindowByDate.set(
-        key,
-        (inWindowByDate.get(key) || 0) + a.initialBalance,
-      );
-    });
+
+    if (!accountBalance.startDate) {
+      // sem data → considera já ativo
+      seedBalance = accountBalance.initialBalance;
+    } else {
+      const d = new Date(accountBalance.startDate);
+      d.setHours(3, 0, 0, 0);
+
+      if (d < chartStart) {
+        // startDate antes da janela → saldo inicial já está ativo
+        seedBalance = accountBalance.initialBalance;
+      } else {
+        // startDate dentro/após a janela → saldo inicial entra em um dia específico do gráfico
+        const key = d.toISOString().split('T')[0];
+        inWindowByDate.set(key, accountBalance.initialBalance);
+      }
+    }
 
     // Indexar investment events por data
     const investmentEventsByDate = new Map<

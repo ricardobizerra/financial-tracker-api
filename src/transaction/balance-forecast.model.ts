@@ -66,7 +66,16 @@ export class BalanceForecastPointModel {
 }
 
 @ObjectType()
-export class BalanceForecastModel {
+export class BalanceForecastSeriesModel {
+  @Field()
+  accountId: string;
+
+  @Field()
+  accountName: string;
+
+  @Field({ nullable: true })
+  color?: string;
+
   @Field(() => [BalanceForecastPointModel])
   dataPoints: BalanceForecastPointModel[];
 
@@ -78,6 +87,12 @@ export class BalanceForecastModel {
 
   @Field(() => Float)
   balanceTrend: number;
+}
+
+@ObjectType()
+export class BalanceForecastModel {
+  @Field(() => [BalanceForecastSeriesModel])
+  accountSeries: BalanceForecastSeriesModel[];
 
   @Field()
   startDate: Date;

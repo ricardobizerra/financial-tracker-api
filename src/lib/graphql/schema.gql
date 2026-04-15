@@ -1235,11 +1235,18 @@ type BalanceForecastPointModel {
   isInitialBalance: Boolean
 }
 
-type BalanceForecastModel {
+type BalanceForecastSeriesModel {
+  accountId: String!
+  accountName: String!
+  color: String
   dataPoints: [BalanceForecastPointModel!]!
   currentBalance: Float!
   projectedBalance: Float!
   balanceTrend: Float!
+}
+
+type BalanceForecastModel {
+  accountSeries: [BalanceForecastSeriesModel!]!
   startDate: DateTime!
   endDate: DateTime!
 }
