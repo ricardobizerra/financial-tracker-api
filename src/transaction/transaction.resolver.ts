@@ -234,13 +234,22 @@ export class TransactionResolver {
       paymentMethod: calculatedPaymentMethod,
       category: data.category,
       ...((data.type === TransactionType.EXPENSE ||
-        data.type === TransactionType.BETWEEN_ACCOUNTS) && {
-        sourceAccount: {
-          connect: {
-            id: data.sourceAccountId,
+        data.type === TransactionType.BETWEEN_ACCOUNTS) &&
+        data.sourceAccountId && {
+          sourceAccount: {
+            connect: {
+              id: data.sourceAccountId,
+            },
           },
-        },
-      }),
+        }),
+      ...(data.type === TransactionType.EXPENSE &&
+        data.sourceCardId && {
+          sourceCard: {
+            connect: {
+              id: data.sourceCardId,
+            },
+          },
+        }),
       ...((data.type === TransactionType.INCOME ||
         data.type === TransactionType.BETWEEN_ACCOUNTS) && {
         destinyAccount: {
