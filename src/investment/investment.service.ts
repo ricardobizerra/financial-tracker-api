@@ -75,14 +75,24 @@ export class InvestmentService {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
+    const userInstitutionLinks =
+      await this.prismaService.institutionLink.findMany({
+        where: {
+          userId,
+        },
+        select: { id: true },
+      });
+
+    const userInstitutionLinkIds = userInstitutionLinks.map((link) => link.id);
+
     const whereClause: Prisma.InvestmentWhereInput = {
-      institutionLink: {
-        userId,
+      institutionLinkId: {
+        in: userInstitutionLinkIds,
       },
       regimeName: regime ?? undefined,
-      institutionLinkId: institutionLinkIds?.length
-        ? { in: institutionLinkIds }
-        : undefined,
+      ...(institutionLinkIds?.length && {
+        institutionLinkId: { in: institutionLinkIds },
+      }),
     };
 
     const unbufferedCursor = after
@@ -396,7 +406,7 @@ export class InvestmentService {
 
   async delete(id: string, userId: string) {
     const investmentFoundAndFromUser =
-      await this.prismaService.investment.findUnique({
+      await this.prismaService.investment.findFirst({
         where: {
           id,
           institutionLink: {
@@ -421,7 +431,7 @@ export class InvestmentService {
   }
 
   async redeem(investmentId: string, userId: string, finishedAt?: Date) {
-    const investment = await this.prismaService.investment.findUnique({
+    const investment = await this.prismaService.investment.findFirst({
       where: {
         id: investmentId,
         institutionLink: {
@@ -502,12 +512,19 @@ export class InvestmentService {
     institutionLinkId?: string | null;
     queriedFields: (keyof InvestmentRegimeSummary)[];
   }): Promise<InvestmentRegimeSummaryConnection> {
-    const whereClause: Prisma.InvestmentWhereInput = {
-      institutionLink: {
+    const institutionLinks = await this.prismaService.institutionLink.findMany({
+      where: {
         userId,
-        ...(institutionLinkId && {
-          id: institutionLinkId,
-        }),
+        ...(institutionLinkId && { id: institutionLinkId }),
+      },
+      select: { id: true },
+    });
+
+    const institutionLinkIds = institutionLinks.map((link) => link.id);
+
+    const whereClause: Prisma.InvestmentWhereInput = {
+      institutionLinkId: {
+        in: institutionLinkIds,
       },
     };
 
@@ -637,7 +654,16 @@ export class InvestmentService {
         correctedAmount: true,
         taxedAmount: true,
       },
-      where: { institutionLink: { userId } },
+      where: {
+        institutionLinkId: {
+          in: (
+            await this.prismaService.institutionLink.findMany({
+              where: { userId },
+              select: { id: true },
+            })
+          ).map((link) => link.id),
+        },
+      },
     });
 
     // Default to 0 when there are no investments
