@@ -57,6 +57,7 @@ export class CardService {
         periodStart: { lte: date },
         OR: [{ periodEnd: { gte: date } }, { periodEnd: null }],
       },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (billing) {
@@ -989,17 +990,18 @@ export class CardService {
       new Decimal(0),
     );
 
-    // Create next billing cycle
-    const nextPeriodStart = new Date(closeDateNormalized);
+    // Create/reuse next billing cycle
+    // Prefer periodEnd as reference to avoid creating duplicated cycles when closing late.
+    const nextPeriodStart = new Date(billing.periodEnd ?? closeDateNormalized);
     nextPeriodStart.setDate(nextPeriodStart.getDate() + 1);
     nextPeriodStart.setHours(0, 0, 0, 0);
 
-    const nextBilling = await this.createBilling({
+    const nextBilling = await this.findOrCreateBillingForDate({
       cardId: billing.cardId,
-      cardBillingCycleDay: billing.card.billingCycleDay,
-      cardBillingPaymentDay: billing.card.billingPaymentDay,
-      periodStart: nextPeriodStart,
+      billingCycleDay: billing.card.billingCycleDay,
+      billingPaymentDay: billing.card.billingPaymentDay,
       limit: billing.card.defaultLimit,
+      date: nextPeriodStart,
     });
 
     // Move transactions after closing date to new billing

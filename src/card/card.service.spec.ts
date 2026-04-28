@@ -474,7 +474,9 @@ describe('CardService', () => {
         installments: [],
       };
 
-      mockPrisma.cardBilling.findFirst.mockResolvedValue(billing);
+      mockPrisma.cardBilling.findFirst
+        .mockResolvedValueOnce(billing)
+        .mockResolvedValueOnce(null);
 
       // createBilling mocks
       mockPrisma.cardBilling.create.mockResolvedValue({
@@ -515,6 +517,57 @@ describe('CardService', () => {
       expect(result.status).toBe(CardBillingStatus.CLOSED);
     });
 
+    it('should reuse existing next billing and not create duplicate', async () => {
+      const billing = {
+        id: 'billing-1',
+        cardId: 'card-1',
+        periodEnd: new Date(2026, 3, 8, 12, 0, 0),
+        card: {
+          billingCycleDay: 8,
+          billingPaymentDay: 20,
+          defaultLimit: new Decimal(5000),
+          institutionLink: {},
+        },
+        paymentTransaction: null,
+        transactions: [],
+        installments: [],
+      };
+
+      mockPrisma.cardBilling.findFirst
+        .mockResolvedValueOnce(billing)
+        .mockResolvedValueOnce({
+          id: 'billing-existing',
+          cardId: 'card-1',
+          periodStart: new Date(2026, 3, 9),
+          periodEnd: new Date(2026, 4, 8),
+        });
+
+      mockPrisma.cardBilling.findUnique.mockResolvedValue({
+        id: 'billing-1',
+        transactions: [],
+        installments: [],
+        paymentDate: new Date(),
+        periodStart: new Date(),
+        card: {
+          name: 'Card',
+          institutionLink: { institution: {}, user: { id: 'user-1' } },
+        },
+      });
+      mockPrisma.transaction.findFirst.mockResolvedValue(null);
+      mockPrisma.cardBilling.update.mockResolvedValue({
+        id: 'billing-1',
+        status: CardBillingStatus.CLOSED,
+      });
+
+      await service.closeBilling({
+        billingId: 'billing-1',
+        userId: 'user-1',
+      });
+
+      expect(mockPrisma.cardBilling.create).not.toHaveBeenCalled();
+      expect(mockPrisma.cardBillingHistory.create).not.toHaveBeenCalled();
+    });
+
     it('should resync parent transaction billing when installments are moved', async () => {
       const billing = {
         id: 'billing-1',
@@ -539,12 +592,14 @@ describe('CardService', () => {
         ],
       };
 
-      mockPrisma.cardBilling.findFirst.mockResolvedValue(billing);
-      mockPrisma.cardBilling.create.mockResolvedValue({
-        id: 'next-billing',
-        card: { institutionLink: { institution: {}, user: {} } },
-      });
-      mockPrisma.cardBillingHistory.create.mockResolvedValue({});
+      mockPrisma.cardBilling.findFirst
+        .mockResolvedValueOnce(billing)
+        .mockResolvedValueOnce({
+          id: 'next-billing',
+          cardId: 'card-1',
+          periodStart: new Date(),
+          periodEnd: new Date(),
+        });
       mockPrisma.transactionInstallment.updateMany.mockResolvedValue({
         count: 1,
       });
