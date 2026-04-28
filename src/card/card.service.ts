@@ -35,6 +35,75 @@ import { OrderDirection } from '@/utils/args/ordenation.args';
 export class CardService {
   constructor(private prisma: PrismaService) {}
 
+  async findOrCreateBillingForDate(
+    {
+      cardId,
+      billingCycleDay,
+      billingPaymentDay,
+      limit,
+      date,
+    }: {
+      cardId: string;
+      billingCycleDay: number;
+      billingPaymentDay: number;
+      limit: Decimal;
+      date: Date;
+    },
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<CardBilling> {
+    const billing = await transactionClient.cardBilling.findFirst({
+      where: {
+        cardId,
+        periodStart: { lte: date },
+        OR: [{ periodEnd: { gte: date } }, { periodEnd: null }],
+      },
+    });
+
+    if (billing) {
+      return billing;
+    }
+
+    return this.createBilling(
+      {
+        cardId,
+        cardBillingCycleDay: billingCycleDay,
+        cardBillingPaymentDay: billingPaymentDay,
+        periodStart: date,
+        limit,
+      },
+      transactionClient,
+    );
+  }
+
+  async syncParentTransactionBillingFromFirstInstallment(
+    transactionId: string,
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<string | null> {
+    const firstInstallment =
+      await transactionClient.transactionInstallment.findFirst({
+        where: {
+          transactionId,
+          installmentNumber: 1,
+        },
+        select: {
+          cardBillingId: true,
+        },
+      });
+
+    if (!firstInstallment) {
+      return null;
+    }
+
+    await transactionClient.transaction.update({
+      where: { id: transactionId },
+      data: {
+        cardBillingId: firstInstallment.cardBillingId ?? null,
+      },
+    });
+
+    return firstInstallment.cardBillingId ?? null;
+  }
+
   async find(
     where: Prisma.CardWhereUniqueInput,
     queriedFields?: (keyof Card)[],
@@ -275,7 +344,12 @@ export class CardService {
     const billing = await this.prisma.cardBilling.findUnique({
       where,
       include: {
-        transactions: true,
+        transactions: {
+          where: {
+            status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
+          },
+        },
         installments: {
           include: {
             transaction: true,
@@ -293,9 +367,7 @@ export class CardService {
       },
     });
 
-    const activeTransactions = billing?.transactions.filter(
-      (t) => t.status !== TransactionStatus.CANCELED,
-    );
+    const activeTransactions = billing?.transactions ?? [];
 
     // Somar transações normais
     const transactionsTotal = activeTransactions?.reduce(
@@ -364,7 +436,12 @@ export class CardService {
           usagePercentage: [],
           transactionsCount: [],
         }),
-        transactions: true,
+        transactions: {
+          where: {
+            status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
+          },
+        },
         installments: {
           include: {
             transaction: true,
@@ -392,7 +469,12 @@ export class CardService {
             usagePercentage: [],
             transactionsCount: [],
           }),
-          transactions: true,
+          transactions: {
+            where: {
+              status: { not: TransactionStatus.CANCELED },
+              installments: { none: {} },
+            },
+          },
           installments: {
             include: {
               transaction: true,
@@ -441,9 +523,7 @@ export class CardService {
           })
         : undefined;
 
-    const activeTransactions = currentBilling?.transactions.filter(
-      (t) => t.status !== TransactionStatus.CANCELED,
-    );
+    const activeTransactions = currentBilling?.transactions ?? [];
 
     // Soma transações normais
     const transactionsTotal = activeTransactions?.reduce(
@@ -520,6 +600,9 @@ export class CardService {
           where: {
             status: {
               not: TransactionStatus.CANCELED,
+            },
+            installments: {
+              none: {},
             },
           },
         },
@@ -609,6 +692,7 @@ export class CardService {
         transactions: {
           where: {
             status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
           },
         },
         installments: {
@@ -724,6 +808,7 @@ export class CardService {
           where: {
             cardBillingId: billing.id,
             status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
           },
         });
 
@@ -869,7 +954,11 @@ export class CardService {
           },
         },
         paymentTransaction: true,
-        transactions: true,
+        transactions: {
+          where: {
+            installments: { none: {} },
+          },
+        },
         installments: {
           include: {
             transaction: true,
@@ -941,6 +1030,16 @@ export class CardService {
             cardBillingId: nextBilling.id,
           },
         });
+
+        const parentTransactionIds = Array.from(
+          new Set(installmentsForNextBilling.map((i) => i.transactionId)),
+        );
+
+        await Promise.all(
+          parentTransactionIds.map((transactionId) =>
+            this.syncParentTransactionBillingFromFirstInstallment(transactionId),
+          ),
+        );
       }
     }
 

@@ -222,8 +222,23 @@ export class TransactionResolver {
       );
     }
 
-    // Cartões de débito não usam billing/fatura - débito é imediato na conta
-    const cardBillingId: string | null = null;
+    let cardBillingId: string | null = null;
+
+    // Despesas no cartão de crédito devem ser associadas à fatura do ciclo da data da transação
+    if (
+      data.type === TransactionType.EXPENSE &&
+      sourceCard &&
+      calculatedPaymentMethod === PaymentMethod.CREDIT_CARD
+    ) {
+      const billing = await this.cardService.findOrCreateBillingForDate({
+        cardId: sourceCard.id,
+        billingCycleDay: sourceCard.billingCycleDay,
+        billingPaymentDay: sourceCard.billingPaymentDay,
+        limit: sourceCard.defaultLimit,
+        date: data.date,
+      });
+      cardBillingId = billing.id;
+    }
 
     const transaction = await this.transactionService.create({
       amount: data.amount,
@@ -324,65 +339,19 @@ export class TransactionResolver {
     // Criar parcelas
     const billingIdsToUpdate = new Set<string>();
 
-    // Buscar a primeira fatura existente no banco para este cartão
-    const firstBilling = await this.prismaService.cardBilling.findFirst({
-      where: { cardId: card.id },
-      orderBy: { periodStart: 'asc' },
-    });
-
     for (let i = 0; i < data.totalInstallments; i++) {
       const installmentNumber = i + 1;
 
       // Calcular data da parcela
       const installmentDate = new Date(data.startDate);
       installmentDate.setMonth(installmentDate.getMonth() + i);
-
-      // Se a data da parcela é anterior à primeira fatura existente, não atribuir a nenhuma fatura
-      if (firstBilling && installmentDate < firstBilling.periodStart) {
-        // Criar TransactionInstallment sem fatura
-        await this.prismaService.transactionInstallment.create({
-          data: {
-            installmentNumber,
-            amount: installmentAmount,
-            transactionId: transaction.id,
-            cardBillingId: null,
-          },
-        });
-        continue;
-      }
-
-      // Encontrar ou criar fatura para esta data
-      let billing = await this.prismaService.cardBilling.findFirst({
-        where: {
-          cardId: card.id,
-          periodStart: { lte: installmentDate },
-          OR: [{ periodEnd: { gte: installmentDate } }, { periodEnd: null }],
-        },
+      const billing = await this.cardService.findOrCreateBillingForDate({
+        cardId: card.id,
+        billingCycleDay: card.billingCycleDay,
+        billingPaymentDay: card.billingPaymentDay,
+        limit: card.defaultLimit,
+        date: installmentDate,
       });
-
-      if (!billing) {
-        // Buscar última fatura para criar a próxima
-        const lastBilling = await this.prismaService.cardBilling.findFirst({
-          where: { cardId: card.id },
-          orderBy: { periodEnd: 'desc' },
-        });
-
-        // Para criar o próximo billing, usar o dia seguinte ao periodEnd do último billing
-        // Isso garante que o novo billing seja para o próximo ciclo
-        let nextBillingStartDate = installmentDate;
-        if (lastBilling?.periodEnd) {
-          nextBillingStartDate = new Date(lastBilling.periodEnd);
-          nextBillingStartDate.setDate(nextBillingStartDate.getDate() + 1);
-        }
-
-        billing = await this.cardService.createBilling({
-          cardId: card.id,
-          cardBillingCycleDay: card.billingCycleDay,
-          cardBillingPaymentDay: card.billingPaymentDay,
-          periodStart: nextBillingStartDate,
-          limit: card.defaultLimit,
-        });
-      }
 
       // Criar TransactionInstallment
       await this.prismaService.transactionInstallment.create({
@@ -396,6 +365,10 @@ export class TransactionResolver {
 
       billingIdsToUpdate.add(billing.id);
     }
+
+    await this.cardService.syncParentTransactionBillingFromFirstInstallment(
+      transaction.id,
+    );
 
     // Recalcular saldo de todas as faturas afetadas
     await Promise.all(

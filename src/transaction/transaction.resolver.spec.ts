@@ -36,7 +36,9 @@ describe('TransactionResolver', () => {
     cardService = {
       find: vi.fn(),
       createBilling: vi.fn(),
+      findOrCreateBillingForDate: vi.fn(),
       updatePaymentTransaction: vi.fn(),
+      syncParentTransactionBillingFromFirstInstallment: vi.fn(),
     };
 
     prismaService = {
@@ -47,6 +49,8 @@ describe('TransactionResolver', () => {
       },
       transactionInstallment: {
         update: vi.fn(),
+        create: vi.fn(),
+        findMany: vi.fn(),
       },
       cardBilling: {
         findFirst: vi.fn(),
@@ -346,7 +350,13 @@ describe('TransactionResolver', () => {
           .mockResolvedValueOnce({
             id: 'card-1',
             type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
           });
+        cardService.findOrCreateBillingForDate.mockResolvedValue({
+          id: 'billing-1',
+        });
         transactionService.create.mockResolvedValue({ id: 'tx-1' });
 
         await resolver.createTransaction(
@@ -474,6 +484,65 @@ describe('TransactionResolver', () => {
         // Should not call updatePaymentTransaction (no billing)
         expect(cardService.updatePaymentTransaction).not.toHaveBeenCalled();
       });
+
+      it('should associate billing for credit card non-installment expense', async () => {
+        const txDate = new Date(2026, 3, 6); // Apr/06
+
+        cardService.find
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
+          })
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
+          });
+
+        cardService.findOrCreateBillingForDate.mockResolvedValue({
+          id: 'billing-mar-apr',
+        });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'Padaria',
+            amount: 1047 as any,
+            date: txDate,
+            type: TransactionType.EXPENSE,
+            sourceCardId: 'card-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(cardService.findOrCreateBillingForDate).toHaveBeenCalledWith({
+          cardId: 'card-1',
+          billingCycleDay: 8,
+          billingPaymentDay: 15,
+          limit: 5000,
+          date: txDate,
+        });
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            cardBilling: {
+              connect: {
+                id: 'billing-mar-apr',
+              },
+            },
+          }),
+        );
+
+        expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+          'billing-mar-apr',
+        );
+      });
     });
   });
 
@@ -515,6 +584,169 @@ describe('TransactionResolver', () => {
           mockUser as any,
         ),
       ).rejects.toThrow('Cartão não encontrado');
+    });
+
+    it('should link parent billing from first installment and recalc billings', async () => {
+      const startDate = new Date(2026, 0, 10);
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({
+        id: 'tx-parent',
+      });
+
+      cardService.findOrCreateBillingForDate
+        .mockResolvedValueOnce({
+          id: 'billing-first',
+        })
+        .mockResolvedValueOnce({
+          id: 'billing-second',
+        });
+
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-first',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 1200 as any,
+          totalInstallments: 2,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(
+        cardService.syncParentTransactionBillingFromFirstInstallment,
+      ).toHaveBeenCalledWith('tx-parent');
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-first',
+      );
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-second',
+      );
+    });
+
+    it('should force billing for installment #1 even before first known billing', async () => {
+      const startDate = new Date(2026, 3, 6); // Apr/06
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({
+        id: 'tx-parent',
+      });
+
+      cardService.findOrCreateBillingForDate
+        .mockResolvedValueOnce({ id: 'billing-mar-apr' }) // #1 Apr/06 -> Mar/09-Apr/08
+        .mockResolvedValueOnce({ id: 'billing-apr-may' }) // #2 May/06 -> Apr/09-May/08
+        .mockResolvedValueOnce({ id: 'billing-may-jun' }) // #3 Jun/06 -> May/09-Jun/08
+        .mockResolvedValueOnce({ id: 'billing-jun-jul' }); // #4 Jul/06 -> Jun/09-Jul/08
+
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-mar-apr',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 1200 as any,
+          totalInstallments: 4,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 1,
+            cardBillingId: 'billing-mar-apr',
+          }),
+        }),
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 2,
+            cardBillingId: 'billing-apr-may',
+          }),
+        }),
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 3,
+            cardBillingId: 'billing-may-jun',
+          }),
+        }),
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+        4,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 4,
+            cardBillingId: 'billing-jun-jul',
+          }),
+        }),
+      );
+
+      expect(
+        cardService.syncParentTransactionBillingFromFirstInstallment,
+      ).toHaveBeenCalledWith('tx-parent');
+
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenCalledTimes(4);
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          date: new Date(2026, 3, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          date: new Date(2026, 4, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          date: new Date(2026, 5, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        4,
+        expect.objectContaining({
+          date: new Date(2026, 6, 6),
+        }),
+      );
     });
   });
 
