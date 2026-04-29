@@ -235,7 +235,7 @@ export class TransactionResolver {
         billingCycleDay: sourceCard.billingCycleDay,
         billingPaymentDay: sourceCard.billingPaymentDay,
         limit: sourceCard.defaultLimit,
-        date: data.date,
+        date: new Date(data.date),
       });
       cardBillingId = billing.id;
     }
@@ -890,8 +890,16 @@ export class TransactionResolver {
       },
       select: {
         id: true,
+        name: true,
         initialBalance: true,
         startDate: true,
+        institutionLink: {
+          select: {
+            institution: {
+              select: { color: true },
+            },
+          },
+        },
       },
     });
 
@@ -959,14 +967,58 @@ export class TransactionResolver {
         } => event.date !== null,
       );
 
-    return this.transactionService.getBalanceForecast({
+    const aggregatedAccountBalance = {
+      initialBalance: accountBalances.reduce(
+        (acc, a) => acc + a.initialBalance,
+        0,
+      ),
+      startDate: accountBalances.reduce(
+        (acc, a) => {
+          if (!a.startDate) return acc;
+          if (!acc) return a.startDate;
+          return a.startDate < acc ? a.startDate : acc;
+        },
+        null as Date | null,
+      ),
+    };
+
+    const forecastResult = await this.transactionService.getBalanceForecast({
       userId: user.id,
       accountId: args.accountId,
       startDate,
       endDate,
-      accountBalances,
+      accountBalance: aggregatedAccountBalance,
       investmentEvents,
     });
+
+    // Derive a display name and color for the aggregated series
+    const seriesName =
+      accounts.length === 1
+        ? accounts[0].name
+        : accounts.length > 1
+          ? `${accounts.length} contas`
+          : 'Todas as contas';
+    const seriesColor =
+      accounts.length === 1
+        ? (accounts[0].institutionLink?.institution?.color ?? null)
+        : null;
+    const seriesAccountId = args.accountId ?? 'all';
+
+    return {
+      accountSeries: [
+        {
+          accountId: seriesAccountId,
+          accountName: seriesName,
+          color: seriesColor,
+          dataPoints: forecastResult.dataPoints,
+          currentBalance: forecastResult.currentBalance,
+          projectedBalance: forecastResult.projectedBalance,
+          balanceTrend: forecastResult.balanceTrend,
+        },
+      ],
+      startDate: forecastResult.startDate,
+      endDate: forecastResult.endDate,
+    };
   }
 
   @Auth()

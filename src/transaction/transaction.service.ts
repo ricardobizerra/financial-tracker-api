@@ -122,12 +122,40 @@ export class TransactionService {
 
     // Determinar quais campos "computados" foram solicitados
     const cancelFields = ['canCancel', 'cancelReason', 'cancelWarningMessage'];
-    const installmentFields = ['installments', 'installmentStartDate'];
+    const installmentFields = [
+      'installments',
+      'installmentStartDate',
+      'totalInstallments',
+      'installmentNumber',
+      'installmentId',
+    ];
     const needsCancelInfo = queriedFields.some((f) =>
       cancelFields.includes(f as string),
     );
     const needsInstallments = queriedFields.some((f) =>
       installmentFields.includes(f as string),
+    );
+
+    const baseSelect = selectObject<Transaction, TransactionModel>(
+      queriedFields.filter(
+        (field) =>
+          ![
+            'canCancel',
+            'cancelReason',
+            'cancelWarningMessage',
+            'installmentStartDate',
+            'installments',
+          ].includes(field as string),
+      ) as (keyof TransactionModel)[],
+      {
+        canCancel: ['status'],
+        cancelReason: ['status'],
+        cancelWarningMessage: ['status'],
+        installmentStartDate: ['recurringTransactionId'],
+        installmentNumber: ['installments'],
+        totalInstallments: ['installments'],
+        installmentId: ['installments'],
+      },
     );
 
     const transactions = await this.prismaService.transaction.findMany({
@@ -158,44 +186,34 @@ export class TransactionService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      // Excluir campos virtuais que são computados no service
       select: {
-        ...selectObject<Transaction, TransactionModel>(
-          queriedFields.filter(
-            (field) =>
-              ![
-                'canCancel',
-                'cancelReason',
-                'cancelWarningMessage',
-                'installmentStartDate',
-                'installments',
-              ].includes(field as string),
-          ) as (keyof TransactionModel)[],
-          {
-            canCancel: ['status'],
-            cancelReason: ['status'],
-            cancelWarningMessage: ['status'],
-            installmentStartDate: ['recurringTransactionId'],
-            installmentNumber: ['installments'],
-            totalInstallments: ['installments'],
-            installmentId: ['installments'],
-          },
-        ),
+        ...baseSelect,
         // Sempre incluir id e status para cancelInfo
         id: true,
         status: true,
-        // Incluir relações necessárias para cancelInfo
-        cardBilling: needsCancelInfo ? { select: { status: true } } : undefined,
-        // Incluir installments se necessário (evita N+1)
+        // Incluir relações necessárias para cancelInfo preservando os campos já solicitados
+        cardBilling: needsCancelInfo
+          ? baseSelect.cardBilling &&
+            typeof baseSelect.cardBilling === 'object' &&
+            'select' in baseSelect.cardBilling
+            ? {
+                select: {
+                  ...(baseSelect.cardBilling as any).select,
+                  status: true,
+                },
+              }
+            : { select: { status: true } }
+          : baseSelect.cardBilling,
+        // Incluir installments se necessário (evita N+1). O uso de include garante que todos os campos escalares (id, amount, etc) sejam retornados.
         installments:
           needsInstallments || needsCancelInfo
             ? {
                 include: {
                   cardBilling: { select: { status: true, periodStart: true } },
                 },
-                orderBy: { installmentNumber: 'asc' },
+                orderBy: { installmentNumber: 'asc' as const },
               }
-            : undefined,
+            : (baseSelect.installments as any),
       },
       where: whereClause,
     });
@@ -230,7 +248,8 @@ export class TransactionService {
         );
 
         installmentStartDate =
-          firstInstallment?.cardBilling?.periodStart ?? transaction.date;
+          (firstInstallment as any)?.cardBilling?.periodStart ??
+          transaction.date;
       }
 
       // Computar cancelInfo e popular campos diretamente
