@@ -65,10 +65,10 @@ export class TransactionService {
         filterArgs.types.length > 0 && {
           type: { in: filterArgs.types },
         }),
-      ...(filterArgs.statuses &&
-        filterArgs.statuses.length > 0 && {
-          status: { in: filterArgs.statuses },
-        }),
+      status:
+        filterArgs.statuses && filterArgs.statuses.length > 0
+          ? { in: filterArgs.statuses }
+          : { not: TransactionStatus.CANCELED },
       ...(searchArgs.search && {
         OR: ['name', 'description'].map((field) => ({
           [field]: {
