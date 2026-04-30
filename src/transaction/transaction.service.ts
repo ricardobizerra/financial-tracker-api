@@ -96,29 +96,27 @@ export class TransactionService {
     ordenationArgs: OrdenationTransactionArgs;
   }): Promise<TransactionConnection> {
     const { after, before, first, last } = paginationArgs;
-    const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+    const { orderBy = 'date', orderDirection = OrderDirection.Desc } =
+      ordenationArgs;
 
-    const unbufferedCursor = after
-      ? Number(Buffer.from(after, 'base64').toString('utf-8'))
-      : before
-        ? Number(Buffer.from(before, 'base64').toString('utf-8'))
-        : 0;
-
+    // Build the where clause
     const whereClause = this.buildWhereClause({
       userId,
-      filterArgs,
+      filterArgs: {
+        ...filterArgs,
+        // When paginating with cursors, we ignore hard date boundaries to allow
+        // crossing into the past/future
+        ...(after || before
+          ? { startDate: undefined, endDate: undefined }
+          : {}),
+      },
       searchArgs,
     });
 
-    const transactionsLengthQuery = last
-      ? await this.prismaService.transaction.count({
-          where: whereClause,
-        })
-      : undefined;
-
-    const transactionsLength = !!transactionsLengthQuery
-      ? Number(transactionsLengthQuery)
-      : undefined;
+    // Determine pagination parameters for Prisma
+    const take = first ? first : last ? -last : undefined;
+    const cursor = after ? { id: after } : before ? { id: before } : undefined;
+    const skip = cursor ? 1 : 0;
 
     // Determinar quais campos "computados" foram solicitados
     const cancelFields = ['canCancel', 'cancelReason', 'cancelWarningMessage'];
@@ -159,39 +157,18 @@ export class TransactionService {
     );
 
     const transactions = await this.prismaService.transaction.findMany({
-      take: last
-        ? unbufferedCursor
-          ? last
-          : transactionsLength % last === 0
-            ? last
-            : transactionsLength % last
-        : first
-          ? first
-          : undefined,
-      skip: unbufferedCursor
-        ? last
-          ? transactionsLength - unbufferedCursor + 1
-          : unbufferedCursor
-        : last
-          ? 0
-          : undefined,
-      orderBy: orderBy
-        ? {
-            [orderBy]: last
-              ? orderDirection === OrderDirection.Asc
-                ? OrderDirection.Desc
-                : OrderDirection.Asc
-              : orderDirection === OrderDirection.Asc
-                ? OrderDirection.Asc
-                : OrderDirection.Desc,
-          }
-        : undefined,
+      take,
+      skip,
+      cursor,
+      orderBy: [
+        { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+      ],
       select: {
         ...baseSelect,
-        // Sempre incluir id e status para cancelInfo
         id: true,
         status: true,
-        // Incluir relações necessárias para cancelInfo preservando os campos já solicitados
+        date: true,
         cardBilling: needsCancelInfo
           ? baseSelect.cardBilling &&
             typeof baseSelect.cardBilling === 'object' &&
@@ -204,7 +181,6 @@ export class TransactionService {
               }
             : { select: { status: true } }
           : baseSelect.cardBilling,
-        // Incluir installments se necessário (evita N+1). O uso de include garante que todos os campos escalares (id, amount, etc) sejam retornados.
         installments:
           needsInstallments || needsCancelInfo
             ? {
@@ -218,47 +194,39 @@ export class TransactionService {
       where: whereClause,
     });
 
-    if (last) {
-      transactions.reverse();
-    }
-
     if (transactions.length === 0) {
       return {
         edges: [],
         pageInfo: {
           hasNextPage: false,
-          hasPreviousPage: !!after,
+          hasPreviousPage: false,
           startCursor: null,
           endCursor: null,
         },
       };
     }
 
-    // Processar transações e anexar dados computados
+    // Process transactions and attach computed data
     const processedTransactions = transactions.map((transaction) => {
       let installmentStartDate: TransactionModel['installmentStartDate'];
       let canCancel: TransactionModel['canCancel'];
       let cancelReason: TransactionModel['cancelReason'];
       let cancelWarningMessage: TransactionModel['cancelWarningMessage'];
 
-      // Computar installmentStartDate se solicitado
       if (needsInstallments) {
         const firstInstallment = transaction.installments?.find(
           (i) => i.installmentNumber === 1,
         );
-
         installmentStartDate =
           (firstInstallment as any)?.cardBilling?.periodStart ??
           transaction.date;
       }
 
-      // Computar cancelInfo e popular campos diretamente
       if (needsCancelInfo) {
         const cancelInfo = this.computeCancelInfo(
           transaction,
           transaction.installments,
         );
-
         canCancel = cancelInfo.canCancel;
         cancelReason = cancelInfo.reason;
         cancelWarningMessage = cancelInfo.warningMessage;
@@ -273,83 +241,54 @@ export class TransactionService {
       };
     });
 
-    const edges = processedTransactions.map((transaction, index) => {
-      const cursorIndex =
-        index +
-        1 +
-        (last
-          ? unbufferedCursor
-            ? unbufferedCursor - last - 1
-            : transactionsLength - transactions.length
-          : unbufferedCursor || 0);
-
-      const bufferedCursor = Buffer.from(cursorIndex.toString())
-        .toString('base64')
-        .split('=')[0];
-
-      return {
-        cursor: bufferedCursor,
-        node: transaction,
-      };
-    });
+    const edges = processedTransactions.map((transaction) => ({
+      cursor: transaction.id,
+      node: transaction,
+    }));
 
     const startCursor = edges[0].cursor;
     const endCursor = edges[edges.length - 1].cursor;
 
-    if (!first && !last) {
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage: false,
-          hasPreviousPage: !!after,
-          startCursor,
-          endCursor,
-        },
-      };
-    }
+    // Detect if there's more data in either direction, ignoring date limits
+    // to allow infinite scroll to cross the initial window.
+    const whereWithoutDates = { ...whereClause, date: undefined };
 
-    const extraItem = !(
-      last && Number(Buffer.from(startCursor, 'base64').toString('utf-8')) <= 1
-    )
-      ? await this.prismaService.transaction.findFirst({
-          take: 1,
-          skip: last
-            ? Number(Buffer.from(startCursor, 'base64').toString('utf-8')) - 2
-            : first
-              ? Number(Buffer.from(endCursor, 'base64').toString('utf-8'))
-              : unbufferedCursor,
-          orderBy: orderBy
-            ? {
-                [orderBy]: last
-                  ? orderDirection === OrderDirection.Asc
-                    ? OrderDirection.Desc
-                    : OrderDirection.Asc
-                  : orderDirection === OrderDirection.Asc
-                    ? OrderDirection.Asc
-                    : OrderDirection.Desc,
-              }
-            : undefined,
-          select: {
-            id: true,
-          },
-          where: whereClause,
-        })
-      : undefined;
+    const hasNextPage = await this.prismaService.transaction
+      .findFirst({
+        take: 1,
+        skip: 1,
+        cursor: { id: endCursor },
+        orderBy: [
+          { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+          { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        ],
+        where: whereWithoutDates,
+        select: { id: true },
+      })
+      .then((item) => !!item);
 
-    const hasNextPage = last ? !!before : !!extraItem;
-
-    const hasPreviousPage = last ? !!extraItem : !!after;
-
-    const pageInfo = {
-      hasNextPage,
-      hasPreviousPage,
-      startCursor,
-      endCursor,
-    };
+    const hasPreviousPage = await this.prismaService.transaction
+      .findFirst({
+        take: -1,
+        skip: 1,
+        cursor: { id: startCursor },
+        orderBy: [
+          { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+          { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        ],
+        where: whereWithoutDates,
+        select: { id: true },
+      })
+      .then((item) => !!item);
 
     return {
       edges,
-      pageInfo,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage,
+        startCursor,
+        endCursor,
+      },
     };
   }
 
