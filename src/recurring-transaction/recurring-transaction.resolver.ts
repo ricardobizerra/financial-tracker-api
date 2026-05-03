@@ -1,4 +1,12 @@
-import { Mutation, Query, Resolver, Args, Info } from '@nestjs/graphql';
+import {
+  Mutation,
+  Query,
+  Resolver,
+  Args,
+  Info,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { RecurringTransactionService } from './recurring-transaction.service';
 import {
   RecurringTransactionConnection,
@@ -15,12 +23,24 @@ import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { CreateRecurringTransactionInput } from './input/create-recurring-transaction.input';
 import { UpdateRecurringTransactionInput } from './input/update-recurring-transaction.input';
+import { TransactionModel } from '@/transaction/transaction.model';
 
-@Resolver()
+@Resolver(() => RecurringTransactionModel)
 export class RecurringTransactionResolver {
   constructor(
     private readonly recurringTransactionService: RecurringTransactionService,
   ) {}
+
+  @ResolveField(() => [TransactionModel])
+  async transactions(
+    @Parent() recurring: RecurringTransactionModel,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.recurringTransactionService.findTransactionsByRecurrence(
+      recurring.id,
+      user.id,
+    );
+  }
 
   @Auth()
   @Mutation(() => RecurringTransactionModel, {

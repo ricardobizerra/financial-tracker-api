@@ -1386,8 +1386,8 @@ type RecurringTransactionModel {
   sourceAccount: Account
   destinyAccount: Account
   sourceCard: Card
-  transactions: [Transaction!]
   _count: RecurringTransactionCount!
+  transactions: [TransactionModel!]
 }
 
 type RecurringTransactionConnection {
@@ -1608,8 +1608,8 @@ enum OrdenationRecurringTransactionModel {
   sourceAccount
   destinyAccount
   sourceCard
-  transactions
   _count
+  transactions
 }
 
 type Mutation {

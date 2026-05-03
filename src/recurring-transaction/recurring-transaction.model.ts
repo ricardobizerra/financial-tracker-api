@@ -6,11 +6,17 @@ import { Field, ID, ObjectType, OmitType, ArgsType } from '@nestjs/graphql';
 import { Connection } from '@/utils/models/connection.model';
 import { Ordenation } from '@/utils/args/ordenation.args';
 
+import { TransactionModel } from '@/transaction/transaction.model';
+
 @ObjectType()
 export class RecurringTransactionModel extends OmitType(RecurringTransaction, [
   'user',
   'userId',
-] as const) {}
+  'transactions',
+] as const) {
+  @Field(() => [TransactionModel], { nullable: true })
+  transactions?: TransactionModel[];
+}
 
 @ObjectType()
 export class RecurringTransactionConnection extends Connection(

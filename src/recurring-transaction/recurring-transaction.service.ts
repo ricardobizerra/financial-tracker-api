@@ -702,6 +702,16 @@ export class RecurringTransactionService {
     });
   }
 
+  async findTransactionsByRecurrence(recurringId: string, userId: string) {
+    return this.prismaService.transaction.findMany({
+      where: {
+        recurringTransactionId: recurringId,
+        userId,
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async findById(id: string, userId: string) {
     return this.prismaService.recurringTransaction.findFirst({
       where: { id, userId },
