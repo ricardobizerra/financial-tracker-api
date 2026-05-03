@@ -486,6 +486,12 @@ export class TransactionResolver {
         paymentMethod: data.paymentMethod as PaymentMethod,
       }),
       ...(data.category !== undefined && { category: data.category }),
+      ...(data.sourceAccountId !== undefined && {
+        sourceAccountId: data.sourceAccountId,
+      }),
+      ...(data.destinyAccountId !== undefined && {
+        destinyAccountId: data.destinyAccountId,
+      }),
       ...(newStatus !== undefined && {
         status: newStatus,
       }),

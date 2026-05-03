@@ -4324,6 +4324,8 @@ input UpdateTransactionInput {
   """
   isCompleted: Boolean
   category: TransactionCategory
+  sourceAccountId: ID
+  destinyAccountId: ID
 }
 
 input RescheduleTransactionInput {
