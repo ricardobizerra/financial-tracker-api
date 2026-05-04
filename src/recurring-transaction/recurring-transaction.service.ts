@@ -158,6 +158,7 @@ export class RecurringTransactionService {
         data.dayOfWeek,
         data.weekOfMonth,
         data.monthOfYear,
+        data.repeatCount,
       );
     }
 
@@ -192,6 +193,7 @@ export class RecurringTransactionService {
         recurrenceType:
           (data.recurrenceType as RecurrenceType) || RecurrenceType.PERIODIC,
         totalInstallments: isInstallment ? data.totalInstallments : null,
+        repeatCount: data.repeatCount,
         userId,
       },
     });
@@ -326,6 +328,7 @@ export class RecurringTransactionService {
     dayOfWeek?: number | null,
     weekOfMonth?: number | null,
     monthOfYear?: number | null,
+    repeatCount?: number | null,
   ): Date[] {
     const dates: Date[] = [];
     const maxDate =
@@ -345,6 +348,7 @@ export class RecurringTransactionService {
       }
 
       while (currentDate <= maxDate) {
+        if (repeatCount && dates.length >= repeatCount) break;
         dates.push(new Date(currentDate));
         currentDate = this.addWeeks(currentDate, weekInterval);
       }
@@ -371,6 +375,7 @@ export class RecurringTransactionService {
           occurrenceDate >= startDate &&
           occurrenceDate <= maxDate
         ) {
+          if (repeatCount && dates.length >= repeatCount) break;
           dates.push(occurrenceDate);
         }
 
@@ -408,6 +413,7 @@ export class RecurringTransactionService {
           occurrenceDate >= startDate &&
           occurrenceDate <= maxDate
         ) {
+          if (repeatCount && dates.length >= repeatCount) break;
           dates.push(occurrenceDate);
         }
 
@@ -688,14 +694,25 @@ export class RecurringTransactionService {
   }
 
   /**
-   * Deletes a recurring transaction (keeps generated transactions)
+   * Deletes a recurring transaction
    */
-  async delete(recurringId: string, userId: string) {
-    // First, unlink all transactions
-    await this.prismaService.transaction.updateMany({
-      where: { recurringTransactionId: recurringId },
-      data: { recurringTransactionId: null },
-    });
+  async delete(
+    recurringId: string,
+    userId: string,
+    deleteAllTransactions = false,
+  ) {
+    if (deleteAllTransactions) {
+      // Delete all linked transactions
+      await this.prismaService.transaction.deleteMany({
+        where: { recurringTransactionId: recurringId },
+      });
+    } else {
+      // Unlink all transactions
+      await this.prismaService.transaction.updateMany({
+        where: { recurringTransactionId: recurringId },
+        data: { recurringTransactionId: null },
+      });
+    }
 
     return this.prismaService.recurringTransaction.delete({
       where: { id: recurringId, userId },

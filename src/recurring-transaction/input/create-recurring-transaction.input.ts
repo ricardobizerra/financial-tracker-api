@@ -62,6 +62,9 @@ export class CreateRecurringTransactionInput {
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
 
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
+
   @Field(() => TransactionCategory, { nullable: true })
   category?: TransactionCategory;
 }

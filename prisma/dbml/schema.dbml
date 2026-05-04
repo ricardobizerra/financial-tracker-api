@@ -211,6 +211,7 @@ Table RecurringTransaction {
   isActive Boolean [not null, default: true]
   recurrenceType RecurrenceType [not null, default: 'PERIODIC']
   totalInstallments Int
+  repeatCount Int
   sourceAccount Account
   sourceAccountId String
   destinyAccount Account

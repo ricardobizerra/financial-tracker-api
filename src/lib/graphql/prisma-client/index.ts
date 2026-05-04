@@ -72,6 +72,7 @@ export enum RecurringTransactionScalarFieldEnum {
   isActive = 'isActive',
   recurrenceType = 'recurrenceType',
   totalInstallments = 'totalInstallments',
+  repeatCount = 'repeatCount',
   sourceAccountId = 'sourceAccountId',
   destinyAccountId = 'destinyAccountId',
   sourceCardId = 'sourceCardId',
@@ -18825,6 +18826,8 @@ export class RecurringTransactionAvgAggregateInput {
   monthOfYear?: true;
   @Field(() => Boolean, { nullable: true })
   totalInstallments?: true;
+  @Field(() => Boolean, { nullable: true })
+  repeatCount?: true;
 }
 
 @ObjectType()
@@ -18841,6 +18844,8 @@ export class RecurringTransactionAvgAggregate {
   monthOfYear?: number;
   @Field(() => Float, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Float, { nullable: true })
+  repeatCount?: number;
 }
 
 @InputType()
@@ -18857,6 +18862,8 @@ export class RecurringTransactionAvgOrderByAggregateInput {
   monthOfYear?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   totalInstallments?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  repeatCount?: keyof typeof SortOrder;
 }
 
 @InputType()
@@ -18893,6 +18900,8 @@ export class RecurringTransactionCountAggregateInput {
   recurrenceType?: true;
   @Field(() => Boolean, { nullable: true })
   totalInstallments?: true;
+  @Field(() => Boolean, { nullable: true })
+  repeatCount?: true;
   @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
@@ -18944,6 +18953,8 @@ export class RecurringTransactionCountAggregate {
   @Field(() => Int, { nullable: false })
   totalInstallments!: number;
   @Field(() => Int, { nullable: false })
+  repeatCount!: number;
+  @Field(() => Int, { nullable: false })
   sourceAccountId!: number;
   @Field(() => Int, { nullable: false })
   destinyAccountId!: number;
@@ -18993,6 +19004,8 @@ export class RecurringTransactionCountOrderByAggregateInput {
   recurrenceType?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   totalInstallments?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  repeatCount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -19060,6 +19073,8 @@ export class RecurringTransactionCreateManyDestinyAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -19119,6 +19134,8 @@ export class RecurringTransactionCreateManySourceAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -19178,6 +19195,8 @@ export class RecurringTransactionCreateManySourceCardInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -19235,6 +19254,8 @@ export class RecurringTransactionCreateManyUserInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -19283,6 +19304,8 @@ export class RecurringTransactionCreateManyInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -19515,6 +19538,8 @@ export class RecurringTransactionCreateWithoutDestinyAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19585,6 +19610,8 @@ export class RecurringTransactionCreateWithoutSourceAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19655,6 +19682,8 @@ export class RecurringTransactionCreateWithoutSourceCardInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19725,6 +19754,8 @@ export class RecurringTransactionCreateWithoutTransactionsInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19795,6 +19826,8 @@ export class RecurringTransactionCreateWithoutUserInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19865,6 +19898,8 @@ export class RecurringTransactionCreateInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => Date, { nullable: true })
   createdAt?: Date | string;
   @Field(() => Date, { nullable: true })
@@ -19980,6 +20015,8 @@ export class RecurringTransactionGroupBy {
   recurrenceType!: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20052,6 +20089,8 @@ export class RecurringTransactionMaxAggregateInput {
   @Field(() => Boolean, { nullable: true })
   totalInstallments?: true;
   @Field(() => Boolean, { nullable: true })
+  repeatCount?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
@@ -20099,6 +20138,8 @@ export class RecurringTransactionMaxAggregate {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20148,6 +20189,8 @@ export class RecurringTransactionMaxOrderByAggregateInput {
   @Field(() => SortOrder, { nullable: true })
   totalInstallments?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
+  repeatCount?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   destinyAccountId?: keyof typeof SortOrder;
@@ -20196,6 +20239,8 @@ export class RecurringTransactionMinAggregateInput {
   @Field(() => Boolean, { nullable: true })
   totalInstallments?: true;
   @Field(() => Boolean, { nullable: true })
+  repeatCount?: true;
+  @Field(() => Boolean, { nullable: true })
   sourceAccountId?: true;
   @Field(() => Boolean, { nullable: true })
   destinyAccountId?: true;
@@ -20243,6 +20288,8 @@ export class RecurringTransactionMinAggregate {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20291,6 +20338,8 @@ export class RecurringTransactionMinOrderByAggregateInput {
   recurrenceType?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   totalInstallments?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  repeatCount?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   sourceAccountId?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
@@ -20356,6 +20405,8 @@ export class RecurringTransactionOrderByWithAggregationInput {
   @Field(() => SortOrderInput, { nullable: true })
   totalInstallments?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
+  repeatCount?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   destinyAccountId?: InstanceType<typeof SortOrderInput>;
@@ -20420,6 +20471,8 @@ export class RecurringTransactionOrderByWithRelationInput {
   recurrenceType?: keyof typeof SortOrder;
   @Field(() => SortOrderInput, { nullable: true })
   totalInstallments?: InstanceType<typeof SortOrderInput>;
+  @Field(() => SortOrderInput, { nullable: true })
+  repeatCount?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
   sourceAccountId?: InstanceType<typeof SortOrderInput>;
   @Field(() => SortOrderInput, { nullable: true })
@@ -20503,6 +20556,8 @@ export class RecurringTransactionScalarWhereWithAggregatesInput {
   recurrenceType?: InstanceType<typeof EnumRecurrenceTypeWithAggregatesFilter>;
   @Field(() => IntNullableWithAggregatesFilter, { nullable: true })
   totalInstallments?: InstanceType<typeof IntNullableWithAggregatesFilter>;
+  @Field(() => IntNullableWithAggregatesFilter, { nullable: true })
+  repeatCount?: InstanceType<typeof IntNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableWithAggregatesFilter>;
   @Field(() => StringNullableWithAggregatesFilter, { nullable: true })
@@ -20561,6 +20616,8 @@ export class RecurringTransactionScalarWhereInput {
   recurrenceType?: InstanceType<typeof EnumRecurrenceTypeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   totalInstallments?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  repeatCount?: InstanceType<typeof IntNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -20589,6 +20646,8 @@ export class RecurringTransactionSumAggregateInput {
   monthOfYear?: true;
   @Field(() => Boolean, { nullable: true })
   totalInstallments?: true;
+  @Field(() => Boolean, { nullable: true })
+  repeatCount?: true;
 }
 
 @ObjectType()
@@ -20605,6 +20664,8 @@ export class RecurringTransactionSumAggregate {
   monthOfYear?: number;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
 }
 
 @InputType()
@@ -20621,6 +20682,8 @@ export class RecurringTransactionSumOrderByAggregateInput {
   monthOfYear?: keyof typeof SortOrder;
   @Field(() => SortOrder, { nullable: true })
   totalInstallments?: keyof typeof SortOrder;
+  @Field(() => SortOrder, { nullable: true })
+  repeatCount?: keyof typeof SortOrder;
 }
 
 @InputType()
@@ -20754,6 +20817,8 @@ export class RecurringTransactionUncheckedCreateWithoutDestinyAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20812,6 +20877,8 @@ export class RecurringTransactionUncheckedCreateWithoutSourceAccountInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   destinyAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20870,6 +20937,8 @@ export class RecurringTransactionUncheckedCreateWithoutSourceCardInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20928,6 +20997,8 @@ export class RecurringTransactionUncheckedCreateWithoutTransactionsInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -20978,6 +21049,8 @@ export class RecurringTransactionUncheckedCreateWithoutUserInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -21036,6 +21109,8 @@ export class RecurringTransactionUncheckedCreateInput {
   recurrenceType?: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
   @Field(() => String, { nullable: true })
   sourceAccountId?: string;
   @Field(() => String, { nullable: true })
@@ -21170,6 +21245,8 @@ export class RecurringTransactionUncheckedUpdateManyWithoutDestinyAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21293,6 +21370,8 @@ export class RecurringTransactionUncheckedUpdateManyWithoutSourceAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21412,6 +21491,8 @@ export class RecurringTransactionUncheckedUpdateManyWithoutSourceCardInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21528,6 +21609,8 @@ export class RecurringTransactionUncheckedUpdateManyWithoutUserInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21593,6 +21676,8 @@ export class RecurringTransactionUncheckedUpdateManyInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21660,6 +21745,8 @@ export class RecurringTransactionUncheckedUpdateWithoutDestinyAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21733,6 +21820,8 @@ export class RecurringTransactionUncheckedUpdateWithoutSourceAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   destinyAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21806,6 +21895,8 @@ export class RecurringTransactionUncheckedUpdateWithoutSourceCardInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21881,6 +21972,8 @@ export class RecurringTransactionUncheckedUpdateWithoutTransactionsInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -21948,6 +22041,8 @@ export class RecurringTransactionUncheckedUpdateWithoutUserInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -22023,6 +22118,8 @@ export class RecurringTransactionUncheckedUpdateInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => NullableStringFieldUpdateOperationsInput, { nullable: true })
   sourceAccountId?: InstanceType<
     typeof NullableStringFieldUpdateOperationsInput
@@ -22100,6 +22197,8 @@ export class RecurringTransactionUpdateManyMutationInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22529,6 +22628,8 @@ export class RecurringTransactionUpdateWithoutDestinyAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22612,6 +22713,8 @@ export class RecurringTransactionUpdateWithoutSourceAccountInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22695,6 +22798,8 @@ export class RecurringTransactionUpdateWithoutSourceCardInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22778,6 +22883,8 @@ export class RecurringTransactionUpdateWithoutTransactionsInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22861,6 +22968,8 @@ export class RecurringTransactionUpdateWithoutUserInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -22944,6 +23053,8 @@ export class RecurringTransactionUpdateInput {
   totalInstallments?: InstanceType<
     typeof NullableIntFieldUpdateOperationsInput
   >;
+  @Field(() => NullableIntFieldUpdateOperationsInput, { nullable: true })
+  repeatCount?: InstanceType<typeof NullableIntFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
   createdAt?: InstanceType<typeof DateTimeFieldUpdateOperationsInput>;
   @Field(() => DateTimeFieldUpdateOperationsInput, { nullable: true })
@@ -23126,6 +23237,8 @@ export class RecurringTransactionWhereUniqueInput {
   recurrenceType?: InstanceType<typeof EnumRecurrenceTypeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   totalInstallments?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  repeatCount?: InstanceType<typeof IntNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -23199,6 +23312,8 @@ export class RecurringTransactionWhereInput {
   recurrenceType?: InstanceType<typeof EnumRecurrenceTypeFilter>;
   @Field(() => IntNullableFilter, { nullable: true })
   totalInstallments?: InstanceType<typeof IntNullableFilter>;
+  @Field(() => IntNullableFilter, { nullable: true })
+  repeatCount?: InstanceType<typeof IntNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
   sourceAccountId?: InstanceType<typeof StringNullableFilter>;
   @Field(() => StringNullableFilter, { nullable: true })
@@ -23262,6 +23377,8 @@ export class RecurringTransaction {
   recurrenceType!: keyof typeof RecurrenceType;
   @Field(() => Int, { nullable: true })
   totalInstallments!: number | null;
+  @Field(() => Int, { nullable: true })
+  repeatCount!: number | null;
   @Field(() => String, { nullable: true })
   sourceAccountId!: string | null;
   @Field(() => String, { nullable: true })

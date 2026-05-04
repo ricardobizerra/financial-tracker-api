@@ -288,6 +288,7 @@ model RecurringTransaction {
   // Tipo de recorrência
   recurrenceType    RecurrenceType @default(PERIODIC)
   totalInstallments Int? // Total de parcelas para INSTALLMENT
+  repeatCount       Int? // Número total de repetições para PERIODIC
 
   sourceAccount   Account? @relation(fields: [sourceAccountId], references: [id], onDelete: Cascade, name: "RecurringSource")
   sourceAccountId String?

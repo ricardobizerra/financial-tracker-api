@@ -114,9 +114,15 @@ export class RecurringTransactionResolver {
   })
   async deleteRecurringTransaction(
     @Args('id') id: string,
+    @Args('deleteAllTransactions', { type: () => Boolean, defaultValue: false })
+    deleteAllTransactions: boolean,
     @CurrentUser() user: UserModel,
   ) {
-    return this.recurringTransactionService.delete(id, user.id);
+    return this.recurringTransactionService.delete(
+      id,
+      user.id,
+      deleteAllTransactions,
+    );
   }
 
   @Auth()
