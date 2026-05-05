@@ -113,7 +113,7 @@ export class LoggingInterceptor implements NestInterceptor {
     if (Array.isArray(obj)) {
       return obj.map((v) => this.sanitize(v));
     }
-    if (typeof obj === 'object' && obj !== null) {
+    if (typeof obj === 'object' && obj !== null && !(obj instanceof Date)) {
       return Object.fromEntries(
         Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
           if (this.sensitiveKeys.includes(key)) return [key, '[REDACTED]'];
