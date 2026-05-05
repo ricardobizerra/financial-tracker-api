@@ -384,6 +384,11 @@ export class RecurringTransactionService {
     const maxDate =
       endDate || this.addYears(new Date(), this.MAX_GENERATION_YEARS);
 
+    // Normalize startDate to midnight for comparison to avoid skipping the first occurrence
+    // when occurrenceDate (at 00:00) is compared to startDate (which may have time component)
+    const normalizedStart = new Date(startDate);
+    normalizedStart.setHours(0, 0, 0, 0);
+
     // Handle weekly/bi-weekly frequency
     if (
       frequency === RecurrenceFrequency.WEEKLY ||
@@ -399,7 +404,9 @@ export class RecurringTransactionService {
 
       while (currentDate <= maxDate) {
         if (repeatCount && dates.length >= repeatCount) break;
-        dates.push(new Date(currentDate));
+        if (currentDate >= normalizedStart) {
+          dates.push(new Date(currentDate));
+        }
         currentDate = this.addWeeks(currentDate, weekInterval);
       }
       return dates;
@@ -422,7 +429,7 @@ export class RecurringTransactionService {
 
         if (
           occurrenceDate &&
-          occurrenceDate >= startDate &&
+          occurrenceDate >= normalizedStart &&
           occurrenceDate <= maxDate
         ) {
           if (repeatCount && dates.length >= repeatCount) break;
@@ -460,7 +467,7 @@ export class RecurringTransactionService {
 
         if (
           occurrenceDate &&
-          occurrenceDate >= startDate &&
+          occurrenceDate >= normalizedStart &&
           occurrenceDate <= maxDate
         ) {
           if (repeatCount && dates.length >= repeatCount) break;
