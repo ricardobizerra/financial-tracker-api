@@ -185,7 +185,15 @@ export class TransactionService {
           needsInstallments || needsCancelInfo
             ? {
                 include: {
-                  cardBilling: { select: { status: true, periodStart: true } },
+                  cardBilling: {
+                    select: {
+                      id: true,
+                      status: true,
+                      periodStart: true,
+                      periodEnd: true,
+                      paymentDate: true,
+                    },
+                  },
                 },
                 orderBy: { installmentNumber: 'asc' as const },
               }
@@ -208,18 +216,34 @@ export class TransactionService {
 
     // Process transactions and attach computed data
     const processedTransactions = transactions.map((transaction) => {
+      let totalInstallments: TransactionModel['totalInstallments'] = null;
+      let installmentNumber: TransactionModel['installmentNumber'] = null;
+      let installmentId: TransactionModel['installmentId'] = null;
       let installmentStartDate: TransactionModel['installmentStartDate'];
       let canCancel: TransactionModel['canCancel'];
       let cancelReason: TransactionModel['cancelReason'];
       let cancelWarningMessage: TransactionModel['cancelWarningMessage'];
 
       if (needsInstallments) {
-        const firstInstallment = transaction.installments?.find(
+        const installments = transaction.installments || [];
+        totalInstallments = installments.length || null;
+
+        const firstInstallment = installments.find(
           (i) => i.installmentNumber === 1,
         );
         installmentStartDate =
           (firstInstallment as any)?.cardBilling?.periodStart ??
           transaction.date;
+
+        if (filterArgs.cardBillingId) {
+          const currentInstallment = installments.find(
+            (i) => i.cardBillingId === filterArgs.cardBillingId,
+          );
+          if (currentInstallment) {
+            installmentNumber = currentInstallment.installmentNumber;
+            installmentId = currentInstallment.id;
+          }
+        }
       }
 
       if (needsCancelInfo) {
@@ -235,6 +259,9 @@ export class TransactionService {
       return {
         ...transaction,
         installmentStartDate,
+        totalInstallments,
+        installmentNumber,
+        installmentId,
         canCancel,
         cancelReason,
         cancelWarningMessage,
@@ -1123,7 +1150,15 @@ export class TransactionService {
         },
         installments: {
           include: {
-            cardBilling: { select: { status: true } },
+            cardBilling: {
+              select: {
+                id: true,
+                status: true,
+                periodStart: true,
+                periodEnd: true,
+                paymentDate: true,
+              },
+            },
           },
           orderBy: { installmentNumber: 'asc' as const },
         },
