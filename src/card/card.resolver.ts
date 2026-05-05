@@ -94,9 +94,14 @@ export class CardResolver {
   @Query(() => [TransactionModel])
   async billingTransactions(
     @Args('billingId', { type: () => ID }) billingId: string,
+    @Args() searchArgs: SearchArgs,
     @CurrentUser() user: User,
   ): Promise<TransactionModel[]> {
-    return this.cardService.findBillingTransactions(billingId, user.id);
+    return this.cardService.findBillingTransactions(
+      billingId,
+      user.id,
+      searchArgs,
+    );
   }
 
   @Auth()

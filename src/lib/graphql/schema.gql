@@ -1443,7 +1443,7 @@ type Query {
   card(id: ID!): Card
   cards(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationCard, orderDirection: OrderDirection, institutionLinkId: String, types: [CardType!]): CardConnection!
   billing(cardId: ID!, id: ID): CardBillingOnDate!
-  billingTransactions(billingId: ID!): [TransactionModel!]!
+  billingTransactions(billingId: ID!, search: String): [TransactionModel!]!
   transactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationTransactionModel, orderDirection: OrderDirection, accountId: ID, cardId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionConnection!
   transactionsSummary(search: String, accountId: ID, cardId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): TransactionsSummaryModel!
   balanceForecast(

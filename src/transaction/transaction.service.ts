@@ -70,7 +70,7 @@ export class TransactionService {
           ? { in: filterArgs.statuses }
           : { not: TransactionStatus.CANCELED },
       ...(searchArgs.search && {
-        OR: ['name', 'description'].map((field) => ({
+        OR: ['description'].map((field) => ({
           [field]: {
             contains: searchArgs.search,
             mode: 'insensitive',

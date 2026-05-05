@@ -567,7 +567,17 @@ export class CardService {
   async findBillingTransactions(
     billingId: string,
     userId: string,
+    searchArgs: SearchArgs,
   ): Promise<TransactionModel[]> {
+    const searchCondition = searchArgs.search
+      ? {
+          description: {
+            contains: searchArgs.search,
+            mode: 'insensitive' as const,
+          },
+        }
+      : {};
+
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
@@ -605,6 +615,7 @@ export class CardService {
             installments: {
               none: {},
             },
+            ...searchCondition,
           },
         },
         // Parcelas (installments) vinculadas ao billing
@@ -637,6 +648,7 @@ export class CardService {
               status: {
                 not: TransactionStatus.CANCELED,
               },
+              ...searchCondition,
             },
           },
         },
@@ -1039,7 +1051,9 @@ export class CardService {
 
         await Promise.all(
           parentTransactionIds.map((transactionId) =>
-            this.syncParentTransactionBillingFromFirstInstallment(transactionId),
+            this.syncParentTransactionBillingFromFirstInstallment(
+              transactionId,
+            ),
           ),
         );
       }
