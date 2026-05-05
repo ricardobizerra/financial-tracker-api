@@ -13,6 +13,7 @@ import {
   RecurringTransactionModel,
   OrdenationRecurringTransactionArgs,
   RecurringTransactionFilterArgs,
+  RecurringTransactionSuggestion,
 } from './recurring-transaction.model';
 import { Auth } from '@/auth/auth.decorator';
 import { PaginationArgs } from '@/utils/args/pagination.args';
@@ -162,5 +163,26 @@ export class RecurringTransactionResolver {
       ordenationArgs,
       filterArgs,
     });
+  }
+
+  @Auth()
+  @Query(() => [RecurringTransactionSuggestion], {
+    name: 'possibleRecurringTransactions',
+  })
+  async possibleRecurringTransactions(@CurrentUser() user: UserModel) {
+    return this.recurringTransactionService.findSuggestions(user.id);
+  }
+
+  @Auth()
+  @Mutation(() => Boolean, { name: 'ignorePossibleRecurrence' })
+  async ignorePossibleRecurrence(
+    @Args('description') description: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    await this.recurringTransactionService.ignoreSuggestion(
+      user.id,
+      description,
+    );
+    return true;
   }
 }

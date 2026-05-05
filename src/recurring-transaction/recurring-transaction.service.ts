@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { addMonths, subMonths, differenceInDays } from 'date-fns';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
   DayMode,
@@ -15,6 +16,7 @@ import {
   RecurringTransactionModel,
   OrdenationRecurringTransactionArgs,
   RecurringTransactionFilterArgs,
+  RecurringTransactionSuggestion,
 } from './recurring-transaction.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
@@ -22,6 +24,7 @@ import { OrderDirection } from '@/utils/args/ordenation.args';
 import { selectObject } from '@/utils/select-object';
 import { CardService } from '@/card/card.service';
 import { CardType } from '@/lib/graphql/prisma-client';
+import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 
 @Injectable()
 export class RecurringTransactionService {
@@ -30,6 +33,7 @@ export class RecurringTransactionService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly cardService: CardService,
+    private readonly redisCacheService: RedisCacheService,
   ) {}
 
   /**
@@ -101,8 +105,14 @@ export class RecurringTransactionService {
       throw new Error('Destiny account is required for income transactions');
     }
 
-    if (data.type === TransactionType.EXPENSE && !data.sourceAccountId) {
-      throw new Error('Source account is required for expense transactions');
+    if (
+      data.type === TransactionType.EXPENSE &&
+      !data.sourceAccountId &&
+      !data.sourceCardId
+    ) {
+      throw new Error(
+        'Source account or card is required for expense transactions',
+      );
     }
 
     if (
@@ -167,7 +177,7 @@ export class RecurringTransactionService {
     // showing as previous day in UTC-3)
     occurrences = this.normalizeOccurrenceTimes(occurrences);
 
-    if (occurrences.length === 0) {
+    if (occurrences.length === 0 && data.isActive !== false) {
       throw new Error(
         'No occurrences could be generated for the given parameters',
       );
@@ -190,19 +200,58 @@ export class RecurringTransactionService {
         endDate: data.endDate,
         sourceAccountId: data.sourceAccountId,
         destinyAccountId: data.destinyAccountId,
+        sourceCardId: data.sourceCardId,
         recurrenceType:
           (data.recurrenceType as RecurrenceType) || RecurrenceType.PERIODIC,
         totalInstallments: isInstallment ? data.totalInstallments : null,
         repeatCount: data.repeatCount,
+        isActive: data.isActive !== false,
         userId,
       },
     });
 
+    // Link existing transactions if provided
+    if (data.transactionIdsToLink && data.transactionIdsToLink.length > 0) {
+      await this.prismaService.transaction.updateMany({
+        where: {
+          id: { in: data.transactionIdsToLink },
+          userId,
+          recurringTransactionId: null,
+        },
+        data: {
+          recurringTransactionId: recurring.id,
+        },
+      });
+    }
+
     // Determine status based on account type
     const baseStatus = await this.determineStatus(
       data.type as TransactionType,
-      data.sourceAccountId,
+      data.sourceCardId || undefined,
     );
+
+    // Filter out occurrences that already have a linked transaction
+    let occurrencesToGenerate = occurrences;
+    if (data.transactionIdsToLink && data.transactionIdsToLink.length > 0) {
+      const linkedTransactions = await this.prismaService.transaction.findMany({
+        where: { id: { in: data.transactionIdsToLink } },
+        select: { date: true },
+      });
+
+      if (linkedTransactions.length > 0) {
+        const maxLinkedDate = new Date(
+          Math.max(...linkedTransactions.map((t) => t.date.getTime())),
+        );
+        occurrencesToGenerate = occurrences.filter(
+          (date) => date.getTime() > maxLinkedDate.getTime(),
+        );
+      }
+    }
+
+    // If not active, don't generate any future transactions
+    if (data.isActive === false) {
+      occurrencesToGenerate = [];
+    }
 
     // Generate all transactions
     // Para parcelamento, calcular valor de cada parcela
@@ -211,8 +260,8 @@ export class RecurringTransactionService {
         ? Number((data.estimatedAmount / data.totalInstallments).toFixed(2))
         : data.estimatedAmount;
 
-    for (let i = 0; i < occurrences.length; i++) {
-      const date = occurrences[i];
+    for (let i = 0; i < occurrencesToGenerate.length; i++) {
+      const date = occurrencesToGenerate[i];
 
       const transaction = await this.prismaService.transaction.create({
         data: {
@@ -224,6 +273,7 @@ export class RecurringTransactionService {
           paymentMethod: data.paymentMethod as PaymentMethod | undefined,
           sourceAccountId: data.sourceAccountId,
           destinyAccountId: data.destinyAccountId,
+          sourceCardId: data.sourceCardId,
           recurringTransactionId: recurring.id,
           userId,
           category: data.category,
@@ -233,12 +283,12 @@ export class RecurringTransactionService {
       // If it's a credit card expense, link to billing
       if (
         data.type === TransactionType.EXPENSE &&
-        data.sourceAccountId &&
+        data.sourceCardId &&
         baseStatus === TransactionStatus.COMPLETED
       ) {
         await this.linkTransactionToBilling(
           transaction.id,
-          data.sourceAccountId,
+          data.sourceCardId,
           date,
         );
       }
@@ -484,7 +534,7 @@ export class RecurringTransactionService {
     }
 
     // Update future transactions
-    const transactionUpdates: Prisma.TransactionUpdateManyMutationInput = {};
+    const transactionUpdates: Prisma.TransactionUncheckedUpdateManyInput = {};
 
     if (updates.description) {
       transactionUpdates.description = updates.description;
@@ -494,6 +544,15 @@ export class RecurringTransactionService {
     }
     if (updates.paymentMethod) {
       transactionUpdates.paymentMethod = updates.paymentMethod as PaymentMethod;
+    }
+    if (updates.sourceAccountId !== undefined) {
+      transactionUpdates.sourceAccountId = updates.sourceAccountId;
+    }
+    if (updates.destinyAccountId !== undefined) {
+      transactionUpdates.destinyAccountId = updates.destinyAccountId;
+    }
+    if (updates.sourceCardId !== undefined) {
+      transactionUpdates.sourceCardId = updates.sourceCardId;
     }
 
     if (Object.keys(transactionUpdates).length > 0) {
@@ -512,7 +571,8 @@ export class RecurringTransactionService {
     }
 
     // Update the template
-    const recurringUpdates: Prisma.RecurringTransactionUpdateInput = {};
+    const recurringUpdates: Prisma.RecurringTransactionUncheckedUpdateInput =
+      {};
     if (updates.description) recurringUpdates.description = updates.description;
     if (updates.estimatedAmount)
       recurringUpdates.estimatedAmount = updates.estimatedAmount;
@@ -525,6 +585,12 @@ export class RecurringTransactionService {
       recurringUpdates.endDate = updates.endDate;
     if (updates.isActive !== undefined)
       recurringUpdates.isActive = updates.isActive;
+    if (updates.sourceAccountId !== undefined)
+      recurringUpdates.sourceAccountId = updates.sourceAccountId;
+    if (updates.destinyAccountId !== undefined)
+      recurringUpdates.destinyAccountId = updates.destinyAccountId;
+    if (updates.sourceCardId !== undefined)
+      recurringUpdates.sourceCardId = updates.sourceCardId;
 
     return this.prismaService.recurringTransaction.update({
       where: { id: recurringId },
@@ -552,6 +618,7 @@ export class RecurringTransactionService {
       paymentMethod: PaymentMethod | null;
       sourceAccountId: string | null;
       destinyAccountId: string | null;
+      sourceCardId: string | null;
       userId: string;
     },
     newEndDate: Date | null,
@@ -588,7 +655,7 @@ export class RecurringTransactionService {
 
         const baseStatus = await this.determineStatus(
           recurring.type,
-          recurring.sourceAccountId,
+          recurring.sourceCardId || undefined,
         );
 
         for (const date of newOccurrences) {
@@ -602,6 +669,7 @@ export class RecurringTransactionService {
               paymentMethod: recurring.paymentMethod,
               sourceAccountId: recurring.sourceAccountId,
               destinyAccountId: recurring.destinyAccountId,
+              sourceCardId: recurring.sourceCardId,
               recurringTransactionId: recurring.id,
               userId,
             },
@@ -633,7 +701,7 @@ export class RecurringTransactionService {
 
       const baseStatus = await this.determineStatus(
         recurring.type,
-        recurring.sourceAccountId,
+        recurring.sourceCardId || undefined,
       );
 
       for (const date of newOccurrences) {
@@ -647,6 +715,7 @@ export class RecurringTransactionService {
             paymentMethod: recurring.paymentMethod,
             sourceAccountId: recurring.sourceAccountId,
             destinyAccountId: recurring.destinyAccountId,
+            sourceCardId: recurring.sourceCardId,
             recurringTransactionId: recurring.id,
             userId,
           },
@@ -959,5 +1028,117 @@ export class RecurringTransactionService {
       normalized.setUTCHours(3, 0, 0, 0);
       return normalized;
     });
+  }
+
+  async findSuggestions(
+    userId: string,
+  ): Promise<RecurringTransactionSuggestion[]> {
+    const now = new Date();
+    const startDate = subMonths(now, 6);
+    const endDate = addMonths(now, 6);
+
+    // Get ignored suggestions from Redis
+    const ignoredKey =
+      `recurring-transaction-ignored-suggestions:${userId}` as const;
+    const ignoredList = (await this.redisCacheService.get(ignoredKey)) || [];
+
+    // Fetch all unlinked transactions in the period
+    const transactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        recurringTransactionId: null,
+        date: { gte: startDate, lte: endDate },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    // Group by normalized description
+    const groups: Record<string, typeof transactions> = {};
+    for (const t of transactions) {
+      const normalized = t.description.trim().toLowerCase();
+      if (!groups[normalized]) groups[normalized] = [];
+      groups[normalized].push(t);
+    }
+
+    const suggestions: RecurringTransactionSuggestion[] = [];
+
+    for (const [desc, group] of Object.entries(groups)) {
+      // Filter out ignored ones
+      if (ignoredList.includes(desc)) continue;
+
+      // Minimum 2 occurrences
+      if (group.length < 2) continue;
+
+      // Check for periodicity
+      const intervals: number[] = [];
+      for (let i = 1; i < group.length; i++) {
+        intervals.push(differenceInDays(group[i].date, group[i - 1].date));
+      }
+
+      // Find common interval (mode-ish)
+      const avgInterval =
+        intervals.reduce((a, b) => a + b, 0) / intervals.length;
+
+      let frequency: RecurrenceFrequency | null = null;
+      if (avgInterval >= 6 && avgInterval <= 8)
+        frequency = RecurrenceFrequency.WEEKLY;
+      else if (avgInterval >= 13 && avgInterval <= 15)
+        frequency = RecurrenceFrequency.BI_WEEKLY;
+      else if (avgInterval >= 27 && avgInterval <= 33)
+        frequency = RecurrenceFrequency.MONTHLY;
+      else if (avgInterval >= 360 && avgInterval <= 370)
+        frequency = RecurrenceFrequency.YEARLY;
+
+      if (frequency) {
+        const totalAmount = group.reduce((sum, t) => sum + Number(t.amount), 0);
+        const avgAmount = Number((totalAmount / group.length).toFixed(2));
+
+        // Find most frequent source/destiny accounts
+        const sourceAccounts = group
+          .map((t) => t.sourceAccountId)
+          .filter(Boolean);
+        const destinyAccounts = group
+          .map((t) => t.destinyAccountId)
+          .filter(Boolean);
+
+        const mostFrequent = (arr: (string | null)[]) => {
+          if (arr.length === 0) return undefined;
+          const counts = arr.reduce(
+            (acc, val) => {
+              if (val) acc[val] = (acc[val] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
+
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          return sorted.length > 0 ? sorted[0][0] : undefined;
+        };
+
+        suggestions.push({
+          description: group[0].description, // Keep the original casing from the first one
+          averageAmount: avgAmount,
+          frequency: frequency as any,
+          suggestedDay: group[group.length - 1].date.getDate(),
+          sourceAccountId: mostFrequent(sourceAccounts),
+          destinyAccountId: mostFrequent(destinyAccounts),
+          transactionIds: group.map((t) => t.id),
+          transactions: group as any,
+          occurrenceCount: group.length,
+        });
+      }
+    }
+
+    return suggestions;
+  }
+
+  async ignoreSuggestion(userId: string, description: string) {
+    const ignoredKey =
+      `recurring-transaction-ignored-suggestions:${userId}` as const;
+    const normalized = description.trim().toLowerCase();
+    const current = (await this.redisCacheService.get(ignoredKey)) || [];
+    if (!current.includes(normalized)) {
+      await this.redisCacheService.set(ignoredKey, [...current, normalized]);
+    }
   }
 }

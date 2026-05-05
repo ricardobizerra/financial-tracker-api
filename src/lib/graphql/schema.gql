@@ -1367,6 +1367,18 @@ type InstitutionModelEdge {
   node: InstitutionModel!
 }
 
+type RecurringTransactionSuggestion {
+  description: String!
+  averageAmount: Float!
+  frequency: RecurrenceFrequency!
+  suggestedDay: Int
+  sourceAccountId: ID
+  destinyAccountId: ID
+  transactionIds: [ID!]!
+  transactions: [TransactionModel!]!
+  occurrenceCount: Int!
+}
+
 type RecurringTransactionModel {
   id: ID!
   description: String!
@@ -1452,6 +1464,7 @@ type Query {
   institution(id: String!): InstitutionModel!
   recurringTransaction(id: String!): RecurringTransactionModel
   recurringTransactions(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationRecurringTransactionModel, orderDirection: OrderDirection, accountId: ID, cardId: ID, isActive: Boolean): RecurringTransactionConnection!
+  possibleRecurringTransactions: [RecurringTransactionSuggestion!]!
   suggestCategory(description: String!): CategorySuggestion!
 }
 
@@ -1646,6 +1659,7 @@ type Mutation {
   resumeRecurringTransaction(id: String!): RecurringTransactionModel!
   endRecurringTransaction(id: String!, endDate: DateTime!): RecurringTransactionModel!
   deleteRecurringTransaction(id: String!, deleteAllTransactions: Boolean! = false): RecurringTransactionModel!
+  ignorePossibleRecurrence(description: String!): Boolean!
   chat(message: String!): ChatResponse!
 }
 
@@ -4391,6 +4405,8 @@ input CreateRecurringTransactionInput {
   totalInstallments: Int
   repeatCount: Int
   category: TransactionCategory
+  transactionIdsToLink: [ID!]
+  isActive: Boolean = true
 }
 
 input UpdateRecurringTransactionInput {

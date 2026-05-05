@@ -67,4 +67,10 @@ export class CreateRecurringTransactionInput {
 
   @Field(() => TransactionCategory, { nullable: true })
   category?: TransactionCategory;
+
+  @Field(() => [ID], { nullable: true })
+  transactionIdsToLink?: string[];
+
+  @Field(() => Boolean, { nullable: true, defaultValue: true })
+  isActive?: boolean;
 }

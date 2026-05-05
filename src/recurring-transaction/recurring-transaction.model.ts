@@ -2,11 +2,48 @@ import {
   RecurringTransaction,
   RecurrenceFrequency,
 } from '@/lib/graphql/prisma-client';
-import { Field, ID, ObjectType, OmitType, ArgsType } from '@nestjs/graphql';
+import {
+  Field,
+  ID,
+  ObjectType,
+  OmitType,
+  ArgsType,
+  Int,
+} from '@nestjs/graphql';
 import { Connection } from '@/utils/models/connection.model';
 import { Ordenation } from '@/utils/args/ordenation.args';
 
 import { TransactionModel } from '@/transaction/transaction.model';
+
+@ObjectType()
+export class RecurringTransactionSuggestion {
+  @Field()
+  description: string;
+
+  @Field()
+  averageAmount: number;
+
+  @Field(() => RecurrenceFrequency)
+  frequency: RecurrenceFrequency;
+
+  @Field(() => Int, { nullable: true })
+  suggestedDay?: number;
+
+  @Field(() => ID, { nullable: true })
+  sourceAccountId?: string;
+
+  @Field(() => ID, { nullable: true })
+  destinyAccountId?: string;
+
+  @Field(() => [ID])
+  transactionIds: string[];
+
+  @Field(() => [TransactionModel])
+  transactions: TransactionModel[];
+
+  @Field(() => Int)
+  occurrenceCount: number;
+}
 
 @ObjectType()
 export class RecurringTransactionModel extends OmitType(RecurringTransaction, [
