@@ -1054,10 +1054,26 @@ export class RecurringTransactionService {
       where: {
         userId,
         recurringTransactionId: null,
+        status: {
+          not: TransactionStatus.CANCELED,
+        },
+        installments: {
+          none: {},
+        },
         date: { gte: startDate, lte: endDate },
       },
       orderBy: { date: 'asc' },
     });
+
+    // Fetch existing recurring transactions to avoid suggesting what already exists
+    const existingRecurrences =
+      await this.prismaService.recurringTransaction.findMany({
+        where: { userId },
+        select: { description: true },
+      });
+    const existingDescriptions = new Set(
+      existingRecurrences.map((r) => r.description.trim().toLowerCase()),
+    );
 
     // Group by normalized description
     const groups: Record<string, typeof transactions> = {};
@@ -1070,8 +1086,9 @@ export class RecurringTransactionService {
     const suggestions: RecurringTransactionSuggestion[] = [];
 
     for (const [desc, group] of Object.entries(groups)) {
-      // Filter out ignored ones
-      if (ignoredList.includes(desc)) continue;
+      // Filter out ignored ones or already existing ones
+      if (ignoredList.includes(desc) || existingDescriptions.has(desc))
+        continue;
 
       // Minimum 2 occurrences
       if (group.length < 2) continue;
