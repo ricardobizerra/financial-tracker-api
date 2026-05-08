@@ -1049,7 +1049,6 @@ export class RecurringTransactionService {
       `recurring-transaction-ignored-suggestions:${userId}` as const;
     const ignoredList = (await this.redisCacheService.get(ignoredKey)) || [];
 
-    // Fetch all unlinked transactions in the period
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
@@ -1063,6 +1062,50 @@ export class RecurringTransactionService {
         date: { gte: startDate, lte: endDate },
       },
       orderBy: { date: 'asc' },
+      include: {
+        sourceAccount: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
+        destinyAccount: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
+        sourceCard: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
+        billingPayment: {
+          include: {
+            card: {
+              include: {
+                institutionLink: { include: { institution: true } },
+              },
+            },
+          },
+        },
+        cardBilling: {
+          include: {
+            paymentTransaction: {
+              include: {
+                sourceAccount: {
+                  include: {
+                    institutionLink: { include: { institution: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        installments: {
+          include: {
+            cardBilling: true,
+          },
+        },
+      },
     });
 
     // Fetch existing recurring transactions to avoid suggesting what already exists
@@ -1115,7 +1158,7 @@ export class RecurringTransactionService {
 
       if (frequency) {
         const totalAmount = group.reduce((sum, t) => sum + Number(t.amount), 0);
-        const avgAmount = Number((totalAmount / group.length).toFixed(2));
+        const avgAmount = Math.round(totalAmount / group.length);
 
         // Find most frequent source/destiny accounts
         const sourceAccounts = group
