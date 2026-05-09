@@ -13,6 +13,7 @@ import { SearchArgs } from '@/utils/args/search.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import { selectObject } from '@/utils/select-object';
 import { AccountService } from '@/account/account.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class InstitutionLinkService {
@@ -193,6 +194,43 @@ export class InstitutionLinkService {
             };
           }
         }
+        if (select.cards?.select) {
+          const needsCurrentBilling = Boolean(
+            select.cards.select.currentBilling,
+          );
+          const needsPayableBillings = Boolean(
+            select.cards.select.payableBillings,
+          );
+          if (needsCurrentBilling || needsPayableBillings) {
+            delete select.cards.select.currentBilling;
+            delete select.cards.select.payableBillings;
+            select.cards.select.billings = {
+              where: {
+                periodStart: { lte: new Date() },
+                status: needsPayableBillings
+                  ? { in: ['PENDING', 'CLOSED', 'OVERDUE'] }
+                  : 'PENDING',
+              },
+              orderBy: [{ paymentDate: 'asc' }, { periodStart: 'asc' }],
+              include: {
+                transactions: {
+                  where: {
+                    status: { not: 'CANCELED' },
+                    installments: { none: {} },
+                  },
+                  select: { amount: true },
+                },
+                installments: {
+                  include: {
+                    transaction: {
+                      select: { status: true },
+                    },
+                  },
+                },
+              },
+            };
+          }
+        }
         return select;
       })(),
       where: queryWhere,
@@ -264,10 +302,71 @@ export class InstitutionLinkService {
         .toString('base64')
         .split('=')[0];
 
+      const mappedCards =
+        (connection as any).cards?.map((card: any) => {
+          const billings = card.billings ?? [];
+          const getTotalAmount = (billing: any) => {
+            const txTotal = (billing.transactions ?? []).reduce(
+              (acc: Decimal, tx: any) => acc.add(tx.amount),
+              new Decimal(0),
+            );
+            const installmentsTotal = (billing.installments ?? [])
+              .filter((i: any) => i.transaction?.status !== 'CANCELED')
+              .reduce(
+                (acc: Decimal, i: any) => acc.add(i.amount),
+                new Decimal(0),
+              );
+            const totalAmount = txTotal.add(installmentsTotal);
+            return {
+              ...billing,
+              totalAmount,
+              usagePercentage: totalAmount
+                .div(billing.limit)
+                .mul(100)
+                .toNumber(),
+              transactionsCount:
+                (billing.transactions?.length ?? 0) +
+                (billing.installments?.filter(
+                  (i: any) => i.transaction?.status !== 'CANCELED',
+                ).length ?? 0),
+            };
+          };
+
+          const currentPending = billings
+            .filter((b: any) => b.status === 'PENDING')
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.periodStart).getTime() -
+                new Date(a.periodStart).getTime(),
+            )[0];
+
+          const payableBillings = billings
+            .filter((b: any) => b.status === 'CLOSED' || b.status === 'OVERDUE')
+            .sort((a: any, b: any) => {
+              const aTime = a.paymentDate
+                ? new Date(a.paymentDate).getTime()
+                : new Date(a.periodStart).getTime();
+              const bTime = b.paymentDate
+                ? new Date(b.paymentDate).getTime()
+                : new Date(b.periodStart).getTime();
+              return aTime - bTime;
+            })
+            .map(getTotalAmount);
+
+          return {
+            ...card,
+            currentBilling: currentPending
+              ? getTotalAmount(currentPending)
+              : null,
+            payableBillings,
+          };
+        }) ?? undefined;
+
       return {
         cursor: bufferedCursor,
         node: {
           ...connection,
+          ...(mappedCards && { cards: mappedCards }),
           ...(connection.account && {
             account: {
               ...connection.account,

@@ -201,6 +201,8 @@ type Card {
   sourceTransactions: [Transaction!]
   sourceRecurringTransactions: [RecurringTransaction!]
   _count: CardCount!
+  currentBilling: CardBillingModel
+  payableBillings: [CardBillingModel!]
 }
 
 type CardBillingAvgAggregate {

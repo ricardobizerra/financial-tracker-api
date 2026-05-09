@@ -400,6 +400,92 @@ export class CardService {
     };
   }
 
+  private mapBillingWithComputedTotals(billing: any): CardBillingModel {
+    const activeTransactions = billing?.transactions ?? [];
+    const transactionsTotal = activeTransactions.reduce(
+      (acc: Decimal, transaction: any) => acc.add(transaction.amount),
+      new Decimal(0),
+    );
+    const installmentsTotal =
+      billing?.installments
+        ?.filter(
+          (i: any) => i.transaction?.status !== TransactionStatus.CANCELED,
+        )
+        .reduce(
+          (acc: Decimal, installment: any) => acc.add(installment.amount),
+          new Decimal(0),
+        ) ?? new Decimal(0);
+    const totalAmount = transactionsTotal.add(installmentsTotal);
+    const installmentsCount =
+      billing?.installments?.filter(
+        (i: any) => i.transaction?.status !== TransactionStatus.CANCELED,
+      ).length ?? 0;
+
+    return {
+      ...billing,
+      totalAmount,
+      usagePercentage: totalAmount.div(billing?.limit).mul(100).toNumber(),
+      transactionsCount: (activeTransactions?.length ?? 0) + installmentsCount,
+    };
+  }
+
+  async findCurrentPendingBilling(
+    cardId: string,
+  ): Promise<CardBillingModel | null> {
+    const billing = await this.prisma.cardBilling.findFirst({
+      where: {
+        cardId,
+        periodStart: { lte: new Date() },
+        status: CardBillingStatus.PENDING,
+      },
+      orderBy: { periodStart: 'desc' },
+      include: {
+        transactions: {
+          where: {
+            status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
+      },
+    });
+
+    if (!billing) return null;
+    return this.mapBillingWithComputedTotals(billing);
+  }
+
+  async findPayableBillings(cardId: string): Promise<CardBillingModel[]> {
+    const billings = await this.prisma.cardBilling.findMany({
+      where: {
+        cardId,
+        periodStart: { lte: new Date() },
+        status: { in: [CardBillingStatus.CLOSED, CardBillingStatus.OVERDUE] },
+      },
+      orderBy: [{ paymentDate: 'asc' }, { periodStart: 'asc' }],
+      include: {
+        transactions: {
+          where: {
+            status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
+      },
+    });
+
+    return billings.map((billing) =>
+      this.mapBillingWithComputedTotals(billing),
+    );
+  }
+
   async findCurrentBilling(
     queriedFields: (keyof CardBillingOnDate)[],
     cardId: string,

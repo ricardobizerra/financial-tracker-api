@@ -1,9 +1,19 @@
-import { Resolver, Query, Args, Info, Mutation, ID } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Args,
+  Info,
+  Mutation,
+  ID,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { CardService } from './card.service';
 import { Card, CardBilling, CardType, User } from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
 import {
   CardBillingOnDate,
+  CardBillingModel,
   CardConnection,
   CardFilterArgs,
   OrdenationCardArgs,
@@ -57,6 +67,24 @@ export class CardResolver {
       ordenationArgs,
       filterArgs,
     });
+  }
+
+  @ResolveField(() => CardBillingModel, { nullable: true })
+  async currentBilling(@Parent() card: Card): Promise<CardBillingModel | null> {
+    const preloaded = (card as any).currentBilling;
+    if (preloaded !== undefined) {
+      return preloaded;
+    }
+    return this.cardService.findCurrentPendingBilling(card.id);
+  }
+
+  @ResolveField(() => [CardBillingModel], { nullable: true })
+  async payableBillings(@Parent() card: Card): Promise<CardBillingModel[]> {
+    const preloaded = (card as any).payableBillings;
+    if (preloaded !== undefined) {
+      return preloaded;
+    }
+    return this.cardService.findPayableBillings(card.id);
   }
 
   @Auth()
