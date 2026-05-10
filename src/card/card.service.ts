@@ -956,7 +956,6 @@ export class CardService {
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(12, 0, 0, 0);
     } else {
       // A transação está no dia de fechamento ou depois → próximo ciclo
       // periodStart é o dia após o fechamento do mês atual
@@ -964,8 +963,13 @@ export class CardService {
 
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(12, 0, 0, 0);
     }
+
+    // Normalize period boundaries to UTC-3 day anchors represented in UTC:
+    // start: 03:00:00.000Z (00:00 local), end: next day 02:59:59.999Z (23:59:59.999 local)
+    calculatedPeriodStart.setUTCHours(3, 0, 0, 0);
+    periodEnd.setDate(periodEnd.getDate() + 1);
+    periodEnd.setUTCHours(2, 59, 59, 999);
 
     // Calcular data de pagamento - deve ser baseada em periodEnd, não periodStart
     // O pagamento ocorre após o fechamento da fatura (periodEnd)
@@ -981,7 +985,7 @@ export class CardService {
       paymentDate.setMonth(periodEnd.getMonth());
     }
     paymentDate.setDate(cardBillingPaymentDay);
-    paymentDate.setHours(12, 0, 0, 0);
+    paymentDate.setUTCHours(3, 0, 0, 0);
 
     const billing = await transactionClient.cardBilling.create({
       data: {
@@ -1030,7 +1034,7 @@ export class CardService {
   async closeBilling({
     billingId,
     userId,
-    closingDate = new Date(),
+    closingDate,
   }: {
     billingId: string;
     userId: string;
@@ -1070,8 +1074,12 @@ export class CardService {
       throw new NotFoundException('Billing not found or already closed');
     }
 
+    if (!closingDate && !billing.periodEnd) {
+      throw new Error('periodEnd on a CardBilling cannot be null');
+    }
+
     // Normalize closing date to end of day
-    const closeDateNormalized = new Date(closingDate);
+    const closeDateNormalized = new Date(closingDate ?? billing.periodEnd!);
     closeDateNormalized.setHours(23, 59, 59, 999);
 
     // Separate transactions: those within the closing period vs those after
@@ -1092,7 +1100,7 @@ export class CardService {
     // Prefer periodEnd as reference to avoid creating duplicated cycles when closing late.
     const nextPeriodStart = new Date(billing.periodEnd ?? closeDateNormalized);
     nextPeriodStart.setDate(nextPeriodStart.getDate() + 1);
-    nextPeriodStart.setHours(0, 0, 0, 0);
+    nextPeriodStart.setUTCHours(3, 0, 0, 0);
 
     const nextBilling = await this.findOrCreateBillingForDate({
       cardId: billing.cardId,
