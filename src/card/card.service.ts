@@ -1175,6 +1175,28 @@ export class CardService {
     });
   }
 
+  /**
+   * Marks a billing as PAID and records a history entry.
+   * Accepts an optional Prisma transaction client to run within an existing transaction.
+   */
+  async markBillingPaid(
+    billingId: string,
+    tx: Prisma.TransactionClient = this.prisma,
+  ): Promise<void> {
+    await Promise.all([
+      tx.cardBilling.update({
+        where: { id: billingId },
+        data: { status: CardBillingStatus.PAID },
+      }),
+      tx.cardBillingHistory.create({
+        data: {
+          cardBilling: { connect: { id: billingId } },
+          status: CardBillingStatus.PAID,
+        },
+      }),
+    ]);
+  }
+
   async payBilling({
     billingId,
     userId,
@@ -1247,19 +1269,7 @@ export class CardService {
         billing.status === CardBillingStatus.CLOSED ||
         billing.status === CardBillingStatus.OVERDUE
       ) {
-        await Promise.all([
-          tx.cardBilling.update({
-            where: { id: billingId },
-            data: { status: CardBillingStatus.PAID },
-          }),
-          // Add history entry for the payment
-          tx.cardBillingHistory.create({
-            data: {
-              cardBilling: { connect: { id: billingId } },
-              status: CardBillingStatus.PAID,
-            },
-          }),
-        ]);
+        await this.markBillingPaid(billingId, tx);
       }
 
       return updatedTransaction;
@@ -1287,20 +1297,7 @@ export class CardService {
 
     // Update to PAID and create history entries
     await Promise.all(
-      billingsToPay.map((billing) =>
-        this.prisma.$transaction([
-          this.prisma.cardBilling.update({
-            where: { id: billing.id },
-            data: { status: CardBillingStatus.PAID },
-          }),
-          this.prisma.cardBillingHistory.create({
-            data: {
-              cardBilling: { connect: { id: billing.id } },
-              status: CardBillingStatus.PAID,
-            },
-          }),
-        ]),
-      ),
+      billingsToPay.map((billing) => this.markBillingPaid(billing.id)),
     );
 
     // 2. Find CLOSED billings with paymentDate in the past -> mark as OVERDUE

@@ -528,20 +528,9 @@ export class TransactionResolver {
       (existingTransaction.billingPayment.status === CardBillingStatus.CLOSED ||
         existingTransaction.billingPayment.status === CardBillingStatus.OVERDUE)
     ) {
-      await this.prismaService.$transaction([
-        this.prismaService.cardBilling.update({
-          where: { id: existingTransaction.billingPayment.id },
-          data: { status: CardBillingStatus.PAID },
-        }),
-        this.prismaService.cardBillingHistory.create({
-          data: {
-            cardBilling: {
-              connect: { id: existingTransaction.billingPayment.id },
-            },
-            status: CardBillingStatus.PAID,
-          },
-        }),
-      ]);
+      await this.cardService.markBillingPaid(
+        existingTransaction.billingPayment.id,
+      );
     }
 
     // Coletar billings para recalcular

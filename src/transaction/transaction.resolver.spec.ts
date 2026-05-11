@@ -39,6 +39,7 @@ describe('TransactionResolver', () => {
       findOrCreateBillingForDate: vi.fn(),
       updatePaymentTransaction: vi.fn(),
       syncParentTransactionBillingFromFirstInstallment: vi.fn(),
+      markBillingPaid: vi.fn().mockResolvedValue(undefined),
     };
 
     prismaService = {
@@ -54,12 +55,7 @@ describe('TransactionResolver', () => {
       },
       cardBilling: {
         findFirst: vi.fn(),
-        update: vi.fn(),
       },
-      cardBillingHistory: {
-        create: vi.fn(),
-      },
-      $transaction: vi.fn((ops) => Promise.all(ops)),
       recurringTransaction: {
         update: vi.fn(),
       },
@@ -962,16 +958,7 @@ describe('TransactionResolver', () => {
         mockUser as any,
       );
 
-      expect(prismaService.cardBilling.update).toHaveBeenCalledWith({
-        where: { id: 'billing-1' },
-        data: { status: CardBillingStatus.PAID },
-      });
-      expect(prismaService.cardBillingHistory.create).toHaveBeenCalledWith({
-        data: {
-          cardBilling: { connect: { id: 'billing-1' } },
-          status: CardBillingStatus.PAID,
-        },
-      });
+      expect(cardService.markBillingPaid).toHaveBeenCalledWith('billing-1');
     });
 
     it('should mark OVERDUE billing as PAID immediately when payment tx becomes COMPLETED', async () => {
@@ -998,16 +985,7 @@ describe('TransactionResolver', () => {
         mockUser as any,
       );
 
-      expect(prismaService.cardBilling.update).toHaveBeenCalledWith({
-        where: { id: 'billing-2' },
-        data: { status: CardBillingStatus.PAID },
-      });
-      expect(prismaService.cardBillingHistory.create).toHaveBeenCalledWith({
-        data: {
-          cardBilling: { connect: { id: 'billing-2' } },
-          status: CardBillingStatus.PAID,
-        },
-      });
+      expect(cardService.markBillingPaid).toHaveBeenCalledWith('billing-2');
     });
 
     it('should NOT mark billing as PAID when tx was already COMPLETED before update', async () => {
@@ -1031,8 +1009,7 @@ describe('TransactionResolver', () => {
         mockUser as any,
       );
 
-      expect(prismaService.cardBilling.update).not.toHaveBeenCalled();
-      expect(prismaService.cardBillingHistory.create).not.toHaveBeenCalled();
+      expect(cardService.markBillingPaid).not.toHaveBeenCalled();
     });
   });
 
