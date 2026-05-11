@@ -54,7 +54,12 @@ describe('TransactionResolver', () => {
       },
       cardBilling: {
         findFirst: vi.fn(),
+        update: vi.fn(),
       },
+      cardBillingHistory: {
+        create: vi.fn(),
+      },
+      $transaction: vi.fn((ops) => Promise.all(ops)),
       recurringTransaction: {
         update: vi.fn(),
       },
@@ -913,6 +918,7 @@ describe('TransactionResolver', () => {
         status: TransactionStatus.COMPLETED,
         date: new Date(),
         installments: [],
+        billingPayment: null,
       });
       transactionService.update.mockResolvedValue({
         id: 'tx-1',
@@ -930,6 +936,103 @@ describe('TransactionResolver', () => {
           status: TransactionStatus.PLANNED,
         }),
       );
+    });
+
+    it('should mark CLOSED billing as PAID immediately when payment tx becomes COMPLETED', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 1);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-pay',
+        userId: 'user-1',
+        status: TransactionStatus.PLANNED,
+        date: pastDate,
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-1', status: CardBillingStatus.CLOSED },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-pay',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-pay', date: pastDate } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.cardBilling.update).toHaveBeenCalledWith({
+        where: { id: 'billing-1' },
+        data: { status: CardBillingStatus.PAID },
+      });
+      expect(prismaService.cardBillingHistory.create).toHaveBeenCalledWith({
+        data: {
+          cardBilling: { connect: { id: 'billing-1' } },
+          status: CardBillingStatus.PAID,
+        },
+      });
+    });
+
+    it('should mark OVERDUE billing as PAID immediately when payment tx becomes COMPLETED', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 5);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-pay-overdue',
+        userId: 'user-1',
+        status: TransactionStatus.OVERDUE,
+        date: pastDate,
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-2', status: CardBillingStatus.OVERDUE },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-pay-overdue',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-pay-overdue', date: pastDate } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.cardBilling.update).toHaveBeenCalledWith({
+        where: { id: 'billing-2' },
+        data: { status: CardBillingStatus.PAID },
+      });
+      expect(prismaService.cardBillingHistory.create).toHaveBeenCalledWith({
+        data: {
+          cardBilling: { connect: { id: 'billing-2' } },
+          status: CardBillingStatus.PAID,
+        },
+      });
+    });
+
+    it('should NOT mark billing as PAID when tx was already COMPLETED before update', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-already',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        date: new Date(),
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-3', status: CardBillingStatus.CLOSED },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-already',
+        description: 'Updated description',
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-already', description: 'Updated description' } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.cardBilling.update).not.toHaveBeenCalled();
+      expect(prismaService.cardBillingHistory.create).not.toHaveBeenCalled();
     });
   });
 

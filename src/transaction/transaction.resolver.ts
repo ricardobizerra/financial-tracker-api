@@ -408,6 +408,9 @@ export class TransactionResolver {
         where: { id: data.id },
         include: {
           cardBilling: true,
+          billingPayment: {
+            select: { id: true, status: true },
+          },
           installments: {
             include: {
               cardBilling: { select: { id: true, status: true } },
@@ -512,6 +515,34 @@ export class TransactionResolver {
         status: newStatus,
       }),
     });
+
+    // Se esta transação é o pagamento de uma fatura e acabou de virar COMPLETED,
+    // marcar a fatura como PAID imediatamente (sem esperar o cron de meia-noite).
+    const wasJustCompleted =
+      newStatus === TransactionStatus.COMPLETED &&
+      existingTransaction.status !== TransactionStatus.COMPLETED;
+
+    if (
+      wasJustCompleted &&
+      existingTransaction.billingPayment &&
+      (existingTransaction.billingPayment.status === CardBillingStatus.CLOSED ||
+        existingTransaction.billingPayment.status === CardBillingStatus.OVERDUE)
+    ) {
+      await this.prismaService.$transaction([
+        this.prismaService.cardBilling.update({
+          where: { id: existingTransaction.billingPayment.id },
+          data: { status: CardBillingStatus.PAID },
+        }),
+        this.prismaService.cardBillingHistory.create({
+          data: {
+            cardBilling: {
+              connect: { id: existingTransaction.billingPayment.id },
+            },
+            status: CardBillingStatus.PAID,
+          },
+        }),
+      ]);
+    }
 
     // Coletar billings para recalcular
     const billingIdsToUpdate = new Set<string>();
