@@ -63,6 +63,20 @@ export class TransactionResolver {
     private readonly prismaService: PrismaService,
   ) {}
 
+  private distributeInstallmentAmounts(
+    totalAmount: number,
+    totalInstallments: number,
+  ): number[] {
+    const totalCents = Math.round(totalAmount);
+    const baseCents = Math.floor(totalCents / totalInstallments);
+    const remainder = totalCents % totalInstallments;
+
+    return Array.from({ length: totalInstallments }, (_, i) => {
+      const cents = baseCents + (i < remainder ? 1 : 0);
+      return cents;
+    });
+  }
+
   @Auth()
   @Mutation(() => TransactionModel, { name: 'createTransaction' })
   async createTransaction(
@@ -316,13 +330,15 @@ export class TransactionResolver {
       );
     }
 
-    // Calcular valor de cada parcela
-    const totalAmount = data.totalAmount;
-    const installmentAmount = Number(data.totalAmount) / data.totalInstallments;
+    const totalAmount = Number(data.totalAmount);
+    const installmentAmounts = this.distributeInstallmentAmounts(
+      totalAmount,
+      data.totalInstallments,
+    );
 
     // Criar a transação pai com status COMPLETED (compras parceladas são efetivadas)
     const transaction = await this.transactionService.create({
-      amount: totalAmount,
+      amount: data.totalAmount,
       description: data.description,
       date: data.startDate,
       status: TransactionStatus.COMPLETED,
@@ -357,7 +373,7 @@ export class TransactionResolver {
       await this.prismaService.transactionInstallment.create({
         data: {
           installmentNumber,
-          amount: installmentAmount,
+          amount: installmentAmounts[i],
           transactionId: transaction.id,
           cardBillingId: billing.id,
         },
@@ -506,14 +522,19 @@ export class TransactionResolver {
       hasInstallments &&
       Number(data.amount) !== Number(existingTransaction.amount)
     ) {
-      const newInstallmentAmount =
-        Number(data.amount) / existingTransaction.installments.length;
+      const redistributedAmounts = this.distributeInstallmentAmounts(
+        Number(data.amount),
+        existingTransaction.installments.length,
+      );
 
       // Atualizar cada parcela
-      for (const installment of existingTransaction.installments) {
+      for (const [
+        idx,
+        installment,
+      ] of existingTransaction.installments.entries()) {
         await this.prismaService.transactionInstallment.update({
           where: { id: installment.id },
-          data: { amount: newInstallmentAmount },
+          data: { amount: redistributedAmounts[idx] },
         });
 
         if (installment.cardBillingId) {

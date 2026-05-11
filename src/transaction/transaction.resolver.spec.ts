@@ -640,6 +640,56 @@ describe('TransactionResolver', () => {
       );
     });
 
+    it('should distribute rounding cents to first installments', async () => {
+      const startDate = new Date(2026, 0, 10);
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({ id: 'tx-parent' });
+      cardService.findOrCreateBillingForDate.mockResolvedValue({
+        id: 'billing-1',
+      });
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-1',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 33893 as any,
+          totalInstallments: 4,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 8474 }),
+        }),
+      );
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 8473 }),
+        }),
+      );
+    });
+
     it('should force billing for installment #1 even before first known billing', async () => {
       const startDate = new Date(2026, 3, 6); // Apr/06
 
@@ -678,7 +728,9 @@ describe('TransactionResolver', () => {
         mockUser as any,
       );
 
-      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
           data: expect.objectContaining({
@@ -688,7 +740,9 @@ describe('TransactionResolver', () => {
         }),
       );
 
-      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
           data: expect.objectContaining({
@@ -698,7 +752,9 @@ describe('TransactionResolver', () => {
         }),
       );
 
-      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
         3,
         expect.objectContaining({
           data: expect.objectContaining({
@@ -708,7 +764,9 @@ describe('TransactionResolver', () => {
         }),
       );
 
-      expect(prismaService.transactionInstallment.create).toHaveBeenNthCalledWith(
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
         4,
         expect.objectContaining({
           data: expect.objectContaining({
