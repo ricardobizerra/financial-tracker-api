@@ -23,6 +23,7 @@ import {
   CardBillingStatus,
   CardType,
   PaymentMethod,
+  RecurrenceFrequency,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
@@ -53,6 +54,7 @@ import {
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
 import { Card } from '@/lib/graphql/prisma-client';
+import { SimulateBalanceForecastInput } from './input/simulation.input';
 
 @Resolver(() => TransactionModel)
 export class TransactionResolver {
@@ -462,11 +464,14 @@ export class TransactionResolver {
       | undefined;
     const newDate = data.date ?? existingTransaction.date;
 
-    // Normalizar datas para comparação (apenas data, sem horário)
+    // Normalizar datas para comparação (apenas data, sem horário, em GMT-3)
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(today.getUTCHours() - 3);
+    today.setUTCHours(0, 0, 0, 0);
+
     const transactionDate = new Date(newDate);
-    transactionDate.setHours(0, 0, 0, 0);
+    transactionDate.setUTCHours(transactionDate.getUTCHours() - 3);
+    transactionDate.setUTCHours(0, 0, 0, 0);
 
     // Transição automática de status se a data for alterada
     if (data.date !== undefined) {
@@ -486,11 +491,14 @@ export class TransactionResolver {
         ) {
           newStatus = data.isCompleted
             ? TransactionStatus.COMPLETED
-            : existingTransaction.status;
+            : TransactionStatus.PLANNED;
         }
       } else {
         // Data futura -> PLANNED
-        if (existingTransaction.status === TransactionStatus.COMPLETED) {
+        if (
+          existingTransaction.status === TransactionStatus.COMPLETED ||
+          existingTransaction.status === TransactionStatus.OVERDUE
+        ) {
           newStatus = TransactionStatus.PLANNED;
         }
       }
@@ -977,7 +985,7 @@ export class TransactionResolver {
               institutionLink: {
                 select: {
                   account: {
-                    select: { startDate: true },
+                    select: { id: true, startDate: true },
                   },
                 },
               },
@@ -994,7 +1002,9 @@ export class TransactionResolver {
         if (!accountStart) return false;
         return new Date(tx.investment.startDate) >= new Date(accountStart);
       })
+
       .map((tx) => ({
+        accountId: tx.investment.institutionLink!.account!.id,
         date:
           tx.role === 'FUNDING'
             ? new Date(tx.investment.startDate)
@@ -1008,61 +1018,253 @@ export class TransactionResolver {
         (
           event,
         ): event is {
+          accountId: string;
+          date: Date;
+          amount: number;
+          type: 'FUNDING' | 'REDEMPTION';
+        } => event.date !== null,
+      );
+    const accountsList = accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      color: a.institutionLink?.institution?.color ?? null,
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    const forecastResult = await this.transactionService.getBalanceForecast({
+      userId: user.id,
+      accountId: args.accountId,
+      accounts: accountsList,
+      startDate,
+      endDate,
+      investmentEvents,
+    });
+
+    return {
+      accountSeries: forecastResult.accountSeries,
+      startDate: forecastResult.startDate,
+      endDate: forecastResult.endDate,
+    };
+  }
+
+  @Auth()
+  @Query(() => BalanceForecastModel, { name: 'simulateBalanceForecast' })
+  async simulateBalanceForecast(
+    @Args('input') input: SimulateBalanceForecastInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const startDate = input.startDate;
+    const endDate = input.endDate;
+
+    // Fetch real accounts (same as getBalanceForecast)
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        institutionLink: { userId: user.id },
+        ...(input.accountId && { id: input.accountId }),
+      },
+      select: {
+        id: true,
+        name: true,
+        initialBalance: true,
+        startDate: true,
+        institutionLink: {
+          select: {
+            institution: { select: { color: true } },
+          },
+        },
+      },
+    });
+
+    const accountBalances = accounts.map((a) => ({
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    // Fetch real investment transactions (same as getBalanceForecast)
+    const investmentTransactions =
+      await this.prismaService.investmentTransaction.findMany({
+        where: {
+          role: { in: ['FUNDING', 'REDEMPTION'] },
+          investment: {
+            institutionLink: {
+              userId: user.id,
+              ...(input.accountId && {
+                account: { id: input.accountId },
+              }),
+            },
+          },
+        },
+        select: {
+          amount: true,
+          role: true,
+          investment: {
+            select: {
+              startDate: true,
+              finishedAt: true,
+              institutionLink: {
+                select: { account: { select: { id: true, startDate: true } } },
+              },
+            },
+          },
+        },
+      });
+
+    const investmentEvents = investmentTransactions
+      .filter((tx) => {
+        const accountStart = tx.investment.institutionLink?.account?.startDate;
+        if (!accountStart) return false;
+        return new Date(tx.investment.startDate) >= new Date(accountStart);
+      })
+      .map((tx) => ({
+        accountId: tx.investment.institutionLink!.account!.id,
+        date:
+          tx.role === 'FUNDING'
+            ? new Date(tx.investment.startDate)
+            : tx.investment.finishedAt
+              ? new Date(tx.investment.finishedAt)
+              : null,
+        amount: Number(tx.amount),
+        type: tx.role as 'FUNDING' | 'REDEMPTION',
+      }))
+      .filter(
+        (
+          event,
+        ): event is {
+          accountId: string;
           date: Date;
           amount: number;
           type: 'FUNDING' | 'REDEMPTION';
         } => event.date !== null,
       );
 
-    const aggregatedAccountBalance = {
-      initialBalance: accountBalances.reduce(
-        (acc, a) => acc + a.initialBalance,
-        0,
-      ),
-      startDate: accountBalances.reduce(
-        (acc, a) => {
-          if (!a.startDate) return acc;
-          if (!acc) return a.startDate;
-          return a.startDate < acc ? a.startDate : acc;
-        },
-        null as Date | null,
-      ),
+    // Expand simulated transactions (one-offs + recurring expanded across date range)
+    const expandedSimTxs: {
+      description: string;
+      amount: number;
+      type: TransactionType;
+      date: Date;
+      isIncome: boolean;
+      isSimulated: true;
+      accountId?: string | null;
+    }[] = [];
+
+    const pushSimTx = (
+      simTx: (typeof input.simulatedTransactions)[0],
+      targetDate: Date,
+    ) => {
+      if (simTx.type === TransactionType.BETWEEN_ACCOUNTS) {
+        expandedSimTxs.push({
+          description: simTx.description,
+          amount: simTx.amount,
+          type: simTx.type,
+          date: targetDate,
+          isIncome: false,
+          isSimulated: true,
+          accountId: simTx.accountId,
+        });
+        if (simTx.destinyAccountId) {
+          expandedSimTxs.push({
+            description: simTx.description,
+            amount: simTx.amount,
+            type: simTx.type,
+            date: targetDate,
+            isIncome: true,
+            isSimulated: true,
+            accountId: simTx.destinyAccountId,
+          });
+        }
+      } else {
+        expandedSimTxs.push({
+          description: simTx.description,
+          amount: simTx.amount,
+          type: simTx.type,
+          date: targetDate,
+          isIncome: simTx.type === TransactionType.INCOME,
+          isSimulated: true,
+          accountId: simTx.accountId,
+        });
+      }
     };
 
-    const forecastResult = await this.transactionService.getBalanceForecast({
-      userId: user.id,
-      accountId: args.accountId,
-      startDate,
-      endDate,
-      accountBalance: aggregatedAccountBalance,
-      investmentEvents,
-    });
+    for (const simTx of input.simulatedTransactions) {
+      if (!simTx.isRecurring) {
+        if (simTx.date >= startDate && simTx.date <= endDate) {
+          pushSimTx(simTx, simTx.date);
+        }
+      } else if (simTx.recurrenceFrequency) {
+        const recEndDate = simTx.recurrenceEndDate
+          ? new Date(
+              Math.min(
+                new Date(simTx.recurrenceEndDate).getTime(),
+                endDate.getTime(),
+              ),
+            )
+          : endDate;
 
-    // Derive a display name and color for the aggregated series
-    const seriesName =
-      accounts.length === 1
-        ? accounts[0].name
-        : accounts.length > 1
-          ? `${accounts.length} contas`
-          : 'Todas as contas';
-    const seriesColor =
-      accounts.length === 1
-        ? (accounts[0].institutionLink?.institution?.color ?? null)
-        : null;
-    const seriesAccountId = args.accountId ?? 'all';
+        const occurrenceDate = new Date(simTx.date);
+        while (occurrenceDate <= recEndDate) {
+          if (occurrenceDate >= startDate) {
+            pushSimTx(simTx, new Date(occurrenceDate));
+          }
+
+          switch (simTx.recurrenceFrequency) {
+            case RecurrenceFrequency.WEEKLY:
+              occurrenceDate.setDate(occurrenceDate.getDate() + 7);
+              break;
+            case RecurrenceFrequency.BI_WEEKLY:
+              occurrenceDate.setDate(occurrenceDate.getDate() + 14);
+              break;
+            case RecurrenceFrequency.MONTHLY:
+              occurrenceDate.setMonth(occurrenceDate.getMonth() + 1);
+              break;
+            case RecurrenceFrequency.YEARLY:
+              occurrenceDate.setFullYear(occurrenceDate.getFullYear() + 1);
+              break;
+            default:
+              occurrenceDate.setMonth(occurrenceDate.getMonth() + 1);
+          }
+        }
+      }
+    }
+
+    // Add simulated investments as expense events (capital outflow)
+    for (const simInv of input.simulatedInvestments) {
+      const invDate = new Date(simInv.startDate);
+      if (invDate >= startDate && invDate <= endDate) {
+        expandedSimTxs.push({
+          description: `Investimento: ${simInv.description}`,
+          amount: simInv.initialAmount,
+          type: TransactionType.EXPENSE,
+          date: invDate,
+          isIncome: false,
+          isSimulated: true,
+          accountId: simInv.accountId,
+        });
+      }
+    }
+
+    const accountsList = accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      color: a.institutionLink?.institution?.color ?? null,
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    const forecastResult =
+      await this.transactionService.simulateBalanceForecast({
+        userId: user.id,
+        accountId: input.accountId,
+        accounts: accountsList,
+        startDate,
+        endDate,
+        investmentEvents,
+        simulatedTransactions: expandedSimTxs,
+      });
 
     return {
-      accountSeries: [
-        {
-          accountId: seriesAccountId,
-          accountName: seriesName,
-          color: seriesColor,
-          dataPoints: forecastResult.dataPoints,
-          currentBalance: forecastResult.currentBalance,
-          projectedBalance: forecastResult.projectedBalance,
-          balanceTrend: forecastResult.balanceTrend,
-        },
-      ],
+      accountSeries: forecastResult.accountSeries,
       startDate: forecastResult.startDate,
       endDate: forecastResult.endDate,
     };

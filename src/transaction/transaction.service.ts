@@ -491,17 +491,24 @@ export class TransactionService {
   async getBalanceForecast({
     userId,
     accountId,
+    accounts,
     startDate,
     endDate,
-    accountBalance,
     investmentEvents,
   }: {
     userId: string;
     accountId?: string;
+    accounts: {
+      id: string;
+      name: string;
+      color: string | null;
+      initialBalance: number;
+      startDate: Date | null;
+    }[];
     startDate: Date;
     endDate: Date;
-    accountBalance: { initialBalance: number; startDate: Date | null };
     investmentEvents?: {
+      accountId: string;
       date: Date;
       amount: number;
       type: 'FUNDING' | 'REDEMPTION';
@@ -513,70 +520,15 @@ export class TransactionService {
     const chartStart = new Date(startDate);
     chartStart.setHours(3, 0, 0, 0);
 
-    let seedBalance = 0;
-    const inWindowByDate = new Map<string, number>();
-
-    if (!accountBalance.startDate) {
-      // sem data → considera já ativo
-      seedBalance = accountBalance.initialBalance;
-    } else {
-      const d = new Date(accountBalance.startDate);
-      d.setHours(3, 0, 0, 0);
-
-      if (d < chartStart) {
-        // startDate antes da janela → saldo inicial já está ativo
-        seedBalance = accountBalance.initialBalance;
-      } else {
-        // startDate dentro/após a janela → saldo inicial entra em um dia específico do gráfico
-        const key = d.toISOString().split('T')[0];
-        inWindowByDate.set(key, accountBalance.initialBalance);
-      }
-    }
-
-    // Indexar investment events por data
-    const investmentEventsByDate = new Map<
-      string,
-      { amount: number; type: 'FUNDING' | 'REDEMPTION' }[]
-    >();
-    if (investmentEvents) {
-      for (const event of investmentEvents) {
-        const key = event.date.toISOString().split('T')[0];
-        const existing = investmentEventsByDate.get(key) || [];
-        existing.push({ amount: event.amount, type: event.type });
-        investmentEventsByDate.set(key, existing);
-      }
-    }
-
-    // Pre-compute investment balance impact before chart window starts
-    let preWindowInvestmentBalance = 0;
-    if (investmentEvents) {
-      for (const event of investmentEvents) {
-        const eventDate = new Date(event.date);
-        eventDate.setHours(3, 0, 0, 0);
-        if (eventDate < chartStart) {
-          if (event.type === 'FUNDING') {
-            preWindowInvestmentBalance -= event.amount;
-          } else if (event.type === 'REDEMPTION') {
-            preWindowInvestmentBalance += event.amount;
-          }
-        }
-      }
-    }
-
-    // Buscar todas as transações no período
+    // Fetch all transactions in the period
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
         ...(accountId && {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: {
-          not: 'CANCELED',
-        },
+        date: { gte: startDate, lte: endDate },
+        status: { not: 'CANCELED' },
       },
       select: {
         id: true,
@@ -588,208 +540,635 @@ export class TransactionService {
         sourceAccountId: true,
         destinyAccountId: true,
         cardBillingId: true,
-        sourceCard: {
-          select: { id: true, type: true },
-        },
+        sourceCard: { select: { id: true, type: true } },
       },
-      orderBy: {
-        date: 'asc',
+      orderBy: { date: 'asc' },
+    });
+
+    const preTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { lt: startDate },
+        status: { not: 'CANCELED' },
+      },
+      select: {
+        amount: true,
+        type: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { type: true } },
       },
     });
 
-    // Agrupar transações por dia
-    const transactionsByDate = new Map<string, typeof transactions>();
+    const accountSeries = accounts.map((account) => {
+      let seedBalance = 0;
+      const inWindowByDate = new Map<string, number>();
 
-    transactions.forEach((tx) => {
-      const dateKey = tx.date.toISOString().split('T')[0];
-      const existing = transactionsByDate.get(dateKey) || [];
-      existing.push(tx);
-      transactionsByDate.set(dateKey, existing);
-    });
-
-    // Gerar pontos do gráfico dia a dia
-    const dataPoints: {
-      date: Date;
-      balance: number;
-      isProjected: boolean;
-      incomeAmount: number;
-      expenseAmount: number;
-      transactionCount: number;
-      isInitialBalance?: boolean;
-      transactions: {
-        id: string;
-        description: string;
-        amount: number;
-        type: string;
-        isIncome: boolean;
-      }[];
-    }[] = [];
-
-    let runningBalance = seedBalance + preWindowInvestmentBalance;
-    const currentDate = new Date(startDate);
-    currentDate.setHours(3, 0, 0, 0);
-    let currentBalance = seedBalance + preWindowInvestmentBalance;
-    let projectedBalance = seedBalance + preWindowInvestmentBalance;
-    // Controla se o primeiro evento real já ocorreu; dias vazios anteriores são omitidos
-    let chartStarted = false;
-
-    while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split('T')[0];
-      const dayTransactions = transactionsByDate.get(dateKey) || [];
-      const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
-      const isProjected = currentDate >= today;
-
-      // Verificar se alguma conta tem startDate neste exato dia
-      const inWindowAmount = inWindowByDate.get(dateKey);
-      if (inWindowAmount) {
-        // Emitir um ponto de âncora do saldo inicial antes das transações do dia
-        chartStarted = true;
-        dataPoints.push({
-          date: new Date(`${dateKey}T03:00:00.000Z`),
-          balance: runningBalance + inWindowAmount,
-          isProjected,
-          incomeAmount: 0,
-          expenseAmount: 0,
-          transactionCount: 0,
-          isInitialBalance: true,
-          transactions: [],
-        });
-        runningBalance += inWindowAmount;
-      }
-
-      let incomeAmount = 0;
-      let expenseAmount = 0;
-
-      const dayTxList: {
-        id: string;
-        description: string;
-        amount: number;
-        type: string;
-        isIncome: boolean;
-      }[] = [];
-
-      dayTransactions.forEach((tx) => {
-        // Pular transações que fazem parte de faturas de cartão de crédito
+      let preWindowTxBalance = 0;
+      preTransactions.forEach((tx) => {
         if (tx.cardBillingId) return;
-
-        // Pular despesas de cartão de crédito não associadas a uma fatura
         if (
-          tx.type === TransactionType.EXPENSE &&
+          tx.type === 'EXPENSE' &&
           tx.sourceCard &&
-          tx.sourceCard.type === CardType.CREDIT
-        ) {
+          tx.sourceCard.type === 'CREDIT'
+        )
           return;
-        }
-
-        // Para projeções, incluir apenas transações agendadas
-        if (isProjected && tx.status === 'COMPLETED') return;
-        // Para histórico, incluir apenas transações completadas
-        if (!isProjected && tx.status !== 'COMPLETED') return;
 
         const amount = Number(tx.amount);
-        let included = false;
-        let isIncome = false;
-
-        if (tx.type === TransactionType.INCOME) {
-          if (!accountId || tx.destinyAccountId === accountId) {
-            runningBalance += amount;
-            incomeAmount += amount;
-            included = true;
-            isIncome = true;
-          }
-        } else if (tx.type === TransactionType.EXPENSE) {
-          if (!accountId || tx.sourceAccountId === accountId) {
-            runningBalance -= amount;
-            expenseAmount += amount;
-            included = true;
-            isIncome = false;
-          }
-        } else if (tx.type === TransactionType.BETWEEN_ACCOUNTS && accountId) {
-          if (tx.destinyAccountId === accountId) {
-            runningBalance += amount;
-            incomeAmount += amount;
-            included = true;
-            isIncome = true;
-          }
-          if (tx.sourceAccountId === accountId) {
-            runningBalance -= amount;
-            expenseAmount += amount;
-            included = true;
-            isIncome = false;
-          }
-        }
-
-        if (included) {
-          dayTxList.push({
-            id: tx.id,
-            description: tx.description || 'Sem descrição',
-            amount,
-            type: tx.type,
-            isIncome,
-          });
+        if (tx.type === 'INCOME') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+        } else if (tx.type === 'EXPENSE') {
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
         }
       });
 
-      // Apply investment events for this day
-      for (const invEvent of dayInvestmentEvents) {
-        if (invEvent.type === 'FUNDING') {
-          runningBalance -= invEvent.amount;
-          expenseAmount += invEvent.amount;
-          dayTxList.push({
-            id: `inv-funding-${dateKey}`,
-            description: 'Investimento (aporte)',
-            amount: invEvent.amount,
-            type: 'INVESTMENT_FUNDING',
-            isIncome: false,
-          });
-        } else if (invEvent.type === 'REDEMPTION') {
-          runningBalance += invEvent.amount;
-          incomeAmount += invEvent.amount;
-          dayTxList.push({
-            id: `inv-redemption-${dateKey}`,
-            description: 'Investimento (resgate)',
-            amount: invEvent.amount,
-            type: 'INVESTMENT_REDEMPTION',
-            isIncome: true,
-          });
+      if (!account.startDate) {
+        seedBalance = account.initialBalance + preWindowTxBalance;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d < chartStart) {
+          seedBalance = account.initialBalance + preWindowTxBalance;
+        } else {
+          const key = d.toISOString().split('T')[0];
+          inWindowByDate.set(key, account.initialBalance);
         }
       }
 
-      // Emitir ponto do dia se houve transações, ou se o gráfico já começou (mantém linha plana)
-      // Dias antes do primeiro evento real são omitidos
-      if (dayTxList.length > 0) {
+      const accountInvestmentEvents =
+        investmentEvents?.filter((e) => e.accountId === account.id) || [];
+      const investmentEventsByDate = new Map<
+        string,
+        typeof accountInvestmentEvents
+      >();
+
+      accountInvestmentEvents.forEach((event) => {
+        const key = event.date.toISOString().split('T')[0];
+        const existing = investmentEventsByDate.get(key) || [];
+        existing.push(event);
+        investmentEventsByDate.set(key, existing);
+      });
+
+      let preWindowInvestmentBalance = 0;
+      accountInvestmentEvents.forEach((event) => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(3, 0, 0, 0);
+        if (eventDate < chartStart) {
+          if (event.type === 'FUNDING') {
+            preWindowInvestmentBalance -= event.amount;
+          } else if (event.type === 'REDEMPTION') {
+            preWindowInvestmentBalance += event.amount;
+          }
+        }
+      });
+
+      const transactionsByDate = new Map<string, typeof transactions>();
+      transactions.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = transactionsByDate.get(dateKey) || [];
+        existing.push(tx);
+        transactionsByDate.set(dateKey, existing);
+      });
+
+      const dataPoints: any[] = [];
+      let runningBalance = seedBalance + preWindowInvestmentBalance;
+      const currentDate = new Date(startDate);
+      currentDate.setHours(3, 0, 0, 0);
+      let currentBalance = seedBalance + preWindowInvestmentBalance;
+      let projectedBalance = seedBalance + preWindowInvestmentBalance;
+      let chartStarted = false;
+      if (!account.startDate) {
         chartStarted = true;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d <= chartStart) chartStarted = true;
       }
-      if (chartStarted) {
-        dataPoints.push({
-          date: new Date(`${dateKey}T03:00:00.000Z`),
-          balance: runningBalance,
-          isProjected,
-          incomeAmount,
-          expenseAmount,
-          transactionCount: dayTxList.length,
-          transactions: dayTxList,
+
+      while (currentDate <= endDate) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const dayTransactions = transactionsByDate.get(dateKey) || [];
+        const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
+        const isProjected = currentDate >= today;
+
+        const inWindowAmount = inWindowByDate.get(dateKey);
+        if (inWindowAmount) {
+          chartStarted = true;
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance + inWindowAmount,
+            isProjected,
+            incomeAmount: 0,
+            expenseAmount: 0,
+            transactionCount: 0,
+            isInitialBalance: true,
+            transactions: [],
+          });
+          runningBalance += inWindowAmount;
+        }
+
+        let incomeAmount = 0;
+        let expenseAmount = 0;
+        const dayTxList: any[] = [];
+
+        dayTransactions.forEach((tx) => {
+          if (tx.cardBillingId) return;
+          if (
+            tx.type === 'EXPENSE' &&
+            tx.sourceCard &&
+            tx.sourceCard.type === 'CREDIT'
+          ) {
+            return;
+          }
+
+          if (isProjected && tx.status === 'COMPLETED') return;
+          if (!isProjected && tx.status !== 'COMPLETED') return;
+
+          const amount = Number(tx.amount);
+          let included = false;
+          let isIncome = false;
+
+          if (tx.type === 'INCOME') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+          } else if (tx.type === 'EXPENSE') {
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          }
+
+          if (included) {
+            dayTxList.push({
+              id: tx.id,
+              description: tx.description || 'Sem descrição',
+              amount,
+              type: tx.type,
+              isIncome,
+            });
+          }
         });
+
+        for (const invEvent of dayInvestmentEvents) {
+          if (invEvent.type === 'FUNDING') {
+            runningBalance -= invEvent.amount;
+            expenseAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-funding-${dateKey}`,
+              description: 'Investimento (aporte)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_FUNDING',
+              isIncome: false,
+            });
+          } else if (invEvent.type === 'REDEMPTION') {
+            runningBalance += invEvent.amount;
+            incomeAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-redemption-${dateKey}`,
+              description: 'Investimento (resgate)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_REDEMPTION',
+              isIncome: true,
+            });
+          }
+        }
+
+        if (dayTxList.length > 0) {
+          chartStarted = true;
+        }
+
+        if (chartStarted) {
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance,
+            isProjected,
+            incomeAmount,
+            expenseAmount,
+            transactionCount: dayTxList.length,
+            transactions: dayTxList,
+          });
+        }
+
+        if (
+          currentDate.toISOString().split('T')[0] ===
+          today.toISOString().split('T')[0]
+        ) {
+          currentBalance = runningBalance;
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      // Guardar saldo atual e projetado
-      if (
-        currentDate.toISOString().split('T')[0] ===
-        today.toISOString().split('T')[0]
-      ) {
-        currentBalance = runningBalance;
-      }
+      projectedBalance = runningBalance;
 
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    projectedBalance = runningBalance;
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        color: account.color,
+        dataPoints,
+        currentBalance,
+        projectedBalance,
+        balanceTrend: projectedBalance - currentBalance,
+      };
+    });
 
     return {
-      dataPoints,
-      currentBalance,
-      projectedBalance,
-      balanceTrend: projectedBalance - currentBalance,
+      accountSeries,
+      startDate,
+      endDate,
+    };
+  }
+
+  /**
+   * Runs a balance forecast simulation
+   */
+  async simulateBalanceForecast({
+    userId,
+    accountId,
+    accounts,
+    startDate,
+    endDate,
+    investmentEvents,
+    simulatedTransactions,
+  }: {
+    userId: string;
+    accountId?: string;
+    accounts: {
+      id: string;
+      name: string;
+      color: string | null;
+      initialBalance: number;
+      startDate: Date | null;
+    }[];
+    startDate: Date;
+    endDate: Date;
+    investmentEvents?: {
+      accountId: string;
+      date: Date;
+      amount: number;
+      type: 'FUNDING' | 'REDEMPTION';
+    }[];
+    simulatedTransactions: {
+      description: string;
+      amount: number;
+      type: TransactionType;
+      date: Date;
+      isIncome: boolean;
+      isSimulated: true;
+      accountId?: string | null;
+    }[];
+  }) {
+    const today = new Date();
+    today.setHours(3, 0, 0, 0);
+
+    const chartStart = new Date(startDate);
+    chartStart.setHours(3, 0, 0, 0);
+
+    const realTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { gte: startDate, lte: endDate },
+        status: { not: 'CANCELED' },
+      },
+      select: {
+        id: true,
+        date: true,
+        amount: true,
+        type: true,
+        status: true,
+        description: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { id: true, type: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const preTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { lt: startDate },
+        status: { not: 'CANCELED' },
+      },
+      select: {
+        amount: true,
+        type: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { type: true } },
+      },
+    });
+
+    const accountSeries = accounts.map((account) => {
+      let seedBalance = 0;
+      const inWindowByDate = new Map<string, number>();
+
+      let preWindowTxBalance = 0;
+      preTransactions.forEach((tx) => {
+        if (tx.cardBillingId) return;
+        if (
+          tx.type === 'EXPENSE' &&
+          tx.sourceCard &&
+          tx.sourceCard.type === 'CREDIT'
+        )
+          return;
+
+        const amount = Number(tx.amount);
+        if (tx.type === 'INCOME') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+        } else if (tx.type === 'EXPENSE') {
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        }
+      });
+
+      if (!account.startDate) {
+        seedBalance = account.initialBalance + preWindowTxBalance;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d < chartStart) {
+          seedBalance = account.initialBalance + preWindowTxBalance;
+        } else {
+          const key = d.toISOString().split('T')[0];
+          inWindowByDate.set(key, account.initialBalance);
+        }
+      }
+
+      const accountInvestmentEvents =
+        investmentEvents?.filter((e) => e.accountId === account.id) || [];
+      const investmentEventsByDate = new Map<
+        string,
+        typeof accountInvestmentEvents
+      >();
+
+      accountInvestmentEvents.forEach((event) => {
+        const key = event.date.toISOString().split('T')[0];
+        const existing = investmentEventsByDate.get(key) || [];
+        existing.push(event);
+        investmentEventsByDate.set(key, existing);
+      });
+
+      let preWindowInvestmentBalance = 0;
+      accountInvestmentEvents.forEach((event) => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(3, 0, 0, 0);
+        if (eventDate < chartStart) {
+          if (event.type === 'FUNDING') {
+            preWindowInvestmentBalance -= event.amount;
+          } else if (event.type === 'REDEMPTION') {
+            preWindowInvestmentBalance += event.amount;
+          }
+        }
+      });
+
+      const realTxsByDate = new Map<string, typeof realTransactions>();
+      realTransactions.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = realTxsByDate.get(dateKey) || [];
+        existing.push(tx);
+        realTxsByDate.set(dateKey, existing);
+      });
+
+      const accountSimTxs = simulatedTransactions.filter(
+        (tx) => !tx.accountId || tx.accountId === account.id,
+      );
+      const simTxsByDate = new Map<string, typeof accountSimTxs>();
+      accountSimTxs.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = simTxsByDate.get(dateKey) || [];
+        existing.push(tx);
+        simTxsByDate.set(dateKey, existing);
+      });
+
+      const dataPoints: any[] = [];
+      let runningBalance = seedBalance + preWindowInvestmentBalance;
+      const currentDate = new Date(startDate);
+      currentDate.setHours(3, 0, 0, 0);
+      let currentBalance = seedBalance + preWindowInvestmentBalance;
+      let projectedBalance = seedBalance + preWindowInvestmentBalance;
+      let chartStarted = false;
+      if (!account.startDate) {
+        chartStarted = true;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d <= chartStart) chartStarted = true;
+      }
+
+      while (currentDate <= endDate) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const dayRealTxs = realTxsByDate.get(dateKey) || [];
+        const daySimTxs = simTxsByDate.get(dateKey) || [];
+        const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
+        const isProjected = currentDate >= today;
+
+        const inWindowAmount = inWindowByDate.get(dateKey);
+        if (inWindowAmount) {
+          chartStarted = true;
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance + inWindowAmount,
+            isProjected,
+            incomeAmount: 0,
+            expenseAmount: 0,
+            transactionCount: 0,
+            isInitialBalance: true,
+            transactions: [],
+          });
+          runningBalance += inWindowAmount;
+        }
+
+        let incomeAmount = 0;
+        let expenseAmount = 0;
+        const dayTxList: any[] = [];
+
+        dayRealTxs.forEach((tx) => {
+          if (tx.cardBillingId) return;
+          if (
+            tx.type === 'EXPENSE' &&
+            tx.sourceCard &&
+            tx.sourceCard.type === 'CREDIT'
+          ) {
+            return;
+          }
+
+          if (isProjected && tx.status === 'COMPLETED') return;
+          if (!isProjected && tx.status !== 'COMPLETED') return;
+
+          const amount = Number(tx.amount);
+          let included = false;
+          let isIncome = false;
+
+          if (tx.type === 'INCOME') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+          } else if (tx.type === 'EXPENSE') {
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          }
+
+          if (included) {
+            dayTxList.push({
+              id: tx.id,
+              description: tx.description || 'Sem descrição',
+              amount,
+              type: tx.type,
+              isIncome,
+            });
+          }
+        });
+
+        daySimTxs.forEach((tx) => {
+          const amount = Number(tx.amount);
+          if (tx.type === 'INCOME') {
+            runningBalance += amount;
+            incomeAmount += amount;
+          } else if (tx.type === 'EXPENSE') {
+            runningBalance -= amount;
+            expenseAmount += amount;
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.isIncome) {
+              runningBalance += amount;
+              incomeAmount += amount;
+            } else {
+              runningBalance -= amount;
+              expenseAmount += amount;
+            }
+          }
+          dayTxList.push({
+            id: `sim-${dateKey}-${dayTxList.length}`,
+            description: tx.description,
+            amount,
+            type: tx.type,
+            isIncome: tx.isIncome,
+            isSimulated: true,
+          });
+        });
+
+        for (const invEvent of dayInvestmentEvents) {
+          if (invEvent.type === 'FUNDING') {
+            runningBalance -= invEvent.amount;
+            expenseAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-funding-${dateKey}`,
+              description: 'Investimento (aporte)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_FUNDING',
+              isIncome: false,
+            });
+          } else if (invEvent.type === 'REDEMPTION') {
+            runningBalance += invEvent.amount;
+            incomeAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-redemption-${dateKey}`,
+              description: 'Investimento (resgate)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_REDEMPTION',
+              isIncome: true,
+            });
+          }
+        }
+
+        if (dayTxList.length > 0) chartStarted = true;
+
+        const hasSimulated = dayTxList.some((tx) => tx.isSimulated);
+
+        if (chartStarted) {
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance,
+            isProjected: isProjected || hasSimulated,
+            incomeAmount,
+            expenseAmount,
+            transactionCount: dayTxList.length,
+            isSimulated: hasSimulated,
+            transactions: dayTxList,
+          });
+        }
+
+        if (
+          currentDate.toISOString().split('T')[0] ===
+          today.toISOString().split('T')[0]
+        ) {
+          currentBalance = runningBalance;
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      projectedBalance = runningBalance;
+
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        color: account.color,
+        dataPoints,
+        currentBalance,
+        projectedBalance,
+        balanceTrend: projectedBalance - currentBalance,
+      };
+    });
+
+    return {
+      accountSeries,
       startDate,
       endDate,
     };
@@ -1283,7 +1662,7 @@ export class TransactionService {
    * Cron job que roda diariamente à meia-noite para atualizar status de transações.
    * Transações PLANNED com data no passado são marcadas como OVERDUE.
    */
-  @Cron('0 0 0 * * *') // Every day at midnight
+  @Cron('0 0 0 * * *', { timeZone: 'America/Sao_Paulo' }) // Every day at midnight GMT-3
   async updateTransactionStatuses(): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

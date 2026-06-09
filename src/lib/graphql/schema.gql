@@ -1458,6 +1458,7 @@ type Query {
     """Custom end date (only used when period is CUSTOM)"""
     endDate: DateTime
   ): BalanceForecastModel!
+  simulateBalanceForecast(input: SimulateBalanceForecastInput!): BalanceForecastModel!
   transactionsCalendar(accountId: String, year: Int!, month: Int!): TransactionsCalendarModel!
   financialAgenda(accountId: String, daysAhead: Int! = 60): FinancialAgendaModel!
   transactionsGroupedByPeriod(accountId: ID, limitPerGroup: Int = 10, cardId: ID, cardBillingId: ID, startDate: DateTime, endDate: DateTime, types: [TransactionType!], statuses: [TransactionStatus!]): [TransactionGroupModel!]!
@@ -1583,6 +1584,35 @@ enum BalanceForecastPeriod {
   SIX_MONTHS
   YEAR
   CUSTOM
+}
+
+input SimulateBalanceForecastInput {
+  accountId: ID
+  startDate: DateTime!
+  endDate: DateTime!
+  simulatedTransactions: [SimulatedTransactionInput!]!
+  simulatedInvestments: [SimulatedInvestmentInput!]!
+}
+
+input SimulatedTransactionInput {
+  description: String!
+  amount: Float!
+  type: TransactionType!
+  date: DateTime!
+  isRecurring: Boolean!
+  recurrenceFrequency: RecurrenceFrequency
+  recurrenceEndDate: DateTime
+  accountId: ID!
+  destinyAccountId: ID
+}
+
+input SimulatedInvestmentInput {
+  description: String!
+  initialAmount: Float!
+  annualRate: Float!
+  regime: Regime!
+  startDate: DateTime!
+  accountId: ID!
 }
 
 enum OrdenationInstitutionLinkModel {
