@@ -39,7 +39,7 @@ import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 import { CreateInvestmentInput } from './input/create-investment.input';
 import { UpdateInvestmentInput } from './input/update-investment.input';
-import { BrapiService } from '@/external/brapi/brapi.service';
+import { TesouroTransparenteService } from '@/external/tesouro-transparente/tesouro-transparente.service';
 import { getBusinessDays } from './utils/get-business-days';
 import { getIofTax } from './utils/get-iof-tax';
 import { InvestmentTaxesAndFees } from './investment.model';
@@ -66,7 +66,7 @@ export class InvestmentService {
     private readonly redisCacheService: RedisCacheService,
     private readonly ipeadataService: IpeadataService,
     private readonly bacenService: BacenService,
-    private readonly brapiService: BrapiService,
+    private readonly tesouroTransparenteService: TesouroTransparenteService,
   ) {}
 
   async findMany({
@@ -1093,6 +1093,8 @@ export class InvestmentService {
         );
       }
 
+      const historicalData = await this.tesouroTransparenteService.getHistoricalData();
+
       const importedCalculate = await import('./utils/tesouro-direto-math');
       amount = importedCalculate.calculateTesouroTheoreticalValue({
         amount: investment.amount,
@@ -1101,6 +1103,8 @@ export class InvestmentService {
         businessDays,
         selicValues,
         startDate: investment.startDate,
+        maturityDate: investment.maturityDate,
+        historicalData,
       });
     }
 
@@ -1542,6 +1546,7 @@ export class InvestmentService {
         type: true,
         fixedRate: true,
         regimeName: true,
+        maturityDate: true,
       },
     });
 
@@ -1573,6 +1578,7 @@ export class InvestmentService {
       start: investment.startDate,
       end: new Date(),
     });
+    const historicalData = await this.tesouroTransparenteService.getHistoricalData();
 
     let businessDays = 0;
     for (let i = 0; i < days.length; i++) {
@@ -1589,6 +1595,9 @@ export class InvestmentService {
         businessDays,
         selicValues,
         startDate: investment.startDate,
+        maturityDate: investment.maturityDate,
+        historicalData,
+        targetDate: day,
       });
 
       points.push({

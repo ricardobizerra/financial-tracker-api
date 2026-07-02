@@ -1,5 +1,7 @@
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { Regime } from '@/lib/graphql/prisma-client';
+import { TesouroDiretoDataPoint } from '@/external/tesouro-transparente/tesouro-transparente.service';
+import { format } from 'date-fns';
 
 export function calculateTesouroTheoreticalValue({
   amount,
@@ -8,6 +10,9 @@ export function calculateTesouroTheoreticalValue({
   businessDays,
   selicValues,
   startDate,
+  maturityDate,
+  historicalData,
+  targetDate,
 }: {
   amount: number;
   fixedRate: number | null;
@@ -15,9 +20,43 @@ export function calculateTesouroTheoreticalValue({
   businessDays: number;
   selicValues?: BacenCachedValue[];
   startDate: Date;
+  maturityDate?: Date | null;
+  historicalData?: TesouroDiretoDataPoint[];
+  targetDate?: Date;
 }): number {
   if (businessDays <= 0) return amount;
 
+  if (historicalData && historicalData.length > 0 && maturityDate) {
+    let tipoTituloPrefix = '';
+    if (regimeName === Regime.PREFIXED) tipoTituloPrefix = 'Tesouro Prefixado';
+    else if (regimeName === Regime.SELIC) tipoTituloPrefix = 'Tesouro Selic';
+    else if (regimeName === Regime.IPCA) tipoTituloPrefix = 'Tesouro IPCA+';
+
+    if (tipoTituloPrefix) {
+      const maturityStr = format(maturityDate, 'dd/MM/yyyy');
+      
+      const bondHistory = historicalData.filter(
+        (d) => d.tipoTitulo.startsWith(tipoTituloPrefix) && d.dataVencimento === maturityStr
+      );
+
+      if (bondHistory.length > 0) {
+        // Find PU on start date (or closest after)
+        const startStr = format(startDate, 'dd/MM/yyyy');
+        const endStr = format(targetDate || new Date(), 'dd/MM/yyyy');
+
+        const startPoint = bondHistory.find(d => d.dataBase === startStr) || bondHistory[0];
+        const endPoint = bondHistory.find(d => d.dataBase === endStr) || bondHistory[bondHistory.length - 1];
+
+        if (startPoint && endPoint && startPoint.puBaseManha > 0) {
+          const puStart = startPoint.puBaseManha;
+          const puEnd = endPoint.puBaseManha;
+          return amount * (puEnd / puStart);
+        }
+      }
+    }
+  }
+
+  // Fallback to theoretical curve
   // Tesouro Prefixado
   if (regimeName === Regime.PREFIXED) {
     const rate = fixedRate ? fixedRate / 100 : 0;
