@@ -11,6 +11,24 @@ import {
 } from '@nestjs/graphql';
 
 @ObjectType()
+export class InvestmentTaxesAndFees {
+  @Field(() => Float, { nullable: false })
+  irpfAmount!: number;
+
+  @Field(() => Float, { nullable: false })
+  iofAmount!: number;
+
+  @Field(() => Float, { nullable: false })
+  b3CustodyFeeAmount!: number;
+
+  @Field(() => Float, { nullable: false })
+  brokerageFeeAmount!: number;
+
+  @Field(() => Float, { nullable: false })
+  totalTaxesAndFees!: number;
+}
+
+@ObjectType()
 export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
   @Field(() => String, { nullable: false })
   currentVariation!: string;
@@ -20,6 +38,23 @@ export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
 
   @Field(() => String, { nullable: false })
   taxedVariation!: string;
+
+  @Field(() => InvestmentTaxesAndFees, { nullable: false })
+  taxesAndFees!: InvestmentTaxesAndFees;
+}
+
+
+
+@ObjectType()
+export class InvestmentChartDataPoint {
+  @Field(() => String, { nullable: false })
+  date!: string;
+
+  @Field(() => Float, { nullable: false })
+  theoreticalValue!: number;
+
+  @Field(() => Float, { nullable: false })
+  marketValue!: number;
 }
 
 @ObjectType()

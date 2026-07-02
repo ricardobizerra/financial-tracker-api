@@ -420,6 +420,8 @@ type InvestmentAvgAggregate {
   correctedAmount: Float
   taxedAmount: Float
   duration: Float
+  fixedRate: Float
+  brokerageFee: Float
   regimePercentage: Float
 }
 
@@ -433,6 +435,10 @@ type InvestmentCountAggregate {
   finishedAt: Int!
   lastCorrectedAt: Int!
   status: Int!
+  type: Int!
+  fixedRate: Int!
+  brokerageFee: Int!
+  maturityDate: Int!
   regimeName: Int!
   regimePercentage: Int!
   institutionLinkId: Int!
@@ -455,6 +461,10 @@ type InvestmentMaxAggregate {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime
   regimePercentage: Float
   institutionLinkId: String
@@ -467,9 +477,19 @@ enum InvestmentStatus {
   CLOSED
 }
 
+enum InvestmentType {
+  FIXED_INCOME
+  TREASURY
+  SAVINGS
+  VARIABLE_INCOME
+}
+
 enum Regime {
   CDI
   POUPANCA
+  SELIC
+  IPCA
+  PREFIXED
 }
 
 type InvestmentMinAggregate {
@@ -482,6 +502,10 @@ type InvestmentMinAggregate {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime
   regimePercentage: Float
   institutionLinkId: String
@@ -494,6 +518,8 @@ type InvestmentSumAggregate {
   correctedAmount: Float
   taxedAmount: Float
   duration: Int
+  fixedRate: Float
+  brokerageFee: Float
   regimePercentage: Float
 }
 
@@ -507,6 +533,10 @@ type Investment {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus!
+  type: InvestmentType!
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime!
   regimePercentage: Float
   institutionLinkId: String!
@@ -1013,6 +1043,14 @@ type UserModelEdge {
   node: UserModel!
 }
 
+type InvestmentTaxesAndFees {
+  irpfAmount: Float!
+  iofAmount: Float!
+  b3CustodyFeeAmount: Float!
+  brokerageFeeAmount: Float!
+  totalTaxesAndFees: Float!
+}
+
 type InvestmentModel {
   id: ID!
   amount: Float!
@@ -1023,6 +1061,10 @@ type InvestmentModel {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus!
+  type: InvestmentType!
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime!
   regimePercentage: Float
   institutionLinkId: String!
@@ -1033,6 +1075,13 @@ type InvestmentModel {
   currentVariation: String!
   taxPercentage: String!
   taxedVariation: String!
+  taxesAndFees: InvestmentTaxesAndFees!
+}
+
+type InvestmentChartDataPoint {
+  date: String!
+  theoreticalValue: Float!
+  marketValue: Float!
 }
 
 type InvestmentConnection {
@@ -1440,6 +1489,7 @@ type Query {
   investmentRegimes(institutionLinkId: String): InvestmentRegimeSummaryConnection!
   investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
   investmentAccounts(regime: Regime!): [AccountWithInvestmentCount!]!
+  investmentChartData(investmentId: String!): [InvestmentChartDataPoint!]!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!
   account(id: ID!): AccountModel!
   card(id: ID!): Card
@@ -1493,6 +1543,10 @@ enum OrdenationInvestmentModel {
   finishedAt
   lastCorrectedAt
   status
+  type
+  fixedRate
+  brokerageFee
+  maturityDate
   regimeName
   regimePercentage
   institutionLinkId
@@ -1500,6 +1554,7 @@ enum OrdenationInvestmentModel {
   updatedAt
   institutionLink
   transactions
+  taxesAndFees
 }
 
 enum InvestmentEvolutionPeriod {
@@ -2448,6 +2503,10 @@ input InvestmentWhereInput {
   finishedAt: DateTimeNullableFilter
   lastCorrectedAt: DateTimeNullableFilter
   status: EnumInvestmentStatusFilter
+  type: EnumInvestmentTypeFilter
+  fixedRate: FloatNullableFilter
+  brokerageFee: FloatNullableFilter
+  maturityDate: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   institutionLinkId: StringFilter
@@ -2491,6 +2550,20 @@ input NestedEnumInvestmentStatusFilter {
   in: [InvestmentStatus!]
   notIn: [InvestmentStatus!]
   not: NestedEnumInvestmentStatusFilter
+}
+
+input EnumInvestmentTypeFilter {
+  equals: InvestmentType
+  in: [InvestmentType!]
+  notIn: [InvestmentType!]
+  not: NestedEnumInvestmentTypeFilter
+}
+
+input NestedEnumInvestmentTypeFilter {
+  equals: InvestmentType
+  in: [InvestmentType!]
+  notIn: [InvestmentType!]
+  not: NestedEnumInvestmentTypeFilter
 }
 
 input EnumRegimeFilter {
@@ -3699,6 +3772,10 @@ input InvestmentCreateWithoutInstitutionLinkInput {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
@@ -3770,6 +3847,10 @@ input InvestmentWhereUniqueInput {
   finishedAt: DateTimeNullableFilter
   lastCorrectedAt: DateTimeNullableFilter
   status: EnumInvestmentStatusFilter
+  type: EnumInvestmentTypeFilter
+  fixedRate: FloatNullableFilter
+  brokerageFee: FloatNullableFilter
+  maturityDate: DateTimeNullableFilter
   regimeName: EnumRegimeFilter
   regimePercentage: FloatNullableFilter
   institutionLinkId: StringFilter
@@ -3794,6 +3875,10 @@ input InvestmentCreateManyInstitutionLinkInput {
   finishedAt: DateTime
   lastCorrectedAt: DateTime
   status: InvestmentStatus
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
   regimeName: Regime!
   regimePercentage: Float
   createdAt: DateTime
@@ -4310,6 +4395,10 @@ input CreateInvestmentInput {
   createdAt: DateTime
   updatedAt: DateTime
   institutionLinkId: ID!
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
 }
 
 input RedeemInvestmentInput {

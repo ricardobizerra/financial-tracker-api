@@ -9,6 +9,9 @@ type CacheKeyMapping = {
   'external-ipeadata-cdi-last-date': string;
   'external-bacen-poupanca-daily': BacenCachedValue[];
   'external-bacen-poupanca-last-date': string;
+  'external-bacen-selic-daily': BacenCachedValue[];
+  'external-bacen-selic-last-date': string;
+  'external-brapi-treasury-daily': any;
   'recurring-transaction-ignored-suggestions': string[];
 };
 

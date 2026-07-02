@@ -51,6 +51,7 @@
     "class-transformer": "^0.5.1",
     "cookie-parser": "^1.4.7",
     "date-fns": "^4.1.0",
+    "date-holidays": "^3.30.2",
     "graphql": "^16.9.0",
     "graphql-redis-subscriptions": "^2.6.1",
     "graphql-subscriptions": "^3.0.0",

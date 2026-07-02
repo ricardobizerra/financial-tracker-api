@@ -12,6 +12,7 @@ import {
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
   AccountWithInvestmentCount,
+  InvestmentChartDataPoint,
 } from './investment.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
@@ -189,5 +190,14 @@ export class InvestmentResolver {
       userId: user.id,
       regime,
     });
+  }
+
+  @Auth()
+  @Query(() => [InvestmentChartDataPoint], { name: 'investmentChartData' })
+  async investmentChartData(
+    @Args('investmentId', { type: () => String }) investmentId: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentChartData(investmentId, user.id);
   }
 }

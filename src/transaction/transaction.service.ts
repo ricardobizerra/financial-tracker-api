@@ -688,7 +688,6 @@ export class TransactionService {
             return;
           }
 
-          if (isProjected && tx.status === 'COMPLETED') return;
           if (!isProjected && tx.status !== 'COMPLETED') return;
 
           const amount = Number(tx.amount);
@@ -1029,7 +1028,6 @@ export class TransactionService {
             return;
           }
 
-          if (isProjected && tx.status === 'COMPLETED') return;
           if (!isProjected && tx.status !== 'COMPLETED') return;
 
           const amount = Number(tx.amount);

@@ -133,6 +133,10 @@ Table Investment {
   finishedAt DateTime
   lastCorrectedAt DateTime
   status InvestmentStatus [not null, default: 'OPEN']
+  type InvestmentType [not null, default: 'FIXED_INCOME']
+  fixedRate Float
+  brokerageFee Float
+  maturityDate DateTime
   regimeName Regime [not null]
   regimePercentage Float [default: 100]
   institutionLink InstitutionLink
@@ -269,6 +273,9 @@ Enum Role {
 Enum Regime {
   CDI
   POUPANCA
+  SELIC
+  IPCA
+  PREFIXED
 }
 
 Enum InvestmentTransactionRole {
@@ -276,6 +283,13 @@ Enum InvestmentTransactionRole {
   REDEMPTION
   INCOME
   FEE
+}
+
+Enum InvestmentType {
+  FIXED_INCOME
+  TREASURY
+  SAVINGS
+  VARIABLE_INCOME
 }
 
 Enum TransactionCategory {

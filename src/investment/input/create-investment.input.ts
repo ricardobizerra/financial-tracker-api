@@ -1,4 +1,4 @@
-import { InvestmentStatus, Regime } from '@/lib/graphql/prisma-client';
+import { InvestmentStatus, Regime, InvestmentType } from '@/lib/graphql/prisma-client';
 import { InputType, Field, Float, Int, ID } from '@nestjs/graphql';
 
 @InputType()
@@ -44,4 +44,16 @@ export class CreateInvestmentInput {
 
   @Field(() => ID, { nullable: false })
   institutionLinkId!: string;
+
+  @Field(() => InvestmentType, { nullable: true })
+  type?: keyof typeof InvestmentType;
+
+  @Field(() => Float, { nullable: true })
+  fixedRate?: number;
+
+  @Field(() => Float, { nullable: true })
+  brokerageFee?: number;
+
+  @Field(() => Date, { nullable: true })
+  maturityDate?: Date | string;
 }

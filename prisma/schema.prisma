@@ -184,6 +184,11 @@ model Investment {
 
   status InvestmentStatus @default(OPEN)
 
+  type           InvestmentType @default(FIXED_INCOME)
+  fixedRate      Float?
+  brokerageFee   Float?
+  maturityDate   DateTime?
+
   regimeName       Regime
   regimePercentage Float? @default(100)
 
@@ -355,6 +360,9 @@ enum Role {
 enum Regime {
   CDI
   POUPANCA
+  SELIC
+  IPCA
+  PREFIXED
 }
 
 enum InvestmentTransactionRole {
@@ -362,6 +370,13 @@ enum InvestmentTransactionRole {
   REDEMPTION
   INCOME
   FEE
+}
+
+enum InvestmentType {
+  FIXED_INCOME
+  TREASURY
+  SAVINGS
+  VARIABLE_INCOME
 }
 
 enum TransactionCategory {
