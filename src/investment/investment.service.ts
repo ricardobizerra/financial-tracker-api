@@ -26,7 +26,11 @@ import {
 } from './investment.model';
 import { differenceInDays } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
-import { Regime, Transaction, InvestmentType } from '@/lib/graphql/prisma-client';
+import {
+  Regime,
+  Transaction,
+  InvestmentType,
+} from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
 import { Cron } from '@nestjs/schedule';
@@ -34,6 +38,7 @@ import { BacenService } from '@/external/bacen/bacen.service';
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 import { CreateInvestmentInput } from './input/create-investment.input';
+import { UpdateInvestmentInput } from './input/update-investment.input';
 import { BrapiService } from '@/external/brapi/brapi.service';
 import { getBusinessDays } from './utils/get-business-days';
 import { getIofTax } from './utils/get-iof-tax';
@@ -151,35 +156,36 @@ export class InvestmentService {
           (f) => !f.startsWith('taxesAndFees'),
         ) as (keyof InvestmentModel)[],
         {
-        currentVariation: ['amount'],
-        taxPercentage: ['amount'],
-        taxedVariation: ['amount'],
-        institutionLink: [],
-        transactions: [],
-        taxesAndFees: [],
-        ...((queriedFields.includes('correctedAmount') ||
-          queriedFields.includes('taxedAmount') ||
-          queriedFields.includes('currentVariation') ||
-          queriedFields.includes('taxedVariation') ||
-          queriedFields.includes('taxPercentage')) && {
-          DEFAULT: [
-            'id',
-            'amount',
-            'startDate',
-            'finishedAt',
-            'duration',
-            'regimeName',
-            'regimePercentage',
-            'type',
-            'fixedRate',
-            'brokerageFee',
-            'maturityDate',
-            'lastCorrectedAt',
-            'correctedAmount',
-            'taxedAmount',
-          ] satisfies (keyof Investment)[],
-        }),
-      }),
+          currentVariation: ['amount'],
+          taxPercentage: ['amount'],
+          taxedVariation: ['amount'],
+          institutionLink: [],
+          transactions: [],
+          taxesAndFees: [],
+          ...((queriedFields.includes('correctedAmount') ||
+            queriedFields.includes('taxedAmount') ||
+            queriedFields.includes('currentVariation') ||
+            queriedFields.includes('taxedVariation') ||
+            queriedFields.includes('taxPercentage')) && {
+            DEFAULT: [
+              'id',
+              'amount',
+              'startDate',
+              'finishedAt',
+              'duration',
+              'regimeName',
+              'regimePercentage',
+              'type',
+              'fixedRate',
+              'brokerageFee',
+              'maturityDate',
+              'lastCorrectedAt',
+              'correctedAmount',
+              'taxedAmount',
+            ] satisfies (keyof Investment)[],
+          }),
+        },
+      ),
       where: whereClause,
     });
 
@@ -275,11 +281,15 @@ export class InvestmentService {
           taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
           regimeName: investment.regimeName as Regime,
           taxesAndFees: taxesAndFees || {
-            irpfAmount: (correctedAmount || investment.amount) - (taxedAmount || investment.amount),
+            irpfAmount:
+              (correctedAmount || investment.amount) -
+              (taxedAmount || investment.amount),
             iofAmount: 0,
             b3CustodyFeeAmount: 0,
             brokerageFeeAmount: 0,
-            totalTaxesAndFees: (correctedAmount || investment.amount) - (taxedAmount || investment.amount),
+            totalTaxesAndFees:
+              (correctedAmount || investment.amount) -
+              (taxedAmount || investment.amount),
           },
         };
       }),
@@ -431,7 +441,62 @@ export class InvestmentService {
 
     return { investment, investmentTransaction };
   }
+  async update(data: UpdateInvestmentInput, userId: string) {
+    const isPoupanca = data.regimeName === Regime.POUPANCA;
 
+    const existingInvestment = await this.prismaService.investment.findFirst({
+      where: {
+        id: data.id,
+        institutionLink: {
+          userId,
+        },
+      },
+      include: {
+        transactions: {
+          where: { role: InvestmentTransactionRole.FUNDING },
+          take: 1,
+        },
+      },
+    });
+
+    if (!existingInvestment) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    const investment = await this.prismaService.investment.update({
+      where: { id: data.id },
+      data: {
+        amount: data.amount,
+        startDate: data.startDate,
+        duration: isPoupanca ? undefined : data.duration,
+        regimeName: data.regimeName,
+        regimePercentage: isPoupanca ? data.regimePercentage : 100,
+        type: data.type,
+        fixedRate: data.fixedRate,
+        brokerageFee: data.brokerageFee,
+        maturityDate: data.maturityDate,
+        ...(data.institutionLinkId
+          ? {
+              institutionLink: {
+                connect: { id: data.institutionLinkId },
+              },
+            }
+          : {}),
+      },
+    });
+
+    let investmentTransaction = existingInvestment.transactions[0];
+
+    if (data.amount && Number(investmentTransaction?.amount) !== data.amount) {
+      investmentTransaction =
+        await this.prismaService.investmentTransaction.update({
+          where: { id: investmentTransaction.id },
+          data: { amount: data.amount },
+        });
+    }
+
+    return { investment, investmentTransaction };
+  }
   async delete(id: string, userId: string) {
     const investmentFoundAndFromUser =
       await this.prismaService.investment.findFirst({
@@ -505,44 +570,69 @@ export class InvestmentService {
 
     const taxedAmount = correctionResult.taxedAmount;
 
-    const [updatedInvestment, redemptionTransaction] = await this.prismaService.$transaction(async (tx) => {
-      const inv = await tx.investment.update({
-        where: { id: investmentId },
-        data: {
-          status: 'CLOSED',
-          finishedAt: redeemDate,
-          correctedAmount: correctionResult.correctedAmount,
-          taxedAmount: correctionResult.taxedAmount,
-        },
+    const [updatedInvestment, redemptionTransaction] =
+      await this.prismaService.$transaction(async (tx) => {
+        const inv = await tx.investment.update({
+          where: { id: investmentId },
+          data: {
+            status: 'CLOSED',
+            finishedAt: redeemDate,
+            correctedAmount: correctionResult.correctedAmount,
+            taxedAmount: correctionResult.taxedAmount,
+          },
+        });
+
+        // 1. Transaction: REDEMPTION (Gross Amount = marketValue)
+        const redemption = await tx.investmentTransaction.create({
+          data: {
+            amount: correctionResult.correctedAmount,
+            role: InvestmentTransactionRole.REDEMPTION,
+            investment: { connect: { id: investmentId } },
+          },
+        });
+
+        const taxes = correctionResult.taxesAndFees;
+        if (taxes) {
+          if (taxes.iofAmount > 0) {
+            await tx.investmentTransaction.create({
+              data: {
+                amount: taxes.iofAmount,
+                role: InvestmentTransactionRole.FEE,
+                investment: { connect: { id: investmentId } },
+              },
+            });
+          }
+          if (taxes.irpfAmount > 0) {
+            await tx.investmentTransaction.create({
+              data: {
+                amount: taxes.irpfAmount,
+                role: InvestmentTransactionRole.FEE,
+                investment: { connect: { id: investmentId } },
+              },
+            });
+          }
+          if (taxes.b3CustodyFeeAmount > 0) {
+            await tx.investmentTransaction.create({
+              data: {
+                amount: taxes.b3CustodyFeeAmount,
+                role: InvestmentTransactionRole.FEE,
+                investment: { connect: { id: investmentId } },
+              },
+            });
+          }
+          if (taxes.brokerageFeeAmount > 0) {
+            await tx.investmentTransaction.create({
+              data: {
+                amount: taxes.brokerageFeeAmount,
+                role: InvestmentTransactionRole.FEE,
+                investment: { connect: { id: investmentId } },
+              },
+            });
+          }
+        }
+
+        return [inv, redemption];
       });
-
-      // 1. Transaction: REDEMPTION (Gross Amount = marketValue)
-      const redemption = await tx.investmentTransaction.create({
-        data: {
-          amount: correctionResult.correctedAmount,
-          role: InvestmentTransactionRole.REDEMPTION,
-          investment: { connect: { id: investmentId } },
-        },
-      });
-
-      const taxes = correctionResult.taxesAndFees;
-      if (taxes) {
-        if (taxes.iofAmount > 0) {
-          await tx.investmentTransaction.create({ data: { amount: taxes.iofAmount, role: InvestmentTransactionRole.FEE, investment: { connect: { id: investmentId } } } });
-        }
-        if (taxes.irpfAmount > 0) {
-          await tx.investmentTransaction.create({ data: { amount: taxes.irpfAmount, role: InvestmentTransactionRole.FEE, investment: { connect: { id: investmentId } } } });
-        }
-        if (taxes.b3CustodyFeeAmount > 0) {
-          await tx.investmentTransaction.create({ data: { amount: taxes.b3CustodyFeeAmount, role: InvestmentTransactionRole.FEE, investment: { connect: { id: investmentId } } } });
-        }
-        if (taxes.brokerageFeeAmount > 0) {
-          await tx.investmentTransaction.create({ data: { amount: taxes.brokerageFeeAmount, role: InvestmentTransactionRole.FEE, investment: { connect: { id: investmentId } } } });
-        }
-      }
-
-      return [inv, redemption];
-    });
 
     return { investment: updatedInvestment, redemptionTransaction };
   }
@@ -999,10 +1089,10 @@ export class InvestmentService {
       if (investment.regimeName === Regime.SELIC) {
         selicValues = await this.redisCacheService.get(
           'external-bacen-selic-daily',
-          async () => await this.bacenService.getSelicValues()
+          async () => await this.bacenService.getSelicValues(),
         );
       }
-      
+
       const importedCalculate = await import('./utils/tesouro-direto-math');
       amount = importedCalculate.calculateTesouroTheoreticalValue({
         amount: investment.amount,
@@ -1010,12 +1100,12 @@ export class InvestmentService {
         regimeName: investment.regimeName,
         businessDays,
         selicValues,
-        startDate: investment.startDate
+        startDate: investment.startDate,
       });
     }
 
     const isTreasury = investment.type === InvestmentType.TREASURY;
-    
+
     let iofAmount = 0;
     let b3CustodyFeeAmount = 0;
     let brokerageFeeAmount = 0;
@@ -1026,7 +1116,7 @@ export class InvestmentService {
       const businessDays = getBusinessDays(investment.startDate, new Date());
       const daysHeld = differenceInDays(new Date(), investment.startDate);
       const profit = Math.max(0, amount - investment.amount);
-      
+
       const iofRate = getIofTax(daysHeld);
       iofAmount = profit * iofRate;
 
@@ -1036,24 +1126,35 @@ export class InvestmentService {
 
       const b3ExemptionThreshold = 10000;
       let b3Basis = amount;
-      if (investment.regimeName === Regime.SELIC && amount <= b3ExemptionThreshold) {
+      if (
+        investment.regimeName === Regime.SELIC &&
+        amount <= b3ExemptionThreshold
+      ) {
         b3Basis = 0;
-      } else if (investment.regimeName === Regime.SELIC && amount > b3ExemptionThreshold) {
+      } else if (
+        investment.regimeName === Regime.SELIC &&
+        amount > b3ExemptionThreshold
+      ) {
         b3Basis = amount - b3ExemptionThreshold;
       }
-      
+
       b3CustodyFeeAmount = 0.002 * (businessDays / 252) * b3Basis;
 
       if (investment.brokerageFee) {
-        brokerageFeeAmount = (investment.brokerageFee / 100) * (businessDays / 252) * amount;
+        brokerageFeeAmount =
+          (investment.brokerageFee / 100) * (businessDays / 252) * amount;
       }
     } else {
-       irpfTax = investment.regimeName === Regime.CDI ? getIrpfTax(currentInvestmentDays) : 0;
-       const profit = Math.max(0, amount - investment.amount);
-       irpfAmount = profit * (irpfTax / 100);
+      irpfTax =
+        investment.regimeName === Regime.CDI
+          ? getIrpfTax(currentInvestmentDays)
+          : 0;
+      const profit = Math.max(0, amount - investment.amount);
+      irpfAmount = profit * (irpfTax / 100);
     }
 
-    const totalTaxesAndFees = iofAmount + irpfAmount + b3CustodyFeeAmount + brokerageFeeAmount;
+    const totalTaxesAndFees =
+      iofAmount + irpfAmount + b3CustodyFeeAmount + brokerageFeeAmount;
     const taxedAmount = amount - totalTaxesAndFees;
 
     const result = {
@@ -1069,8 +1170,8 @@ export class InvestmentService {
         iofAmount,
         b3CustodyFeeAmount,
         brokerageFeeAmount,
-        totalTaxesAndFees
-      }
+        totalTaxesAndFees,
+      },
     };
 
     await this.prismaService.investment.update({
@@ -1447,7 +1548,7 @@ export class InvestmentService {
     if (!investment) throw new NotFoundException('Investment not found');
 
     const points: InvestmentChartDataPoint[] = [];
-    
+
     // Simplification for other types
     if (investment.type !== InvestmentType.TREASURY) {
       return points;
@@ -1457,24 +1558,29 @@ export class InvestmentService {
     if (investment.regimeName === Regime.SELIC) {
       selicValues = await this.redisCacheService.get(
         'external-bacen-selic-daily',
-        async () => await this.bacenService.getSelicValues()
+        async () => await this.bacenService.getSelicValues(),
       );
     }
 
-    const { calculateTesouroTheoreticalValue } = await import('./utils/tesouro-direto-math');
+    const { calculateTesouroTheoreticalValue } = await import(
+      './utils/tesouro-direto-math'
+    );
     const { eachDayOfInterval, isWeekend } = await import('date-fns');
     const Holidays = (await import('date-holidays')).default;
     const hd = new Holidays('BR');
 
-    const days = eachDayOfInterval({ start: investment.startDate, end: new Date() });
-    
+    const days = eachDayOfInterval({
+      start: investment.startDate,
+      end: new Date(),
+    });
+
     let businessDays = 0;
     for (let i = 0; i < days.length; i++) {
       const day = days[i];
       if (i > 0 && !isWeekend(day) && !hd.isHoliday(day)) {
         businessDays++;
       }
-      
+
       // Compute value at this point in time
       const value = calculateTesouroTheoreticalValue({
         amount: investment.amount,

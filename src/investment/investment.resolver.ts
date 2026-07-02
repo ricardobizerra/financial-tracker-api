@@ -23,6 +23,7 @@ import {
 } from '@/lib/graphql/prisma-client';
 import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
+import { UpdateInvestmentInput } from './input/update-investment.input';
 import {
   InvestmentEvolutionModel,
   InvestmentEvolutionArgs,
@@ -140,6 +141,17 @@ export class InvestmentResolver {
       user.id,
       data.finishedAt,
     );
+
+    return result.investment;
+  }
+
+  @Auth()
+  @Mutation(() => Investment, { name: 'updateInvestment' })
+  async updateInvestment(
+    @Args('data') data: UpdateInvestmentInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const result = await this.investmentService.update(data, user.id);
 
     return result.investment;
   }

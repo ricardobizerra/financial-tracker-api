@@ -1729,6 +1729,7 @@ type Mutation {
   createInvestment(data: CreateInvestmentInput!): Investment!
   deleteInvestment(id: ID!): ID!
   redeemInvestment(data: RedeemInvestmentInput!): Investment!
+  updateInvestment(data: UpdateInvestmentInput!): Investment!
   createAccount(data: CreateAccountInput!): AccountModel!
   createCard(data: CreateCardInput!): Card!
   closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
@@ -4404,6 +4405,27 @@ input CreateInvestmentInput {
 input RedeemInvestmentInput {
   investmentId: ID!
   finishedAt: DateTime
+}
+
+input UpdateInvestmentInput {
+  id: ID!
+  amount: Float
+  correctedAmount: Float
+  taxedAmount: Float
+  startDate: DateTime
+  duration: Int
+  finishedAt: DateTime
+  lastCorrectedAt: DateTime
+  status: InvestmentStatus
+  regimeName: Regime
+  regimePercentage: Float
+  createdAt: DateTime
+  updatedAt: DateTime
+  institutionLinkId: ID
+  type: InvestmentType
+  fixedRate: Float
+  brokerageFee: Float
+  maturityDate: DateTime
 }
 
 input CreateAccountInput {
