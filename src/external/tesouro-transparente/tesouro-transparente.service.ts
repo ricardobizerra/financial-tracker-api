@@ -52,24 +52,34 @@ export class TesouroTransparenteService implements OnModuleInit {
   async syncData(): Promise<void> {
     try {
       this.logger.log(`Downloading CSV from ${this.CSV_URL}...`);
-      
+
       const response = await this.httpService.axiosRef.get(this.CSV_URL, {
         responseType: 'stream',
       });
 
-      const parsedData: TesouroDiretoDataPoint[] = [];
+      const groupedData: Record<string, TesouroDiretoDataPoint[]> = {};
+      const indexList: string[] = [];
 
       await new Promise((resolve, reject) => {
         response.data
           .pipe(iconv.decodeStream('iso-8859-1'))
           .pipe(csv({ separator: ';' }))
           .on('data', (row: any) => {
-            parsedData.push({
+            const key = `${row['Tipo Titulo']}|${row['Data Vencimento']}`;
+            if (!groupedData[key]) {
+              groupedData[key] = [];
+              indexList.push(key);
+            }
+            groupedData[key].push({
               tipoTitulo: row['Tipo Titulo'],
               dataVencimento: row['Data Vencimento'],
               dataBase: row['Data Base'],
-              taxaCompraManha: this.parsePortugueseNumber(row['Taxa Compra Manha']),
-              taxaVendaManha: this.parsePortugueseNumber(row['Taxa Venda Manha']),
+              taxaCompraManha: this.parsePortugueseNumber(
+                row['Taxa Compra Manha'],
+              ),
+              taxaVendaManha: this.parsePortugueseNumber(
+                row['Taxa Venda Manha'],
+              ),
               puCompraManha: this.parsePortugueseNumber(row['PU Compra Manha']),
               puVendaManha: this.parsePortugueseNumber(row['PU Venda Manha']),
               puBaseManha: this.parsePortugueseNumber(row['PU Base Manha']),
@@ -79,26 +89,89 @@ export class TesouroTransparenteService implements OnModuleInit {
           .on('error', reject);
       });
 
-      this.logger.log(`Parsed ${parsedData.length} records. Caching...`);
-      await this.redisCacheService.set(this.CACHE_KEY, parsedData, 24 * 60 * 60); // Cache for 24h
-      this.logger.log('Tesouro Transparente data synced and cached successfully.');
+      this.logger.log(`Parsed ${indexList.length} unique bonds. Caching...`);
+
+      // Save index
+      await this.redisCacheService.set(
+        `${this.CACHE_KEY}:index` as any,
+        indexList,
+        24 * 60 * 60 * 1000,
+      );
+
+      // Save individual bond histories
+      for (const key of indexList) {
+        // Sort chronologically (DD/MM/YYYY)
+        groupedData[key].sort((a, b) => {
+          const dateA = a.dataBase.split('/').reverse().join('-');
+          const dateB = b.dataBase.split('/').reverse().join('-');
+          return dateA.localeCompare(dateB);
+        });
+
+        await this.redisCacheService.set(
+          `${this.CACHE_KEY}:${key}` as any,
+          groupedData[key],
+          24 * 60 * 60 * 1000,
+        );
+      }
+
+      this.logger.log(
+        'Tesouro Transparente data synced and cached successfully.',
+      );
     } catch (error: any) {
-      this.logger.error(`Failed to sync Tesouro Transparente data: ${error.message}`);
+      this.logger.error(
+        `Failed to sync Tesouro Transparente data: ${error.message}`,
+      );
     }
   }
 
-  async getHistoricalData(): Promise<TesouroDiretoDataPoint[]> {
-    let data = await this.redisCacheService.get(
-      this.CACHE_KEY,
+  async getAvailableBonds(tipoTituloPrefix: string): Promise<string[]> {
+    let index = await this.redisCacheService.get(
+      `${this.CACHE_KEY}:index` as any,
     );
 
-    if (!data) {
+    if (!index) {
       await this.syncData();
-      data = (await this.redisCacheService.get(
-        this.CACHE_KEY,
-      )) || [];
+      index = await this.redisCacheService.get(
+        `${this.CACHE_KEY}:index` as any,
+      );
+      if (!index) return [];
     }
 
-    return data;
+    // Filter index keys starting with prefix
+    const keys = (index as string[]).filter((k) =>
+      k.startsWith(tipoTituloPrefix),
+    );
+    // Extract dates
+    const dates = keys.map((k) => k.split('|')[1]);
+
+    // Sort dates by year/month/day
+    dates.sort((a, b) => {
+      const da = a.split('/').reverse().join('-');
+      const db = b.split('/').reverse().join('-');
+      return da.localeCompare(db);
+    });
+
+    return [...new Set(dates)];
+  }
+
+  async getHistoricalDataForBond(
+    tipoTituloPrefix: string,
+    maturityStr: string,
+  ): Promise<TesouroDiretoDataPoint[]> {
+    const index = (await this.redisCacheService.get(
+      `${this.CACHE_KEY}:index` as any,
+    )) as string[];
+
+    if (!index) return [];
+
+    const exactKey = index.find(
+      (k) => k.startsWith(tipoTituloPrefix) && k.endsWith(`|${maturityStr}`),
+    );
+    if (!exactKey) return [];
+
+    const data = await this.redisCacheService.get(
+      `${this.CACHE_KEY}:${exactKey}` as any,
+    );
+    return (data as TesouroDiretoDataPoint[]) || [];
   }
 }

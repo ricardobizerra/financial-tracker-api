@@ -24,7 +24,7 @@ import {
   TotalInvestmentsModel,
   InvestmentChartDataPoint,
 } from './investment.model';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
 import {
   Regime,
@@ -163,12 +163,15 @@ export class InvestmentService {
       select: selectObject<Investment, InvestmentModel>(
         queriedFields.filter(
           (f) =>
-            !f.startsWith('taxesAndFees') && !f.startsWith('sellFeasibility'),
+            !f.startsWith('taxesAndFees') &&
+            !f.startsWith('sellFeasibility') &&
+            f !== 'currentMarketRate',
         ) as (keyof InvestmentModel)[],
         {
           currentVariation: ['amount'],
           taxPercentage: ['amount'],
           taxedVariation: ['amount'],
+          currentMarketRate: ['type', 'maturityDate', 'regimeName'],
           institutionLink: [],
           transactions: [],
           taxesAndFees: [],
@@ -280,8 +283,37 @@ export class InvestmentService {
           : daysFromInitialDate;
         const taxPercentage = getIrpfTax(currentInvestmentDays);
 
+        let currentMarketRate: number | null = null;
+        if (
+          queriedFields.includes('currentMarketRate') &&
+          investment.type === InvestmentType.TREASURY &&
+          investment.maturityDate
+        ) {
+          let tipoTituloPrefix = '';
+          if (investment.regimeName === Regime.PREFIXED)
+            tipoTituloPrefix = 'Tesouro Prefixado';
+          else if (investment.regimeName === Regime.SELIC)
+            tipoTituloPrefix = 'Tesouro Selic';
+          else if (investment.regimeName === Regime.IPCA)
+            tipoTituloPrefix = 'Tesouro IPCA+';
+
+          if (tipoTituloPrefix) {
+            const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+            const bondHistory =
+              await this.tesouroTransparenteService.getHistoricalDataForBond(
+                tipoTituloPrefix,
+                maturityStr,
+              );
+            if (bondHistory && bondHistory.length > 0) {
+              const lastPoint = bondHistory[bondHistory.length - 1];
+              currentMarketRate = lastPoint.taxaVendaManha;
+            }
+          }
+        }
+
         return {
           ...investment,
+          currentMarketRate,
           ...(correctedAmount && {
             correctedAmount: correctedAmount,
           }),
@@ -1174,8 +1206,25 @@ export class InvestmentService {
         );
       }
 
-      const historicalData =
-        await this.tesouroTransparenteService.getHistoricalData();
+      let historicalData: any[] = [];
+      if (investment.maturityDate) {
+        let tipoTituloPrefix = '';
+        if (investment.regimeName === Regime.PREFIXED)
+          tipoTituloPrefix = 'Tesouro Prefixado';
+        else if (investment.regimeName === Regime.SELIC)
+          tipoTituloPrefix = 'Tesouro Selic';
+        else if (investment.regimeName === Regime.IPCA)
+          tipoTituloPrefix = 'Tesouro IPCA+';
+
+        if (tipoTituloPrefix) {
+          const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+          historicalData =
+            await this.tesouroTransparenteService.getHistoricalDataForBond(
+              tipoTituloPrefix,
+              maturityStr,
+            );
+        }
+      }
 
       const importedCalculate = await import('./utils/tesouro-direto-math');
       const calcResult = importedCalculate.calculateTesouroTheoreticalValue({
@@ -1623,6 +1672,19 @@ export class InvestmentService {
     }));
   }
 
+  async getAvailableTreasuryBonds(regime: Regime): Promise<string[]> {
+    let tipoTituloPrefix = '';
+    if (regime === Regime.PREFIXED) tipoTituloPrefix = 'Tesouro Prefixado';
+    else if (regime === Regime.SELIC) tipoTituloPrefix = 'Tesouro Selic';
+    else if (regime === Regime.IPCA) tipoTituloPrefix = 'Tesouro IPCA+';
+
+    if (!tipoTituloPrefix) return [];
+
+    return await this.tesouroTransparenteService.getAvailableBonds(
+      tipoTituloPrefix,
+    );
+  }
+
   async getInvestmentChartData(
     investmentId: string,
     userId: string,
@@ -1639,6 +1701,7 @@ export class InvestmentService {
         fixedRate: true,
         regimeName: true,
         maturityDate: true,
+        regimePercentage: true,
       },
     });
 
@@ -1673,8 +1736,25 @@ export class InvestmentService {
       start: investment.startDate,
       end: new Date(),
     });
-    const historicalData =
-      await this.tesouroTransparenteService.getHistoricalData();
+    let historicalData: any[] = [];
+    if (investment.maturityDate) {
+      let tipoTituloPrefix = '';
+      if (investment.regimeName === Regime.PREFIXED)
+        tipoTituloPrefix = 'Tesouro Prefixado';
+      else if (investment.regimeName === Regime.SELIC)
+        tipoTituloPrefix = 'Tesouro Selic';
+      else if (investment.regimeName === Regime.IPCA)
+        tipoTituloPrefix = 'Tesouro IPCA+';
+
+      if (tipoTituloPrefix) {
+        const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+        historicalData =
+          await this.tesouroTransparenteService.getHistoricalDataForBond(
+            tipoTituloPrefix,
+            maturityStr,
+          );
+      }
+    }
 
     if (investment.regimeName === Regime.CDI) {
       const cdiValues = await this.redisCacheService.get(

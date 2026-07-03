@@ -13,6 +13,7 @@ type CacheKeyMapping = {
   'external-bacen-selic-last-date': string;
   'external-brapi-treasury-daily': any;
   'external-tesouro-transparente-history': any;
+  'external-tesouro-transparente-history-hash': any;
   'recurring-transaction-ignored-suggestions': string[];
 };
 

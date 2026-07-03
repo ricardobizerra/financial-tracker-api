@@ -76,6 +76,9 @@ export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
 
   @Field(() => SellFeasibility, { nullable: false })
   sellFeasibility!: SellFeasibility;
+
+  @Field(() => Float, { nullable: true })
+  currentMarketRate?: number | null;
 }
 
 @ObjectType()

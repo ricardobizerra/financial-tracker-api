@@ -1092,6 +1092,7 @@ type InvestmentModel {
   taxedVariation: String!
   taxesAndFees: InvestmentTaxesAndFees!
   sellFeasibility: SellFeasibility!
+  currentMarketRate: Float
 }
 
 type InvestmentChartDataPoint {
@@ -1501,6 +1502,7 @@ type Query {
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime, institutionLinkIds: [ID!]): InvestmentConnection!
+  availableTreasuryBonds(regime: Regime!): [String!]!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes(institutionLinkId: String): InvestmentRegimeSummaryConnection!
   investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
@@ -1572,6 +1574,7 @@ enum OrdenationInvestmentModel {
   transactions
   taxesAndFees
   sellFeasibility
+  currentMarketRate
 }
 
 enum InvestmentEvolutionPeriod {

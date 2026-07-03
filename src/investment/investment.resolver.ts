@@ -66,6 +66,14 @@ export class InvestmentResolver {
   }
 
   @Auth()
+  @Query(() => [String], { name: 'availableTreasuryBonds' })
+  async availableTreasuryBonds(
+    @Args('regime', { type: () => Regime }) regime: Regime,
+  ) {
+    return this.investmentService.getAvailableTreasuryBonds(regime);
+  }
+
+  @Auth()
   @Mutation(() => Investment, { name: 'createInvestment' })
   async create(
     @Args('data') data: CreateInvestmentInput,
