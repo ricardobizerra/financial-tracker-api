@@ -42,7 +42,13 @@ import { UpdateInvestmentInput } from './input/update-investment.input';
 import { TesouroTransparenteService } from '@/external/tesouro-transparente/tesouro-transparente.service';
 import { getBusinessDays } from './utils/get-business-days';
 import { getIofTax } from './utils/get-iof-tax';
-import { InvestmentTaxesAndFees, ApplicableTaxEnum } from './investment.model';
+import {
+  InvestmentTaxesAndFees,
+  ApplicableTaxEnum,
+  SellFeasibility,
+  SellFeasibilityStatus,
+} from './investment.model';
+import { getSellFeasibility } from './utils/get-sell-feasibility';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -51,6 +57,7 @@ type CorrectInvestmentAmountReturn = {
   taxedAmount: number;
   taxedVariation: number;
   taxesAndFees: InvestmentTaxesAndFees;
+  sellFeasibility: SellFeasibility;
 };
 
 export type InvestmentCachedAmounts = {
@@ -155,7 +162,8 @@ export class InvestmentService {
         : undefined,
       select: selectObject<Investment, InvestmentModel>(
         queriedFields.filter(
-          (f) => !f.startsWith('taxesAndFees'),
+          (f) =>
+            !f.startsWith('taxesAndFees') && !f.startsWith('sellFeasibility'),
         ) as (keyof InvestmentModel)[],
         {
           currentVariation: ['amount'],
@@ -164,11 +172,13 @@ export class InvestmentService {
           institutionLink: [],
           transactions: [],
           taxesAndFees: [],
+          sellFeasibility: [],
           ...((queriedFields.includes('correctedAmount') ||
             queriedFields.includes('taxedAmount') ||
             queriedFields.includes('currentVariation') ||
             queriedFields.includes('taxedVariation') ||
-            queriedFields.includes('taxPercentage')) && {
+            queriedFields.includes('taxPercentage') ||
+            queriedFields.includes('sellFeasibility')) && {
             DEFAULT: [
               'id',
               'amount',
@@ -236,12 +246,13 @@ export class InvestmentService {
 
     const investments = await Promise.all(
       investmentsQuery.map(async (investment) => {
-        const { correctedAmount, taxedAmount, taxesAndFees } =
+        const { correctedAmount, taxedAmount, taxesAndFees, sellFeasibility } =
           queriedFields.includes('correctedAmount') ||
           queriedFields.includes('taxedAmount') ||
           queriedFields.includes('currentVariation') ||
           queriedFields.includes('taxedVariation') ||
           queriedFields.includes('taxPercentage') ||
+          queriedFields.includes('sellFeasibility') ||
           queriedFields.some((f) => f.startsWith('taxesAndFees'))
             ? await this.correctInvestmentAmount(
                 investment,
@@ -295,6 +306,13 @@ export class InvestmentService {
                 brokerageFeeAmount: 0,
               },
               correctedAmount ? correctedAmount - investment.amount : 0,
+            ),
+          sellFeasibility:
+            sellFeasibility ||
+            getSellFeasibility(
+              investment.type,
+              correctedAmount || investment.amount,
+              investment.amount,
             ),
         };
       }),
@@ -850,6 +868,23 @@ export class InvestmentService {
         ? investment.duration
         : daysFromInitialDate;
 
+      let theoreticalAmount = investment.amount;
+      if (
+        investment.type === 'TREASURY' &&
+        investment.regimeName !== Regime.SELIC
+      ) {
+        const rate = investment.fixedRate ? investment.fixedRate / 100 : 0;
+        const businessDays = getBusinessDays(investment.startDate, new Date());
+        theoreticalAmount =
+          investment.amount * Math.pow(1 + rate, businessDays / 252);
+      } else if (
+        investment.type === 'TREASURY' &&
+        investment.regimeName === Regime.SELIC
+      ) {
+        // Fallback for SELIC cache
+        theoreticalAmount = investment.correctedAmount;
+      }
+
       const irpfTax =
         investment.regimeName === Regime.CDI
           ? getIrpfTax(currentInvestmentDays)
@@ -919,6 +954,11 @@ export class InvestmentService {
           },
           profit,
         ),
+        sellFeasibility: getSellFeasibility(
+          investment.type,
+          investment.correctedAmount,
+          theoreticalAmount,
+        ),
       };
     }
 
@@ -934,6 +974,7 @@ export class InvestmentService {
       : daysFromInitialDate;
 
     let amount = investment.amount;
+    let theoreticalAmount = investment.amount;
 
     if (investment.regimeName === Regime.CDI) {
       const cdiValues = await this.redisCacheService.get(
@@ -961,6 +1002,10 @@ export class InvestmentService {
             },
             0,
           ),
+          sellFeasibility: {
+            status: SellFeasibilityStatus.NOT_APPLICABLE,
+            message: 'Não aplicável para este tipo de investimento.',
+          },
         };
 
         await this.prismaService.investment.update({
@@ -997,6 +1042,10 @@ export class InvestmentService {
             },
             0,
           ),
+          sellFeasibility: {
+            status: SellFeasibilityStatus.NOT_APPLICABLE,
+            message: 'Não aplicável para este tipo de investimento.',
+          },
         };
 
         await this.prismaService.investment.update({
@@ -1129,7 +1178,7 @@ export class InvestmentService {
         await this.tesouroTransparenteService.getHistoricalData();
 
       const importedCalculate = await import('./utils/tesouro-direto-math');
-      amount = importedCalculate.calculateTesouroTheoreticalValue({
+      const calcResult = importedCalculate.calculateTesouroTheoreticalValue({
         amount: investment.amount,
         fixedRate: investment.fixedRate,
         regimeName: investment.regimeName,
@@ -1138,7 +1187,9 @@ export class InvestmentService {
         startDate: investment.startDate,
         maturityDate: investment.maturityDate,
         historicalData,
-      }).marketValue;
+      });
+      amount = calcResult.marketValue;
+      theoreticalAmount = calcResult.theoreticalValue;
     }
 
     const isTreasury = investment.type === InvestmentType.TREASURY;
@@ -1211,6 +1262,11 @@ export class InvestmentService {
           brokerageFeeAmount,
         },
         amount - investment.amount,
+      ),
+      sellFeasibility: getSellFeasibility(
+        investment.type,
+        amount,
+        theoreticalAmount,
       ),
     };
 
@@ -1591,7 +1647,10 @@ export class InvestmentService {
     const points: InvestmentChartDataPoint[] = [];
 
     // Simplification for other types
-    if (investment.type !== InvestmentType.TREASURY) {
+    if (
+      investment.type !== InvestmentType.TREASURY &&
+      investment.regimeName !== Regime.CDI
+    ) {
       return points;
     }
 
@@ -1617,9 +1676,44 @@ export class InvestmentService {
     const historicalData =
       await this.tesouroTransparenteService.getHistoricalData();
 
+    if (investment.regimeName === Regime.CDI) {
+      const cdiValues = await this.redisCacheService.get(
+        'external-ipeadata-cdi-daily',
+        async () => {
+          return await this.ipeadataService.getCdiValues();
+        },
+      );
+
+      const cdiDateMap = new Map<string, number>();
+      if (cdiValues) {
+        cdiValues.forEach((val: any) => cdiDateMap.set(val.date, val.value));
+      }
+
+      let amount = investment.amount;
+      for (let i = 0; i < days.length; i++) {
+        const day = days[i];
+        const dayStr = day.toISOString().split('T')[0];
+
+        if (i > 0 && !isWeekend(day) && !hd.isHoliday(day)) {
+          const rate = cdiDateMap.get(dayStr);
+          if (rate !== undefined && investment.regimePercentage) {
+            amount *= 1 + (rate * (investment.regimePercentage / 100)) / 100;
+          }
+        }
+
+        points.push({
+          date: dayStr,
+          theoreticalValue: amount,
+          marketValue: null,
+        });
+      }
+      return points;
+    }
+
     let businessDays = 0;
     for (let i = 0; i < days.length; i++) {
       const day = days[i];
+      const dayStr = day.toISOString().split('T')[0];
       if (i > 0 && !isWeekend(day) && !hd.isHoliday(day)) {
         businessDays++;
       }
@@ -1638,7 +1732,7 @@ export class InvestmentService {
       });
 
       points.push({
-        date: day.toISOString().split('T')[0],
+        date: dayStr,
         theoreticalValue: value.theoreticalValue,
         marketValue: value.marketValue,
       });

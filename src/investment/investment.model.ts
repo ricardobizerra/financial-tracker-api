@@ -21,6 +21,24 @@ export enum ApplicableTaxEnum {
 
 registerEnumType(ApplicableTaxEnum, { name: 'ApplicableTaxEnum' });
 
+export enum SellFeasibilityStatus {
+  FAVORABLE = 'FAVORABLE',
+  UNFAVORABLE = 'UNFAVORABLE',
+  NEUTRAL = 'NEUTRAL',
+  NOT_APPLICABLE = 'NOT_APPLICABLE',
+}
+
+registerEnumType(SellFeasibilityStatus, { name: 'SellFeasibilityStatus' });
+
+@ObjectType()
+export class SellFeasibility {
+  @Field(() => SellFeasibilityStatus, { nullable: false })
+  status!: SellFeasibilityStatus;
+
+  @Field(() => String, { nullable: false })
+  message!: string;
+}
+
 @ObjectType()
 export class InvestmentTaxDetail {
   @Field(() => String, { nullable: false })
@@ -55,6 +73,9 @@ export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
 
   @Field(() => InvestmentTaxesAndFees, { nullable: false })
   taxesAndFees!: InvestmentTaxesAndFees;
+
+  @Field(() => SellFeasibility, { nullable: false })
+  sellFeasibility!: SellFeasibility;
 }
 
 @ObjectType()
@@ -65,8 +86,8 @@ export class InvestmentChartDataPoint {
   @Field(() => Float, { nullable: false })
   theoreticalValue!: number;
 
-  @Field(() => Float, { nullable: false })
-  marketValue!: number;
+  @Field(() => Float, { nullable: true })
+  marketValue?: number | null;
 }
 
 @ObjectType()

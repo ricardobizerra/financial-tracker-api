@@ -1043,6 +1043,18 @@ type UserModelEdge {
   node: UserModel!
 }
 
+type SellFeasibility {
+  status: SellFeasibilityStatus!
+  message: String!
+}
+
+enum SellFeasibilityStatus {
+  FAVORABLE
+  UNFAVORABLE
+  NEUTRAL
+  NOT_APPLICABLE
+}
+
 type InvestmentTaxDetail {
   label: String!
   amount: Float!
@@ -1079,12 +1091,13 @@ type InvestmentModel {
   taxPercentage: String!
   taxedVariation: String!
   taxesAndFees: InvestmentTaxesAndFees!
+  sellFeasibility: SellFeasibility!
 }
 
 type InvestmentChartDataPoint {
   date: String!
   theoreticalValue: Float!
-  marketValue: Float!
+  marketValue: Float
 }
 
 type InvestmentConnection {
@@ -1558,6 +1571,7 @@ enum OrdenationInvestmentModel {
   institutionLink
   transactions
   taxesAndFees
+  sellFeasibility
 }
 
 enum InvestmentEvolutionPeriod {
