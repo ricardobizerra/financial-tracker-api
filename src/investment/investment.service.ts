@@ -1138,7 +1138,7 @@ export class InvestmentService {
         startDate: investment.startDate,
         maturityDate: investment.maturityDate,
         historicalData,
-      });
+      }).marketValue;
     }
 
     const isTreasury = investment.type === InvestmentType.TREASURY;
@@ -1639,8 +1639,8 @@ export class InvestmentService {
 
       points.push({
         date: day.toISOString().split('T')[0],
-        theoreticalValue: value,
-        marketValue: value, // Since we don't have VNA history, market value falls back to theoretical
+        theoreticalValue: value.theoreticalValue,
+        marketValue: value.marketValue,
       });
     }
 

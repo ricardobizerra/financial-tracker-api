@@ -23,8 +23,10 @@ export function calculateTesouroTheoreticalValue({
   maturityDate?: Date | null;
   historicalData?: TesouroDiretoDataPoint[];
   targetDate?: Date;
-}): number {
-  if (businessDays <= 0) return amount;
+}): { marketValue: number; theoreticalValue: number } {
+  const result = { marketValue: amount, theoreticalValue: amount };
+
+  if (businessDays <= 0) return result;
 
   if (historicalData && historicalData.length > 0 && maturityDate) {
     let tipoTituloPrefix = '';
@@ -50,22 +52,22 @@ export function calculateTesouroTheoreticalValue({
         if (startPoint && endPoint && startPoint.puBaseManha > 0) {
           const puStart = startPoint.puBaseManha;
           const puEnd = endPoint.puBaseManha;
-          return amount * (puEnd / puStart);
+          result.marketValue = amount * (puEnd / puStart);
         }
       }
     }
   }
 
-  // Fallback to theoretical curve
+  // Calculate theoretical curve
   // Tesouro Prefixado
   if (regimeName === Regime.PREFIXED) {
     const rate = fixedRate ? fixedRate / 100 : 0;
-    return amount * Math.pow(1 + rate, businessDays / 252);
+    result.theoreticalValue = amount * Math.pow(1 + rate, businessDays / 252);
   }
 
   // Tesouro Selic (LFT)
   if (regimeName === Regime.SELIC) {
-    if (!selicValues || selicValues.length === 0) return amount;
+    if (!selicValues || selicValues.length === 0) return result;
     
     // Find starting index in the cached daily selic values
     const firstDayIndex = selicValues.findIndex((selic) => {
@@ -76,9 +78,8 @@ export function calculateTesouroTheoreticalValue({
       return selicDate.getTime() >= dateToMatch.getTime();
     });
 
-    if (firstDayIndex === -1) return amount;
-
-    let currentAmount = amount;
+    if (firstDayIndex !== -1) {
+      let currentAmount = amount;
     const endIndex = Math.min(firstDayIndex + businessDays, selicValues.length);
 
     for (let i = firstDayIndex; i < endIndex; i++) {
@@ -86,13 +87,14 @@ export function calculateTesouroTheoreticalValue({
       currentAmount *= (1 + selicValues[i].valor);
     }
     
-    // If there is a fixed spread (e.g., Selic + 0.1%), apply it over the period
-    if (fixedRate) {
-      const spread = fixedRate / 100;
-      currentAmount *= Math.pow(1 + spread, businessDays / 252);
+      // If there is a fixed spread (e.g., Selic + 0.1%), apply it over the period
+      if (fixedRate) {
+        const spread = fixedRate / 100;
+        currentAmount *= Math.pow(1 + spread, businessDays / 252);
+      }
+      
+      result.theoreticalValue = currentAmount;
     }
-    
-    return currentAmount;
   }
 
   // Tesouro IPCA+ (NTN-B)
@@ -103,8 +105,13 @@ export function calculateTesouroTheoreticalValue({
     // In a real scenario, this would multiply by (VNA_current / VNA_start).
     // For now, we apply the fixed rate over the business days.
     const rate = fixedRate ? fixedRate / 100 : 0;
-    return amount * Math.pow(1 + rate, businessDays / 252);
+    result.theoreticalValue = amount * Math.pow(1 + rate, businessDays / 252);
   }
 
-  return amount;
+  // If market value was not calculated from historical data, fallback to theoretical
+  if (result.marketValue === amount && result.theoreticalValue !== amount) {
+    result.marketValue = result.theoreticalValue;
+  }
+
+  return result;
 }
