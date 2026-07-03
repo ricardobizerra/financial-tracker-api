@@ -42,7 +42,7 @@ import { UpdateInvestmentInput } from './input/update-investment.input';
 import { TesouroTransparenteService } from '@/external/tesouro-transparente/tesouro-transparente.service';
 import { getBusinessDays } from './utils/get-business-days';
 import { getIofTax } from './utils/get-iof-tax';
-import { InvestmentTaxesAndFees } from './investment.model';
+import { InvestmentTaxesAndFees, ApplicableTaxEnum } from './investment.model';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -58,6 +58,8 @@ export type InvestmentCachedAmounts = {
   taxedAmount: number;
   lastDate: string;
 };
+
+import { getTaxesAndFeesDetails } from './utils/get-taxes-details';
 
 @Injectable()
 export class InvestmentService {
@@ -280,17 +282,20 @@ export class InvestmentService {
           }),
           taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
           regimeName: investment.regimeName as Regime,
-          taxesAndFees: taxesAndFees || {
-            irpfAmount:
-              (correctedAmount || investment.amount) -
-              (taxedAmount || investment.amount),
-            iofAmount: 0,
-            b3CustodyFeeAmount: 0,
-            brokerageFeeAmount: 0,
-            totalTaxesAndFees:
-              (correctedAmount || investment.amount) -
-              (taxedAmount || investment.amount),
-          },
+          taxesAndFees:
+            taxesAndFees ||
+            getTaxesAndFeesDetails(
+              investment,
+              {
+                irpfAmount:
+                  (correctedAmount || investment.amount) -
+                  (taxedAmount || investment.amount),
+                iofAmount: 0,
+                b3CustodyFeeAmount: 0,
+                brokerageFeeAmount: 0,
+              },
+              correctedAmount ? correctedAmount - investment.amount : 0,
+            ),
         };
       }),
     );
@@ -592,42 +597,17 @@ export class InvestmentService {
         });
 
         const taxes = correctionResult.taxesAndFees;
-        if (taxes) {
-          if (taxes.iofAmount > 0) {
-            await tx.investmentTransaction.create({
-              data: {
-                amount: taxes.iofAmount,
-                role: InvestmentTransactionRole.FEE,
-                investment: { connect: { id: investmentId } },
-              },
-            });
-          }
-          if (taxes.irpfAmount > 0) {
-            await tx.investmentTransaction.create({
-              data: {
-                amount: taxes.irpfAmount,
-                role: InvestmentTransactionRole.FEE,
-                investment: { connect: { id: investmentId } },
-              },
-            });
-          }
-          if (taxes.b3CustodyFeeAmount > 0) {
-            await tx.investmentTransaction.create({
-              data: {
-                amount: taxes.b3CustodyFeeAmount,
-                role: InvestmentTransactionRole.FEE,
-                investment: { connect: { id: investmentId } },
-              },
-            });
-          }
-          if (taxes.brokerageFeeAmount > 0) {
-            await tx.investmentTransaction.create({
-              data: {
-                amount: taxes.brokerageFeeAmount,
-                role: InvestmentTransactionRole.FEE,
-                investment: { connect: { id: investmentId } },
-              },
-            });
+        if (taxes && taxes.details) {
+          for (const tax of taxes.details) {
+            if (tax.amount > 0) {
+              await tx.investmentTransaction.create({
+                data: {
+                  amount: tax.amount,
+                  role: InvestmentTransactionRole.FEE,
+                  investment: { connect: { id: investmentId } },
+                },
+              });
+            }
           }
         }
 
@@ -875,6 +855,49 @@ export class InvestmentService {
           ? getIrpfTax(currentInvestmentDays)
           : 0;
 
+      const profit = Math.max(
+        0,
+        investment.correctedAmount - investment.amount,
+      );
+      const daysHeld = differenceInDays(new Date(), investment.startDate);
+
+      let iofAmount = 0;
+      let b3CustodyFeeAmount = 0;
+      let brokerageFeeAmount = 0;
+
+      if (investment.type === 'TREASURY') {
+        const iofRate = getIofTax(daysHeld);
+        iofAmount = profit * iofRate;
+        const businessDays = getBusinessDays(investment.startDate, new Date());
+        const b3ExemptionThreshold = 10000;
+        let b3Basis = investment.correctedAmount;
+        if (
+          investment.regimeName === Regime.SELIC &&
+          investment.correctedAmount <= b3ExemptionThreshold
+        ) {
+          b3Basis = 0;
+        } else if (
+          investment.regimeName === Regime.SELIC &&
+          investment.correctedAmount > b3ExemptionThreshold
+        ) {
+          b3Basis = investment.correctedAmount - b3ExemptionThreshold;
+        }
+        b3CustodyFeeAmount = 0.002 * (businessDays / 252) * b3Basis;
+
+        if (investment.brokerageFee) {
+          brokerageFeeAmount =
+            (investment.brokerageFee / 100) *
+            (businessDays / 252) *
+            investment.correctedAmount;
+        }
+      } else {
+        const iofRate = getIofTax(daysHeld);
+        iofAmount = profit * iofRate;
+      }
+
+      const remainingProfit = Math.max(0, profit - iofAmount);
+      const irpfAmount = remainingProfit * (irpfTax / 100);
+
       return {
         correctedAmount: investment.correctedAmount,
         correctedVariation:
@@ -886,13 +909,16 @@ export class InvestmentService {
         taxedVariation:
           100 *
           ((investment.taxedAmount - investment.amount) / investment.amount),
-        taxesAndFees: {
-          irpfAmount: 0,
-          iofAmount: 0,
-          b3CustodyFeeAmount: 0,
-          brokerageFeeAmount: 0,
-          totalTaxesAndFees: 0,
-        },
+        taxesAndFees: getTaxesAndFeesDetails(
+          investment,
+          {
+            irpfAmount,
+            iofAmount,
+            b3CustodyFeeAmount,
+            brokerageFeeAmount,
+          },
+          profit,
+        ),
       };
     }
 
@@ -925,13 +951,16 @@ export class InvestmentService {
           taxedAmount: investment.amount,
           taxedVariation: 0,
           lastDate: lastDate || '',
-          taxesAndFees: {
-            irpfAmount: 0,
-            iofAmount: 0,
-            b3CustodyFeeAmount: 0,
-            brokerageFeeAmount: 0,
-            totalTaxesAndFees: 0,
-          },
+          taxesAndFees: getTaxesAndFeesDetails(
+            investment,
+            {
+              irpfAmount: 0,
+              iofAmount: 0,
+              b3CustodyFeeAmount: 0,
+              brokerageFeeAmount: 0,
+            },
+            0,
+          ),
         };
 
         await this.prismaService.investment.update({
@@ -958,13 +987,16 @@ export class InvestmentService {
           taxPercentage: 0,
           taxedVariation: 0,
           lastDate: lastDate || '',
-          taxesAndFees: {
-            irpfAmount: 0,
-            iofAmount: 0,
-            b3CustodyFeeAmount: 0,
-            brokerageFeeAmount: 0,
-            totalTaxesAndFees: 0,
-          },
+          taxesAndFees: getTaxesAndFeesDetails(
+            investment,
+            {
+              irpfAmount: 0,
+              iofAmount: 0,
+              b3CustodyFeeAmount: 0,
+              brokerageFeeAmount: 0,
+            },
+            0,
+          ),
         };
 
         await this.prismaService.investment.update({
@@ -1093,7 +1125,8 @@ export class InvestmentService {
         );
       }
 
-      const historicalData = await this.tesouroTransparenteService.getHistoricalData();
+      const historicalData =
+        await this.tesouroTransparenteService.getHistoricalData();
 
       const importedCalculate = await import('./utils/tesouro-direto-math');
       amount = importedCalculate.calculateTesouroTheoreticalValue({
@@ -1169,13 +1202,16 @@ export class InvestmentService {
       taxedAmount,
       taxedVariation:
         100 * ((taxedAmount - investment.amount) / investment.amount),
-      taxesAndFees: {
-        irpfAmount,
-        iofAmount,
-        b3CustodyFeeAmount,
-        brokerageFeeAmount,
-        totalTaxesAndFees,
-      },
+      taxesAndFees: getTaxesAndFeesDetails(
+        investment,
+        {
+          irpfAmount,
+          iofAmount,
+          b3CustodyFeeAmount,
+          brokerageFeeAmount,
+        },
+        amount - investment.amount,
+      ),
     };
 
     await this.prismaService.investment.update({
@@ -1578,7 +1614,8 @@ export class InvestmentService {
       start: investment.startDate,
       end: new Date(),
     });
-    const historicalData = await this.tesouroTransparenteService.getHistoricalData();
+    const historicalData =
+      await this.tesouroTransparenteService.getHistoricalData();
 
     let businessDays = 0;
     for (let i = 0; i < days.length; i++) {

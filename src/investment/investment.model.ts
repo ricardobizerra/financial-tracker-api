@@ -10,19 +10,33 @@ import {
   OmitType,
 } from '@nestjs/graphql';
 
+import { registerEnumType } from '@nestjs/graphql';
+
+export enum ApplicableTaxEnum {
+  IRPF = 'IRPF',
+  IOF = 'IOF',
+  B3_CUSTODY = 'B3_CUSTODY',
+  BROKERAGE = 'BROKERAGE',
+}
+
+registerEnumType(ApplicableTaxEnum, { name: 'ApplicableTaxEnum' });
+
+@ObjectType()
+export class InvestmentTaxDetail {
+  @Field(() => String, { nullable: false })
+  label!: string;
+
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+
+  @Field(() => String, { nullable: false })
+  reason!: string;
+}
+
 @ObjectType()
 export class InvestmentTaxesAndFees {
-  @Field(() => Float, { nullable: false })
-  irpfAmount!: number;
-
-  @Field(() => Float, { nullable: false })
-  iofAmount!: number;
-
-  @Field(() => Float, { nullable: false })
-  b3CustodyFeeAmount!: number;
-
-  @Field(() => Float, { nullable: false })
-  brokerageFeeAmount!: number;
+  @Field(() => [InvestmentTaxDetail], { nullable: false })
+  details!: InvestmentTaxDetail[];
 
   @Field(() => Float, { nullable: false })
   totalTaxesAndFees!: number;
@@ -42,8 +56,6 @@ export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
   @Field(() => InvestmentTaxesAndFees, { nullable: false })
   taxesAndFees!: InvestmentTaxesAndFees;
 }
-
-
 
 @ObjectType()
 export class InvestmentChartDataPoint {

@@ -1043,11 +1043,14 @@ type UserModelEdge {
   node: UserModel!
 }
 
+type InvestmentTaxDetail {
+  label: String!
+  amount: Float!
+  reason: String!
+}
+
 type InvestmentTaxesAndFees {
-  irpfAmount: Float!
-  iofAmount: Float!
-  b3CustodyFeeAmount: Float!
-  brokerageFeeAmount: Float!
+  details: [InvestmentTaxDetail!]!
   totalTaxesAndFees: Float!
 }
 
