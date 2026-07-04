@@ -22,7 +22,7 @@ export class TesouroTransparenteService implements OnModuleInit {
   private readonly logger = new Logger(TesouroTransparenteService.name);
   private readonly CSV_URL =
     'https://www.tesourotransparente.gov.br/ckan/dataset/df56aa42-484a-4a59-8184-7676580c81e3/resource/796d2059-14e9-44e3-80c9-2d9e30b405c1/download/precotaxatesourodireto.csv';
-  private readonly CACHE_KEY = 'external-tesouro-transparente-history';
+  private readonly HASH_KEY = 'external-tesouro-transparente-history-hash';
 
   constructor(
     private readonly httpService: HttpService,
@@ -30,8 +30,8 @@ export class TesouroTransparenteService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const existing = await this.redisCacheService.get(this.CACHE_KEY);
-    if (!existing) {
+    const existing = await this.redisCacheService.hkeys(this.HASH_KEY);
+    if (!existing || existing.length === 0) {
       this.logger.log('Cache missing on startup, triggering sync...');
       await this.syncData();
     }
@@ -89,16 +89,11 @@ export class TesouroTransparenteService implements OnModuleInit {
           .on('error', reject);
       });
 
-      this.logger.log(`Parsed ${indexList.length} unique bonds. Caching...`);
-
-      // Save index
-      await this.redisCacheService.set(
-        `${this.CACHE_KEY}:index` as any,
-        indexList,
-        24 * 60 * 60 * 1000,
+      this.logger.log(
+        `Parsed ${indexList.length} unique bonds. Caching in Hash...`,
       );
 
-      // Save individual bond histories
+      // Save individual bond histories into Hash
       for (const key of indexList) {
         // Sort chronologically (DD/MM/YYYY)
         groupedData[key].sort((a, b) => {
@@ -107,15 +102,11 @@ export class TesouroTransparenteService implements OnModuleInit {
           return dateA.localeCompare(dateB);
         });
 
-        await this.redisCacheService.set(
-          `${this.CACHE_KEY}:${key}` as any,
-          groupedData[key],
-          24 * 60 * 60 * 1000,
-        );
+        await this.redisCacheService.hset(this.HASH_KEY, key, groupedData[key]);
       }
 
       this.logger.log(
-        'Tesouro Transparente data synced and cached successfully.',
+        'Tesouro Transparente data synced and cached in HASH successfully.',
       );
     } catch (error: any) {
       this.logger.error(
@@ -125,22 +116,16 @@ export class TesouroTransparenteService implements OnModuleInit {
   }
 
   async getAvailableBonds(tipoTituloPrefix: string): Promise<string[]> {
-    let index = await this.redisCacheService.get(
-      `${this.CACHE_KEY}:index` as any,
-    );
+    let index = await this.redisCacheService.hkeys(this.HASH_KEY);
 
-    if (!index) {
+    if (!index || index.length === 0) {
       await this.syncData();
-      index = await this.redisCacheService.get(
-        `${this.CACHE_KEY}:index` as any,
-      );
-      if (!index) return [];
+      index = await this.redisCacheService.hkeys(this.HASH_KEY);
+      if (!index || index.length === 0) return [];
     }
 
     // Filter index keys starting with prefix
-    const keys = (index as string[]).filter((k) =>
-      k.startsWith(tipoTituloPrefix),
-    );
+    const keys = index.filter((k) => k.startsWith(tipoTituloPrefix));
     // Extract dates
     const dates = keys.map((k) => k.split('|')[1]);
 
@@ -158,20 +143,16 @@ export class TesouroTransparenteService implements OnModuleInit {
     tipoTituloPrefix: string,
     maturityStr: string,
   ): Promise<TesouroDiretoDataPoint[]> {
-    const index = (await this.redisCacheService.get(
-      `${this.CACHE_KEY}:index` as any,
-    )) as string[];
+    const index = await this.redisCacheService.hkeys(this.HASH_KEY);
 
-    if (!index) return [];
+    if (!index || index.length === 0) return [];
 
     const exactKey = index.find(
       (k) => k.startsWith(tipoTituloPrefix) && k.endsWith(`|${maturityStr}`),
     );
     if (!exactKey) return [];
 
-    const data = await this.redisCacheService.get(
-      `${this.CACHE_KEY}:${exactKey}` as any,
-    );
+    const data = await this.redisCacheService.hget(this.HASH_KEY, exactKey);
     return (data as TesouroDiretoDataPoint[]) || [];
   }
 }

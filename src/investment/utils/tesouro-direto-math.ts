@@ -1,7 +1,27 @@
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { Regime } from '@/lib/graphql/prisma-client';
 import { TesouroDiretoDataPoint } from '@/external/tesouro-transparente/tesouro-transparente.service';
-import { format } from 'date-fns';
+import Holidays from 'date-holidays';
+import {
+  eachDayOfInterval,
+  isWeekend,
+  startOfMonth,
+  endOfMonth,
+  format,
+} from 'date-fns';
+
+function getBusinessDaysInMonth(date: Date, hd: any): number {
+  const start = startOfMonth(date);
+  const end = endOfMonth(date);
+  const days = eachDayOfInterval({ start, end });
+  let count = 0;
+  for (const day of days) {
+    if (!isWeekend(day) && !hd.isHoliday(day)) {
+      count++;
+    }
+  }
+  return count;
+}
 
 export function calculateTesouroTheoreticalValue({
   amount,
@@ -9,6 +29,7 @@ export function calculateTesouroTheoreticalValue({
   regimeName,
   businessDays,
   selicValues,
+  ipcaValues,
   startDate,
   maturityDate,
   historicalData,
@@ -19,6 +40,7 @@ export function calculateTesouroTheoreticalValue({
   regimeName: string;
   businessDays: number;
   selicValues?: BacenCachedValue[];
+  ipcaValues?: BacenCachedValue[];
   startDate: Date;
   maturityDate?: Date | null;
   historicalData?: TesouroDiretoDataPoint[];
@@ -101,13 +123,55 @@ export function calculateTesouroTheoreticalValue({
 
   // Tesouro IPCA+ (NTN-B)
   if (regimeName === Regime.IPCA) {
-    // For a pure theoretical curve without VNA history, we approximate using the fixed rate.
-    // Real IPCA curve requires the daily IPCA projection (VNA).
-    // If we don't have historical VNA, we can at least apply the fixed rate part.
-    // In a real scenario, this would multiply by (VNA_current / VNA_start).
-    // For now, we apply the fixed rate over the business days.
     const rate = fixedRate ? fixedRate / 100 : 0;
-    result.theoreticalValue = amount * Math.pow(1 + rate, businessDays / 252);
+
+    if (!ipcaValues || ipcaValues.length === 0) {
+      // Fallback: only apply fixed rate if no IPCA data is available
+      result.theoreticalValue = amount * Math.pow(1 + rate, businessDays / 252);
+    } else {
+      const hd = new Holidays('BR');
+      let currentAmount = amount;
+      const endDate = targetDate || new Date();
+
+      const days =
+        startDate < endDate
+          ? eachDayOfInterval({ start: startDate, end: endDate })
+          : [];
+      const bdaysMap = new Map<string, number>();
+      const ipcaMap = new Map<string, number>();
+
+      for (const ipca of ipcaValues) {
+        const key = ipca.data.substring(0, 7); // 'YYYY-MM'
+        ipcaMap.set(key, ipca.valor);
+      }
+
+      let lastKnownIpca = ipcaValues[ipcaValues.length - 1]?.valor || 0;
+
+      for (let i = 1; i < days.length; i++) {
+        const day = days[i];
+        if (!isWeekend(day) && !hd.isHoliday(day)) {
+          const monthKey = format(day, 'yyyy-MM');
+
+          let bdaysInMonth = bdaysMap.get(monthKey);
+          if (bdaysInMonth === undefined) {
+            bdaysInMonth = getBusinessDaysInMonth(day, hd);
+            bdaysMap.set(monthKey, bdaysInMonth);
+          }
+
+          let ipcaForMonth = ipcaMap.get(monthKey);
+          if (ipcaForMonth === undefined) {
+            ipcaForMonth = lastKnownIpca;
+          } else {
+            lastKnownIpca = ipcaForMonth;
+          }
+
+          currentAmount *= Math.pow(1 + ipcaForMonth, 1 / bdaysInMonth);
+          currentAmount *= Math.pow(1 + rate, 1 / 252);
+        }
+      }
+
+      result.theoreticalValue = currentAmount;
+    }
   }
 
   // If market value was not calculated from historical data, fallback to theoretical

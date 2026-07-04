@@ -39,6 +39,21 @@ export class InvestmentResolver {
   ) {}
 
   @Auth()
+  @Query(() => InvestmentModel, { name: 'investment' })
+  async findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Info() info: GraphQLResolveInfo,
+    @CurrentUser() user: UserModel,
+  ) {
+    const queriedFields = getQueriedFields<InvestmentModel>(
+      info,
+      'investment',
+      false,
+    );
+    return this.investmentService.findOne(id, queriedFields, user.id);
+  }
+
+  @Auth()
   @Query(() => InvestmentConnection, { name: 'investments' })
   async findMany(
     @Args() paginationArgs: PaginationArgs,
