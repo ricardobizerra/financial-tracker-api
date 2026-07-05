@@ -944,6 +944,56 @@ export class InvestmentService {
     const totalCurrentAmount = rawTotalCurrentAmount ?? 0;
     const totalTaxedAmount = rawTotalTaxedAmount ?? 0;
 
+    let totalRealAmount = totalInitialAmount;
+
+    if (queriedFields.includes('realVariation') && totalInitialAmount > 0) {
+      const allInvestments = await this.prismaService.investment.findMany({
+        where: {
+          institutionLinkId: {
+            in: (
+              await this.prismaService.institutionLink.findMany({
+                where: { userId },
+                select: { id: true },
+              })
+            ).map((link) => link.id),
+          },
+        },
+        select: { amount: true, startDate: true },
+      });
+
+      const ipcaValues = await this.redisCacheService.get(
+        'external-bacen-ipca-monthly',
+        async () => await this.bacenService.getIpcaValues(),
+      );
+
+      if (ipcaValues && ipcaValues.length > 0) {
+        const ipcaMap = new Map<string, number>();
+        for (const ipca of ipcaValues) {
+          ipcaMap.set(ipca.data.substring(0, 7), ipca.valor);
+        }
+        
+        let calculatedRealAmount = 0;
+        const endDate = new Date();
+        const { eachMonthOfInterval } = await import('date-fns');
+        
+        for (const inv of allInvestments) {
+          const startDate = inv.startDate;
+          let currentPrincipal = inv.amount;
+          
+          if (startDate < endDate) {
+            const months = eachMonthOfInterval({ start: startDate, end: endDate });
+            for (const month of months) {
+              const monthKey = format(month, 'yyyy-MM');
+              const ipca = ipcaMap.get(monthKey) || 0;
+              currentPrincipal *= (1 + ipca);
+            }
+          }
+          calculatedRealAmount += currentPrincipal;
+        }
+        totalRealAmount = calculatedRealAmount;
+      }
+    }
+
     const currentVariation =
       queriedFields.includes('currentVariation') && totalInitialAmount > 0
         ? 100 * ((totalCurrentAmount - totalInitialAmount) / totalInitialAmount)
@@ -952,6 +1002,11 @@ export class InvestmentService {
     const taxedVariation =
       queriedFields.includes('taxedVariation') && totalInitialAmount > 0
         ? 100 * ((totalTaxedAmount - totalInitialAmount) / totalInitialAmount)
+        : 0;
+
+    const realVariation =
+      queriedFields.includes('realVariation') && totalRealAmount > 0
+        ? 100 * ((totalTaxedAmount / totalRealAmount) - 1)
         : 0;
 
     return {
@@ -969,6 +1024,9 @@ export class InvestmentService {
       }),
       ...(queriedFields.includes('taxedVariation') && {
         taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+      }),
+      ...(queriedFields.includes('realVariation') && {
+        realVariation: (realVariation > 0 ? '+' : '') + realVariation.toFixed(2).replace('.', ',') + '%',
       }),
     };
   }

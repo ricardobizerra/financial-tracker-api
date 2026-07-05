@@ -105,20 +105,23 @@ export class OrdenationInvestmentArgs extends Ordenation(InvestmentModel, [
 
 @ObjectType()
 export class TotalInvestmentsModel {
-  @Field(() => Float, { nullable: false })
-  initialAmount!: number;
+  @Field(() => Float, { nullable: true })
+  initialAmount?: number;
 
-  @Field(() => Float, { nullable: false })
-  currentAmount!: number;
+  @Field(() => Float, { nullable: true })
+  currentAmount?: number;
 
-  @Field(() => String, { nullable: false })
-  currentVariation!: string;
+  @Field(() => String, { nullable: true })
+  currentVariation?: string;
 
-  @Field(() => Float, { nullable: false })
-  taxedAmount!: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
 
-  @Field(() => String, { nullable: false })
-  taxedVariation!: string;
+  @Field(() => String, { nullable: true })
+  taxedVariation?: string;
+
+  @Field(() => String, { nullable: true })
+  realVariation?: string;
 }
 
 @ObjectType()
