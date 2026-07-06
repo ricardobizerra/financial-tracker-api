@@ -1503,11 +1503,11 @@ type Query {
   users(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationUserModel, orderDirection: OrderDirection): UserConnection!
   user: UserModel!
   investment(id: String!): InvestmentModel!
-  investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime, institutionLinkIds: [ID!]): InvestmentConnection!
+  investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime, status: InvestmentStatus, institutionLinkIds: [ID!]): InvestmentConnection!
   availableTreasuryBonds(regime: Regime!): [String!]!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes(institutionLinkId: String): InvestmentRegimeSummaryConnection!
-  investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String): InvestmentEvolutionModel!
+  investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String, regime: Regime): InvestmentEvolutionModel!
   investmentAccounts(regime: Regime!): [AccountWithInvestmentCount!]!
   investmentChartData(investmentId: String!): [InvestmentChartDataPoint!]!
   accounts(first: Int, after: String, last: Int, before: String, search: String, orderBy: OrdenationAccountModel, orderDirection: OrderDirection): AccountConnection!

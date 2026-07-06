@@ -20,6 +20,7 @@ import {
   Investment,
   Regime,
   InstitutionType,
+  InvestmentStatus,
 } from '@/lib/graphql/prisma-client';
 import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
@@ -60,6 +61,8 @@ export class InvestmentResolver {
     @Args() ordenationArgs: OrdenationInvestmentArgs,
     @Args('regime', { type: () => Regime, nullable: true })
     regime: Regime | null,
+    @Args('status', { type: () => InvestmentStatus, nullable: true })
+    status: InvestmentStatus | null,
     @Args('institutionLinkIds', { type: () => [ID!], nullable: true })
     institutionLinkIds: string[] | null,
     @Info() info: GraphQLResolveInfo,
@@ -76,6 +79,7 @@ export class InvestmentResolver {
       ordenationArgs,
       userId: user?.id,
       regime,
+      status,
       institutionLinkIds,
     });
   }
@@ -208,7 +212,8 @@ export class InvestmentResolver {
     return this.investmentService.getInvestmentEvolution({
       userId: user.id,
       accountId: args.accountId,
-      period: args.period || 'YEAR',
+      period: args.period as string,
+      regime: args.regime as string | undefined,
     });
   }
 

@@ -13,6 +13,7 @@ import {
   Regime as RegimePrisma,
   TransactionStatus,
   TransactionType,
+  InvestmentStatus,
 } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import {
@@ -285,6 +286,7 @@ export class InvestmentService {
     ordenationArgs,
     userId,
     regime,
+    status,
     institutionLinkIds,
   }: {
     queriedFields: (keyof InvestmentModel)[];
@@ -292,6 +294,7 @@ export class InvestmentService {
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
     regime: Regime | null;
+    status?: InvestmentStatus | null;
     institutionLinkIds?: string[] | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
@@ -312,6 +315,7 @@ export class InvestmentService {
         in: userInstitutionLinkIds,
       },
       regimeName: regime ?? undefined,
+      status: status ?? undefined,
       ...(institutionLinkIds?.length && {
         institutionLinkId: { in: institutionLinkIds },
       }),
@@ -1640,10 +1644,12 @@ export class InvestmentService {
     userId,
     accountId,
     period,
+    regime,
   }: {
     userId: string;
     accountId?: string;
     period: string;
+    regime?: string;
   }) {
     // Calcular data de início baseado no período
     const now = new Date();
@@ -1691,6 +1697,7 @@ export class InvestmentService {
           userId,
         },
         ...(accountId && { accountId }),
+        ...(regime && { regimeName: regime as any }),
       },
       select: {
         id: true,
