@@ -31,7 +31,7 @@ import {
 } from './investment-evolution.model';
 import { InstitutionLinkService } from '@/institution-link/institution-link.service';
 import { RedeemInvestmentInput } from './input/redeem-investment.input';
-
+import { RegimeTaxesHistoryModel, InvestmentTaxesHistoryModel } from './investment-taxes.model';
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
   constructor(
@@ -90,6 +90,23 @@ export class InvestmentResolver {
     @Args('regime', { type: () => Regime }) regime: Regime,
   ) {
     return this.investmentService.getAvailableTreasuryBonds(regime);
+  }
+
+  @Auth()
+  @Query(() => RegimeTaxesHistoryModel, { name: 'regimeTaxesHistory' })
+  async getRegimeTaxesHistory(
+    @Args('regime', { type: () => Regime }) regime: Regime,
+  ) {
+    return this.investmentService.getRegimeTaxesHistory(regime);
+  }
+
+  @Auth()
+  @Query(() => InvestmentTaxesHistoryModel, { name: 'investmentTaxesHistory' })
+  async getInvestmentTaxesHistory(
+    @Args('investmentId', { type: () => String }) investmentId: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentTaxesHistory(investmentId, user.id);
   }
 
   @Auth()

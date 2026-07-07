@@ -1164,6 +1164,22 @@ type InvestmentEvolutionModel {
   totalProfitPercentage: String!
 }
 
+type TaxHistoryPointModel {
+  date: String!
+  value: Float
+  component1: Float
+  component2: Float
+  total: Float
+}
+
+type RegimeTaxesHistoryModel {
+  dataPoints: [TaxHistoryPointModel!]!
+}
+
+type InvestmentTaxesHistoryModel {
+  dataPoints: [TaxHistoryPointModel!]!
+}
+
 type AccountModel {
   id: ID!
   name: String!
@@ -1505,6 +1521,8 @@ type Query {
   investment(id: String!): InvestmentModel!
   investments(first: Int, after: String, last: Int, before: String, orderBy: OrdenationInvestmentModel, orderDirection: OrderDirection, regime: Regime, status: InvestmentStatus, institutionLinkIds: [ID!]): InvestmentConnection!
   availableTreasuryBonds(regime: Regime!): [String!]!
+  regimeTaxesHistory(regime: Regime!): RegimeTaxesHistoryModel!
+  investmentTaxesHistory(investmentId: String!): InvestmentTaxesHistoryModel!
   totalInvestments: TotalInvestmentsModel!
   investmentRegimes(institutionLinkId: String): InvestmentRegimeSummaryConnection!
   investmentEvolution(period: InvestmentEvolutionPeriod! = YEAR, accountId: String, regime: Regime): InvestmentEvolutionModel!

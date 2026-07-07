@@ -25,7 +25,11 @@ import {
   TotalInvestmentsModel,
   InvestmentChartDataPoint,
 } from './investment.model';
-import { differenceInDays, format } from 'date-fns';
+import {
+  RegimeTaxesHistoryModel,
+  InvestmentTaxesHistoryModel,
+} from './investment-taxes.model';
+import { differenceInDays, format, parse } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
 import {
   Regime,
@@ -2017,5 +2021,208 @@ export class InvestmentService {
     }
 
     return points;
+  }
+
+  async getRegimeTaxesHistory(regime: Regime): Promise<RegimeTaxesHistoryModel> {
+    if (regime === Regime.CDI) {
+      let cdiData = await this.redisCacheService.get('external-ipeadata-cdi-daily');
+      if (!cdiData || cdiData.length === 0) {
+        await this.ipeadataService.cacheCdiValues();
+        cdiData = await this.redisCacheService.get('external-ipeadata-cdi-daily');
+      }
+      return {
+        dataPoints: (cdiData || []).map((item) => ({
+          date: item.date,
+          value: item.value,
+        })),
+      };
+    }
+
+    if (regime === Regime.POUPANCA) {
+      let poupancaData = await this.redisCacheService.get('external-bacen-poupanca-daily');
+      if (!poupancaData || poupancaData.length === 0) {
+        await this.bacenService.cachePoupancaValues();
+        poupancaData = await this.redisCacheService.get('external-bacen-poupanca-daily');
+      }
+      return {
+        dataPoints: (poupancaData || []).map((item) => {
+          return {
+            date: item.data, // Already in yyyy-MM-dd format
+            value: item.valor,
+          };
+        }),
+      };
+    }
+
+    const isTreasuryRegime = [Regime.SELIC, Regime.IPCA, Regime.PREFIXED].includes(regime);
+    if (isTreasuryRegime) {
+      let selicData = await this.redisCacheService.get('external-bacen-selic-daily');
+      if (!selicData || selicData.length === 0) {
+        await this.bacenService.cacheSelicValues();
+        selicData = await this.redisCacheService.get('external-bacen-selic-daily');
+      }
+
+      let ipcaData = await this.redisCacheService.get('external-bacen-ipca-monthly');
+      if (!ipcaData || ipcaData.length === 0) {
+        await this.bacenService.cacheIpcaValues();
+        ipcaData = await this.redisCacheService.get('external-bacen-ipca-monthly');
+      }
+
+      const pointsMap = new Map<string, any>();
+      
+      if (selicData) {
+        selicData.forEach(s => {
+          const [y, m, d] = s.data.split('-');
+          const date = `${y}-${m}-${d}`;
+          // Multiply by 100 to convert from decimal (0.0004) to percentage (0.04)
+          pointsMap.set(date, { date, component1: s.valor * 100, component2: null });
+        });
+      }
+      
+      if (ipcaData) {
+        ipcaData.forEach(i => {
+          const [y, m] = i.data.split('-');
+          const date = `${y}-${m}-01`;
+          if (pointsMap.has(date)) {
+            pointsMap.get(date)!.component2 = i.valor * 100;
+          } else {
+            pointsMap.set(date, { date, component1: null, component2: i.valor * 100 });
+          }
+        });
+      }
+
+      // To make the graph continuous, we will forward-fill IPCA for all daily points
+      const dataPoints = Array.from(pointsMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      let lastIpca = null;
+      for (const pt of dataPoints) {
+        if (pt.component2 !== null) {
+          lastIpca = pt.component2;
+        } else if (lastIpca !== null) {
+          pt.component2 = lastIpca;
+        }
+        
+        pt.total = (pt.component1 || 0) + (pt.component2 || 0);
+        pt.value = pt.total;
+      }
+
+      return { dataPoints };
+    }
+
+    return { dataPoints: [] };
+  }
+
+  async getInvestmentTaxesHistory(investmentId: string, userId: string): Promise<InvestmentTaxesHistoryModel> {
+    const investment = await this.prismaService.investment.findUnique({
+      where: { id: investmentId },
+      include: { institutionLink: true },
+    });
+
+    const isTreasury = investment?.regimeName === RegimePrisma.SELIC || investment?.regimeName === RegimePrisma.IPCA || investment?.regimeName === RegimePrisma.PREFIXED;
+    if (!investment || investment.institutionLink?.userId !== userId || !isTreasury) {
+      return { dataPoints: [] };
+    }
+
+    // Example investment.type: "Tesouro IPCA+ 2035" -> "Tesouro IPCA+", "2035"
+    // Also we need to get the exact maturity date. Fortunately, investment.maturityDate holds the maturity date for Treasury bonds.
+    const dueDate = investment.maturityDate;
+    if (!dueDate) return { dataPoints: [] };
+
+    // Format dueDate to DD/MM/YYYY safely ignoring local timezone shifts
+    const [year, month, day] = dueDate.toISOString().substring(0, 10).split('-');
+    const dueDateStr = `${day}/${month}/${year}`;
+    
+    let prefix = 'Tesouro Selic';
+    if (investment.regimeName === RegimePrisma.IPCA) {
+      prefix = 'Tesouro IPCA+';
+      if (investment.type.includes('Semestral')) prefix = 'Tesouro IPCA+ com Juros Semestrais';
+    } else if (investment.regimeName === RegimePrisma.PREFIXED) {
+      prefix = 'Tesouro Prefixado';
+      if (investment.type.includes('Semestral')) prefix = 'Tesouro Prefixado com Juros Semestrais';
+    } else {
+      const match = investment.type.match(/(.*?)\s+\d{4}$/);
+      if (match) prefix = match[1];
+    }
+
+    const history = await this.tesouroTransparenteService.getHistoricalDataForBond(prefix, dueDateStr);
+    
+    // IPCA or Selic data
+    let benchmarkData: BacenCachedValue[] = [];
+    if (investment.regimeName === RegimePrisma.IPCA) {
+      benchmarkData = (await this.redisCacheService.get('external-bacen-ipca-monthly')) || [];
+      if (benchmarkData.length === 0) {
+        await this.bacenService.cacheIpcaValues();
+        benchmarkData = (await this.redisCacheService.get('external-bacen-ipca-monthly')) || [];
+      }
+    } else if (investment.regimeName === RegimePrisma.SELIC) {
+      benchmarkData = (await this.redisCacheService.get('external-bacen-selic-daily')) || [];
+      if (benchmarkData.length === 0) {
+        await this.bacenService.cacheSelicValues();
+        benchmarkData = (await this.redisCacheService.get('external-bacen-selic-daily')) || [];
+      }
+    }
+
+    const benchmarkMap = new Map<string, number>();
+    if (benchmarkData) {
+      benchmarkData.forEach(b => {
+      const [y, m, d] = b.data.split('-');
+      let key = `${y}-${m}-${d}`;
+      if (investment.regimeName === RegimePrisma.IPCA) {
+        key = `${y}-${m}`; // month level for IPCA
+      }
+      // Multiply by 100 to match the percentage scale of Tesouro Transparente (e.g. 6.0)
+      benchmarkMap.set(key, b.valor * 100);
+      });
+    }
+
+    let lastIpca: number | null = null;
+    
+    if (investment.regimeName === RegimePrisma.IPCA && benchmarkData.length > 0) {
+      const startYearMonth = `${investment.startDate.getFullYear()}-${String(investment.startDate.getMonth() + 1).padStart(2, '0')}`;
+      let closestIpca = benchmarkData[0].valor * 100;
+      for (const b of benchmarkData) {
+        const [y, m] = b.data.split('-');
+        if (`${y}-${m}` <= startYearMonth) {
+          closestIpca = b.valor * 100;
+        } else {
+          break;
+        }
+      }
+      lastIpca = closestIpca;
+    }
+    
+    const dataPoints = history
+      .filter(h => {
+        // Only return data points after or on the investment start date
+        const [d, m, y] = h.dataBase.split('/');
+        return new Date(`${y}-${m}-${d}`) >= investment.startDate;
+      })
+      .map(h => {
+        const [d, m, y] = h.dataBase.split('/');
+        const dateStr = `${y}-${m}-${d}`;
+        let component1 = h.taxaCompraManha;
+        let component2 = null;
+        let total = component1;
+
+        if (investment.regimeName === RegimePrisma.IPCA) {
+          const monthKey = `${y}-${m}`;
+          if (benchmarkMap.has(monthKey)) lastIpca = benchmarkMap.get(monthKey)!;
+          component2 = lastIpca;
+          total = component1 + component2;
+        } else if (investment.regimeName === RegimePrisma.SELIC) {
+          component2 = benchmarkMap.get(dateStr) || 0;
+          total = component1 + component2;
+        }
+
+        return {
+          date: dateStr,
+          component1,
+          component2,
+          total
+        };
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return { dataPoints };
   }
 }

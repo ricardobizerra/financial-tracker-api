@@ -148,7 +148,7 @@ export class TesouroTransparenteService implements OnModuleInit {
     if (!index || index.length === 0) return [];
 
     const exactKey = index.find(
-      (k) => k.startsWith(tipoTituloPrefix) && k.endsWith(`|${maturityStr}`),
+      (k) => k === `${tipoTituloPrefix}|${maturityStr}`
     );
     if (!exactKey) return [];
 
