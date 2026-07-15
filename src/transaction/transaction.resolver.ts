@@ -36,7 +36,7 @@ import {
   UpdateRecurringScope,
 } from './input/update-recurring-transactions.input';
 import { BulkUpdateTransactionsInput } from './input/bulk-update-transactions.input';
-import { BulkCancelTransactionsInput } from './input/bulk-cancel-transactions.input';
+import { BulkDeleteTransactionsInput } from './input/bulk-delete-transactions.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -109,20 +109,20 @@ export class TransactionResolver {
   }
 
   @Auth()
-  @Mutation(() => [TransactionModel], { name: 'bulkCancelTransactions' })
-  async bulkCancelTransactions(
+  @Mutation(() => [TransactionModel], { name: 'bulkDeleteTransactions' })
+  async bulkDeleteTransactions(
     @CurrentUser() user: UserModel,
-    @Args('data') data: BulkCancelTransactionsInput,
+    @Args('data') data: BulkDeleteTransactionsInput,
   ): Promise<TransactionModel[]> {
-    const canceledTransactions: TransactionModel[] = [];
+    const deletedTransactions: TransactionModel[] = [];
 
     // Processar sequencialmente para evitar condições de corrida no cardBilling
     for (const id of data.ids) {
-      const result = await this.cancelTransaction(user, id);
-      canceledTransactions.push(result as any);
+      const result = await this.deleteTransaction(user, id);
+      deletedTransactions.push(result as any);
     }
 
-    return canceledTransactions;
+    return deletedTransactions;
   }
 
   @Auth()
@@ -478,31 +478,7 @@ export class TransactionResolver {
       throw new Error('Transaction does not belong to user');
     }
 
-    const isCanceled =
-      existingTransaction.status === TransactionStatus.CANCELED;
     const hasInstallments = existingTransaction.installments.length > 0;
-
-    // Única regra de bloqueio: transações CANCELED só podem ter descrição editada
-    if (isCanceled) {
-      if (
-        data.amount !== undefined ||
-        data.date !== undefined ||
-        data.paymentMethod !== undefined ||
-        data.status !== undefined
-      ) {
-        throw new Error(
-          'Transações canceladas só podem ter a descrição editada',
-        );
-      }
-
-      const updatedTransaction = await this.transactionService.update(data.id, {
-        ...(data.description !== undefined && {
-          description: data.description,
-        }),
-      });
-
-      return updatedTransaction;
-    }
 
     // Calcular novo status baseado na data (transição automática)
     let newStatus: TransactionStatus | undefined = data.status as
@@ -639,17 +615,14 @@ export class TransactionResolver {
   }
 
   @Auth()
-  @Mutation(() => TransactionModel, { name: 'cancelTransaction' })
-  async cancelTransaction(
+  @Mutation(() => TransactionModel, { name: 'deleteTransaction' })
+  async deleteTransaction(
     @CurrentUser() user: UserModel,
     @Args('id') id: string,
   ): Promise<TransactionModel> {
-    // Buscar transação com cardBilling e dados de parcela
+    // Buscar transação com dados de parcela
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id },
-      include: {
-        cardBilling: { select: { status: true } },
-      },
     });
 
     if (!transaction) {
@@ -660,38 +633,15 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
-    // Não permite cancelar transação já cancelada
-    if (transaction.status === TransactionStatus.CANCELED) {
-      throw new Error('Transação já está cancelada');
-    }
-
-    // Se é uma transação parcelada (tem installments associados)
+    // Verificar se é uma transação parcelada (tem installments associados)
     const installments =
       await this.prismaService.transactionInstallment.findMany({
         where: { transactionId: id },
-        include: { cardBilling: { select: { id: true, status: true } } },
+        include: { cardBilling: { select: { id: true } } },
         orderBy: { installmentNumber: 'asc' },
       });
 
     if (installments.length > 0) {
-      // Verificar se a primeira parcela está em fatura fechada
-      const firstInstallment = installments.find(
-        (i) => i.installmentNumber === 1,
-      );
-
-      if (firstInstallment?.cardBilling) {
-        const closedStatuses: CardBillingStatus[] = [
-          CardBillingStatus.PAID,
-          CardBillingStatus.CLOSED,
-          CardBillingStatus.COMPLETED,
-        ];
-        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          throw new Error(
-            'Não é possível cancelar este parcelamento pois a primeira parcela está em uma fatura fechada ou paga',
-          );
-        }
-      }
-
       // Coletar billing IDs para recalcular
       const billingIdsToUpdate = new Set<string>();
       installments.forEach((i) => {
@@ -700,9 +650,9 @@ export class TransactionResolver {
         }
       });
 
-      // Cancelar a transação pai
+      // Marcar a transação pai como excluída
       await this.transactionService.update(id, {
-        status: TransactionStatus.CANCELED,
+        deletedAt: new Date(),
       });
 
       // Recalcular saldo de todas as faturas afetadas
@@ -715,28 +665,12 @@ export class TransactionResolver {
       // Retornar a transação atualizada
       return this.prismaService.transaction.findUnique({
         where: { id },
-      });
+      }) as any;
     }
 
     // Transação única (não-parcela)
-
-    // Validar cardBilling se existir
-    if (transaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(transaction.cardBilling.status)) {
-        throw new Error(
-          'Não é possível cancelar transação de fatura fechada ou paga',
-        );
-      }
-    }
-
-    // Atualizar transação
     const updatedTransaction = await this.transactionService.update(id, {
-      status: TransactionStatus.CANCELED,
+      deletedAt: new Date(),
     });
 
     // Recalcular saldo da fatura se a transação estava vinculada a uma
@@ -782,8 +716,8 @@ export class TransactionResolver {
   }
 
   @Auth()
-  @Mutation(() => TransactionModel, { name: 'cancelRecurringTransactions' })
-  async cancelRecurringTransactions(
+  @Mutation(() => TransactionModel, { name: 'deleteRecurringTransactions' })
+  async deleteRecurringTransactions(
     @CurrentUser() user: UserModel,
     @Args('transactionId') transactionId: string,
     @Args('scope', { type: () => UpdateRecurringScope }) scope: UpdateRecurringScope,
@@ -805,11 +739,11 @@ export class TransactionResolver {
     }
 
     if (scope === UpdateRecurringScope.THIS_ONLY) {
-      const updatedTransaction = await this.cancelTransaction(user, transactionId);
-      return updatedTransaction as any;
+      const deletedTransaction = await this.deleteTransaction(user, transactionId);
+      return deletedTransaction as any;
     }
 
-    const transactionsToCancel = await this.prismaService.transaction.findMany({
+    const transactionsToDelete = await this.prismaService.transaction.findMany({
       where: {
         recurringTransactionId: transaction.recurringTransactionId,
         userId: user.id,
@@ -819,16 +753,16 @@ export class TransactionResolver {
       select: { id: true, cardBillingId: true },
     });
 
-    if (transactionsToCancel.length === 0) {
+    if (transactionsToDelete.length === 0) {
       return transaction as any;
     }
 
-    const ids = transactionsToCancel.map(t => t.id);
-    const billingIds = new Set(transactionsToCancel.filter(t => t.cardBillingId).map(t => t.cardBillingId as string));
+    const ids = transactionsToDelete.map(t => t.id);
+    const billingIds = new Set(transactionsToDelete.filter(t => t.cardBillingId).map(t => t.cardBillingId as string));
 
     await this.prismaService.transaction.updateMany({
       where: { id: { in: ids } },
-      data: { status: TransactionStatus.CANCELED },
+      data: { deletedAt: new Date() },
     });
 
     await Promise.all(

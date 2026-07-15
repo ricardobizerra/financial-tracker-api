@@ -810,44 +810,6 @@ describe('TransactionResolver', () => {
   });
 
   describe('updateTransaction', () => {
-    it('should only allow description edit for CANCELED transactions', async () => {
-      prismaService.transaction.findUnique.mockResolvedValue({
-        id: 'tx-1',
-        userId: 'user-1',
-        status: TransactionStatus.CANCELED,
-        installments: [],
-      });
-
-      await expect(
-        resolver.updateTransaction(
-          { id: 'tx-1', amount: 200 } as any,
-          mockUser as any,
-        ),
-      ).rejects.toThrow(
-        'Transações canceladas só podem ter a descrição editada',
-      );
-    });
-
-    it('should allow description edit for CANCELED transactions', async () => {
-      prismaService.transaction.findUnique.mockResolvedValue({
-        id: 'tx-1',
-        userId: 'user-1',
-        status: TransactionStatus.CANCELED,
-        installments: [],
-      });
-      transactionService.update.mockResolvedValue({
-        id: 'tx-1',
-        description: 'Updated',
-      });
-
-      const result = await resolver.updateTransaction(
-        { id: 'tx-1', description: 'Updated' } as any,
-        mockUser as any,
-      );
-
-      expect(result.description).toBe('Updated');
-    });
-
     it('should throw when transaction not found', async () => {
       prismaService.transaction.findUnique.mockResolvedValue(null);
 
@@ -1013,24 +975,14 @@ describe('TransactionResolver', () => {
     });
   });
 
-  describe('cancelTransaction', () => {
-    it('should throw when transaction is already cancelled', async () => {
-      prismaService.transaction.findUnique.mockResolvedValue({
-        id: 'tx-1',
-        userId: 'user-1',
-        status: TransactionStatus.CANCELED,
-      });
-
-      await expect(
-        resolver.cancelTransaction(mockUser as any, 'tx-1'),
-      ).rejects.toThrow('Transação já está cancelada');
-    });
-
+  describe('deleteTransaction', () => {
     it('should throw when transaction not found', async () => {
       prismaService.transaction.findUnique.mockResolvedValue(null);
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
 
       await expect(
-        resolver.cancelTransaction(mockUser as any, 'nonexistent'),
+        resolver.deleteTransaction(mockUser as any, 'nonexistent'),
       ).rejects.toThrow('Transação não encontrada');
     });
 
@@ -1040,61 +992,62 @@ describe('TransactionResolver', () => {
         userId: 'other-user',
         status: TransactionStatus.COMPLETED,
       });
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
 
       await expect(
-        resolver.cancelTransaction(mockUser as any, 'tx-1'),
+        resolver.deleteTransaction(mockUser as any, 'tx-1'),
       ).rejects.toThrow('Transação não pertence ao usuário');
     });
 
-    it('should reject cancellation when direct billing is PAID', async () => {
-      prismaService.transaction.findUnique.mockResolvedValue({
+    it('should successfully delete a simple transaction (no billing restrictions)', async () => {
+      prismaService.transaction.findUnique.mockResolvedValueOnce({
         id: 'tx-1',
         userId: 'user-1',
         status: TransactionStatus.COMPLETED,
-        cardBilling: { status: CardBillingStatus.PAID },
-        cardBillingId: 'billing-1',
+        cardBillingId: null,
       });
 
-      // No installments
-      prismaService.transactionInstallment = {
-        findMany: vi.fn().mockResolvedValue([]),
-      };
-
-      await expect(
-        resolver.cancelTransaction(mockUser as any, 'tx-1'),
-      ).rejects.toThrow(
-        'Não é possível cancelar transação de fatura fechada ou paga',
-      );
-    });
-
-    it('should successfully cancel a simple transaction', async () => {
-      prismaService.transaction.findUnique
-        .mockResolvedValueOnce({
-          id: 'tx-1',
-          userId: 'user-1',
-          status: TransactionStatus.COMPLETED,
-          cardBilling: null,
-          cardBillingId: null,
-        })
-        .mockResolvedValueOnce({
-          id: 'tx-1',
-          status: TransactionStatus.CANCELED,
-        });
-
-      prismaService.transactionInstallment = {
-        findMany: vi.fn().mockResolvedValue([]),
-      };
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
 
       transactionService.update.mockResolvedValue({
         id: 'tx-1',
-        status: TransactionStatus.CANCELED,
+        deletedAt: new Date(),
       });
 
-      const result = await resolver.cancelTransaction(mockUser as any, 'tx-1');
+      await resolver.deleteTransaction(mockUser as any, 'tx-1');
 
       expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
-        status: TransactionStatus.CANCELED,
+        deletedAt: expect.any(Date),
       });
+    });
+
+    it('should delete a transaction in a PAID billing (no restrictions)', async () => {
+      prismaService.transaction.findUnique.mockResolvedValueOnce({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        cardBillingId: 'billing-1',
+      });
+
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
+
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        deletedAt: new Date(),
+      });
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.deleteTransaction(mockUser as any, 'tx-1');
+
+      expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
+        deletedAt: expect.any(Date),
+      });
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-1',
+      );
     });
   });
 

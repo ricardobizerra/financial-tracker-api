@@ -16,7 +16,7 @@ import {
   TransactionModel,
   OrdenationTransactionArgs,
   TransactionFilterArgs,
-  CancelCheckInfo,
+  DeleteCheckInfo,
   TransactionConnection,
 } from './transaction.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
@@ -68,7 +68,7 @@ export class TransactionService {
       status:
         filterArgs.statuses && filterArgs.statuses.length > 0
           ? { in: filterArgs.statuses }
-          : { not: TransactionStatus.CANCELED },
+          : undefined,
       ...(searchArgs.search && {
         OR: ['description'].map((field) => ({
           [field]: {
@@ -119,7 +119,7 @@ export class TransactionService {
     const skip = cursor ? 1 : 0;
 
     // Determinar quais campos "computados" foram solicitados
-    const cancelFields = ['canCancel', 'cancelReason', 'cancelWarningMessage'];
+    const deleteFields = ['canDelete', 'deleteReason', 'deleteWarningMessage'];
     const installmentFields = [
       'installments',
       'installmentStartDate',
@@ -127,8 +127,8 @@ export class TransactionService {
       'installmentNumber',
       'installmentId',
     ];
-    const needsCancelInfo = queriedFields.some((f) =>
-      cancelFields.includes(f as string),
+    const needsDeleteInfo = queriedFields.some((f) =>
+      deleteFields.includes(f as string),
     );
     const needsInstallments = queriedFields.some((f) =>
       installmentFields.includes(f as string),
@@ -138,17 +138,17 @@ export class TransactionService {
       queriedFields.filter(
         (field) =>
           ![
-            'canCancel',
-            'cancelReason',
-            'cancelWarningMessage',
+            'canDelete',
+            'deleteReason',
+            'deleteWarningMessage',
             'installmentStartDate',
             'installments',
           ].includes(field as string),
       ) as (keyof TransactionModel)[],
       {
-        canCancel: ['status'],
-        cancelReason: ['status'],
-        cancelWarningMessage: ['status'],
+        canDelete: ['status'],
+        deleteReason: ['status'],
+        deleteWarningMessage: ['status'],
         installmentStartDate: ['recurringTransactionId'],
         installmentNumber: ['installments'],
         totalInstallments: ['installments'],
@@ -169,7 +169,7 @@ export class TransactionService {
         id: true,
         status: true,
         date: true,
-        cardBilling: needsCancelInfo
+        cardBilling: needsDeleteInfo
           ? baseSelect.cardBilling &&
             typeof baseSelect.cardBilling === 'object' &&
             'select' in baseSelect.cardBilling
@@ -182,7 +182,7 @@ export class TransactionService {
             : { select: { status: true } }
           : baseSelect.cardBilling,
         installments:
-          needsInstallments || needsCancelInfo
+          needsInstallments || needsDeleteInfo
             ? {
                 include: {
                   cardBilling: {
@@ -220,9 +220,9 @@ export class TransactionService {
       let installmentNumber: TransactionModel['installmentNumber'] = null;
       let installmentId: TransactionModel['installmentId'] = null;
       let installmentStartDate: TransactionModel['installmentStartDate'];
-      let canCancel: TransactionModel['canCancel'];
-      let cancelReason: TransactionModel['cancelReason'];
-      let cancelWarningMessage: TransactionModel['cancelWarningMessage'];
+      let canDelete: TransactionModel['canDelete'];
+      let deleteReason: TransactionModel['deleteReason'];
+      let deleteWarningMessage: TransactionModel['deleteWarningMessage'];
 
       if (needsInstallments) {
         const installments = transaction.installments || [];
@@ -246,14 +246,14 @@ export class TransactionService {
         }
       }
 
-      if (needsCancelInfo) {
-        const cancelInfo = this.computeCancelInfo(
+      if (needsDeleteInfo) {
+        const deleteInfo = this.computeDeleteInfo(
           transaction,
           transaction.installments,
         );
-        canCancel = cancelInfo.canCancel;
-        cancelReason = cancelInfo.reason;
-        cancelWarningMessage = cancelInfo.warningMessage;
+        canDelete = deleteInfo.canDelete;
+        deleteReason = deleteInfo.reason;
+        deleteWarningMessage = deleteInfo.warningMessage;
       }
 
       return {
@@ -262,9 +262,9 @@ export class TransactionService {
         totalInstallments,
         installmentNumber,
         installmentId,
-        canCancel,
-        cancelReason,
-        cancelWarningMessage,
+        canDelete,
+        deleteReason,
+        deleteWarningMessage,
       };
     });
 
@@ -355,7 +355,7 @@ export class TransactionService {
     let realizedIncome = 0;
     let realizedExpense = 0;
 
-    // Saldo Previsto (COMPLETED + PLANNED + OVERDUE, exclui CANCELED)
+    // Saldo Previsto (COMPLETED + PLANNED + OVERDUE)
     let forecastIncome = 0;
     let forecastExpense = 0;
 
@@ -399,10 +399,10 @@ export class TransactionService {
   }
 
   /**
-   * Computa informações de cancelamento para uma transação.
-   * Usa dados pré-carregados (installments, cardBilling, sourceAccount) para evitar N+1.
+   * Computa informações de exclusão para uma transação.
+   * Usa dados pré-carregados (installments, cardBilling) para evitar N+1.
    */
-  computeCancelInfo(
+  computeDeleteInfo(
     transaction: {
       id: string;
       status: TransactionStatus;
@@ -412,60 +412,17 @@ export class TransactionService {
       installmentNumber: number;
       cardBilling?: { status: CardBillingStatus } | null;
     }>,
-  ): CancelCheckInfo {
-    // Se já está cancelada, não pode cancelar novamente
-    if (transaction.status === TransactionStatus.CANCELED) {
-      return {
-        canCancel: false,
-        reason: 'Transação já cancelada',
-        warningMessage: null,
-      };
-    }
-
+  ): DeleteCheckInfo {
     // Se é uma transação parcelada (tem installments associados)
     if (installments.length > 0) {
-      const firstInstallment = installments.find(
-        (i) => i.installmentNumber === 1,
-      );
-
-      if (firstInstallment?.cardBilling) {
-        const closedStatuses: CardBillingStatus[] = [
-          CardBillingStatus.PAID,
-          CardBillingStatus.CLOSED,
-          CardBillingStatus.COMPLETED,
-        ];
-        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          return {
-            canCancel: false,
-            reason: 'A primeira parcela está em uma fatura fechada ou paga',
-            warningMessage: null,
-          };
-        }
-      }
-
       return {
-        canCancel: true,
+        canDelete: true,
         reason: null,
-        warningMessage: `Ao cancelar esta transação, todas as ${installments.length} parcelas serão canceladas.`,
+        warningMessage: `Ao excluir esta transação, todas as ${installments.length} parcelas serão excluídas.`,
       };
     }
 
-    if (transaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(transaction.cardBilling.status)) {
-        return {
-          canCancel: false,
-          reason: 'Transação está em uma fatura fechada ou paga',
-          warningMessage: null,
-        };
-      }
-    }
-
-    return { canCancel: true, reason: null, warningMessage: null };
+    return { canDelete: true, reason: null, warningMessage: null };
   }
 
   async find(
@@ -528,7 +485,6 @@ export class TransactionService {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
         date: { gte: startDate, lte: endDate },
-        status: { not: 'CANCELED' },
       },
       select: {
         id: true,
@@ -552,7 +508,7 @@ export class TransactionService {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
         date: { lt: startDate },
-        status: { not: 'CANCELED' },
+        status: { not: 'COMPLETED' },
       },
       select: {
         amount: true,
@@ -856,7 +812,6 @@ export class TransactionService {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
         date: { gte: startDate, lte: endDate },
-        status: { not: 'CANCELED' },
       },
       select: {
         id: true,
@@ -880,7 +835,7 @@ export class TransactionService {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
         date: { lt: startDate },
-        status: { not: 'CANCELED' },
+        status: { in: ['PLANNED', 'OVERDUE'] },
       },
       select: {
         amount: true,
@@ -1199,7 +1154,7 @@ export class TransactionService {
           lte: endDate,
         },
         status: {
-          not: 'CANCELED',
+          not: 'COMPLETED',
         },
       },
       select: {
@@ -1337,7 +1292,7 @@ export class TransactionService {
           lte: endDate,
         },
         status: {
-          notIn: ['COMPLETED', 'CANCELED'],
+          notIn: ['COMPLETED'],
         },
       },
       select: {
@@ -1476,11 +1431,11 @@ export class TransactionService {
       0,
     );
 
-    // Definir filtro de status (excluir CANCELED a menos que explicitamente solicitado)
+    // Definir filtro de status (aplica filtro explícito se fornecido, middleware exclui deletedAt automaticamente)
     const statusFilter =
       statuses && statuses.length > 0
         ? { in: statuses }
-        : { not: TransactionStatus.CANCELED };
+        : undefined;
 
     // Buscar transações com filtros aplicados
     const transactions = await this.prismaService.transaction.findMany({

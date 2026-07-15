@@ -792,6 +792,7 @@ type TransactionCountAggregate {
   cardBillingId: Int!
   recurringTransactionId: Int!
   userId: Int!
+  deletedAt: Int!
   createdAt: Int!
   updatedAt: Int!
   _all: Int!
@@ -819,6 +820,7 @@ type TransactionMaxAggregate {
   cardBillingId: String
   recurringTransactionId: String
   userId: String
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -826,7 +828,6 @@ type TransactionMaxAggregate {
 enum TransactionStatus {
   PLANNED
   COMPLETED
-  CANCELED
   OVERDUE
 }
 
@@ -864,6 +865,7 @@ type TransactionMinAggregate {
   cardBillingId: String
   recurringTransactionId: String
   userId: String
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -891,6 +893,7 @@ type Transaction {
   cardBillingId: String
   recurringTransactionId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime!
   updatedAt: DateTime!
   sourceAccount: Account
@@ -1265,6 +1268,7 @@ type TransactionModel {
   sourceCardId: String
   cardBillingId: String
   recurringTransactionId: String
+  deletedAt: DateTime
   createdAt: DateTime!
   updatedAt: DateTime!
   sourceAccount: Account
@@ -1275,9 +1279,9 @@ type TransactionModel {
   recurringTransaction: RecurringTransaction
   installments: [TransactionInstallment!]
   _count: TransactionCount!
-  canCancel: Boolean
-  cancelReason: String
-  cancelWarningMessage: String
+  canDelete: Boolean
+  deleteReason: String
+  deleteWarningMessage: String
   installmentStartDate: DateTime
   installmentNumber: Int
   totalInstallments: Int
@@ -1652,6 +1656,7 @@ enum OrdenationTransactionModel {
   sourceCardId
   cardBillingId
   recurringTransactionId
+  deletedAt
   createdAt
   updatedAt
   sourceAccount
@@ -1662,9 +1667,9 @@ enum OrdenationTransactionModel {
   recurringTransaction
   installments
   _count
-  canCancel
-  cancelReason
-  cancelWarningMessage
+  canDelete
+  deleteReason
+  deleteWarningMessage
   installmentStartDate
   installmentNumber
   totalInstallments
@@ -1775,13 +1780,13 @@ type Mutation {
   closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): Card!
   bulkUpdateTransactions(data: BulkUpdateTransactionsInput!): [TransactionModel!]!
-  bulkCancelTransactions(data: BulkCancelTransactionsInput!): [TransactionModel!]!
+  bulkDeleteTransactions(data: BulkDeleteTransactionsInput!): [TransactionModel!]!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
   createInstallmentTransaction(data: CreateInstallmentTransactionInput!): TransactionModel!
   updateTransaction(data: UpdateTransactionInput!): TransactionModel!
-  cancelTransaction(id: String!): TransactionModel!
+  deleteTransaction(id: String!): TransactionModel!
   rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
-  cancelRecurringTransactions(transactionId: String!, scope: UpdateRecurringScope!): TransactionModel!
+  deleteRecurringTransactions(transactionId: String!, scope: UpdateRecurringScope!): TransactionModel!
   updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
   createInstitutionLink(data: CreateInstitutionLinkInput!): InstitutionLinkModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
@@ -2029,6 +2034,7 @@ input TransactionWhereInput {
   cardBillingId: StringNullableFilter
   recurringTransactionId: StringNullableFilter
   userId: StringFilter
+  deletedAt: DateTimeNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   sourceAccount: AccountNullableRelationFilter
@@ -2704,6 +2710,7 @@ input TransactionCreateWithoutUserInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -2885,6 +2892,7 @@ input TransactionCreateWithoutSourceAccountInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   destinyAccount: AccountCreateNestedOneWithoutDestinyTransactionsInput
@@ -2990,6 +2998,7 @@ input TransactionCreateWithoutDestinyAccountInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3153,6 +3162,7 @@ input TransactionCreateWithoutBillingPaymentInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3225,6 +3235,7 @@ input TransactionCreateWithoutSourceCardInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3276,6 +3287,7 @@ input TransactionCreateWithoutCardBillingInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3429,6 +3441,7 @@ input TransactionCreateWithoutRecurringTransactionInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -3650,6 +3663,7 @@ input TransactionWhereUniqueInput {
   cardBillingId: StringNullableFilter
   recurringTransactionId: StringNullableFilter
   userId: StringFilter
+  deletedAt: DateTimeNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
   sourceAccount: AccountNullableRelationFilter
@@ -3684,6 +3698,7 @@ input TransactionCreateManyRecurringTransactionInput {
   sourceCardId: String
   cardBillingId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4005,6 +4020,7 @@ input TransactionCreateManyCardBillingInput {
   sourceCardId: String
   recurringTransactionId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4043,6 +4059,7 @@ input TransactionCreateWithoutInstallmentsInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
   sourceAccount: AccountCreateNestedOneWithoutSourceTransactionsInput
@@ -4110,6 +4127,7 @@ input TransactionCreateManySourceCardInput {
   cardBillingId: String
   recurringTransactionId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4253,6 +4271,7 @@ input TransactionCreateManyDestinyAccountInput {
   cardBillingId: String
   recurringTransactionId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4329,6 +4348,7 @@ input TransactionCreateManySourceAccountInput {
   cardBillingId: String
   recurringTransactionId: String
   userId: String!
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4415,6 +4435,7 @@ input TransactionCreateManyUserInput {
   sourceCardId: String
   cardBillingId: String
   recurringTransactionId: String
+  deletedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4498,7 +4519,7 @@ input BulkUpdateTransactionsInput {
   paymentMethod: PaymentMethod
 }
 
-input BulkCancelTransactionsInput {
+input BulkDeleteTransactionsInput {
   ids: [ID!]!
 }
 
@@ -4512,6 +4533,7 @@ input CreateTransactionInput {
   paymentLimit: DateTime
   category: TransactionCategory
   categoryConfidence: Float
+  deletedAt: DateTime
   billingPayment: CardBillingCreateNestedOneWithoutPaymentTransactionInput
   recurringTransaction: RecurringTransactionCreateNestedOneWithoutTransactionsInput
   installments: TransactionInstallmentCreateNestedManyWithoutTransactionInput

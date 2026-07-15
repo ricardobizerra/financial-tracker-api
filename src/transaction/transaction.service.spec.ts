@@ -27,67 +27,9 @@ describe('TransactionService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('computeCancelInfo', () => {
-    it('should return canCancel: false for already cancelled transactions', () => {
-      const result = service.computeCancelInfo(
-        { id: '1', status: TransactionStatus.CANCELED },
-        [],
-      );
-
-      expect(result.canCancel).toBe(false);
-      expect(result.reason).toBe('Transação já cancelada');
-      expect(result.warningMessage).toBeNull();
-    });
-
-    it('should return canCancel: false when first installment is in a PAID billing', () => {
-      const result = service.computeCancelInfo(
-        { id: '1', status: TransactionStatus.COMPLETED },
-        [
-          {
-            installmentNumber: 1,
-            cardBilling: { status: CardBillingStatus.PAID },
-          },
-          {
-            installmentNumber: 2,
-            cardBilling: { status: CardBillingStatus.PENDING },
-          },
-        ],
-      );
-
-      expect(result.canCancel).toBe(false);
-      expect(result.reason).toContain('fatura fechada ou paga');
-    });
-
-    it('should return canCancel: false when first installment is in a CLOSED billing', () => {
-      const result = service.computeCancelInfo(
-        { id: '1', status: TransactionStatus.COMPLETED },
-        [
-          {
-            installmentNumber: 1,
-            cardBilling: { status: CardBillingStatus.CLOSED },
-          },
-        ],
-      );
-
-      expect(result.canCancel).toBe(false);
-    });
-
-    it('should return canCancel: false when first installment is in a COMPLETED billing', () => {
-      const result = service.computeCancelInfo(
-        { id: '1', status: TransactionStatus.COMPLETED },
-        [
-          {
-            installmentNumber: 1,
-            cardBilling: { status: CardBillingStatus.COMPLETED },
-          },
-        ],
-      );
-
-      expect(result.canCancel).toBe(false);
-    });
-
-    it('should return canCancel: true with warning for installments in PENDING billing', () => {
-      const result = service.computeCancelInfo(
+  describe('computeDeleteInfo', () => {
+    it('should return canDelete: true with warning for installment transactions', () => {
+      const result = service.computeDeleteInfo(
         { id: '1', status: TransactionStatus.COMPLETED },
         [
           {
@@ -105,13 +47,13 @@ describe('TransactionService', () => {
         ],
       );
 
-      expect(result.canCancel).toBe(true);
+      expect(result.canDelete).toBe(true);
       expect(result.reason).toBeNull();
       expect(result.warningMessage).toContain('3 parcelas');
     });
 
-    it('should return canCancel: false when direct cardBilling is PAID', () => {
-      const result = service.computeCancelInfo(
+    it('should return canDelete: true when billing is PAID (no restrictions)', () => {
+      const result = service.computeDeleteInfo(
         {
           id: '1',
           status: TransactionStatus.COMPLETED,
@@ -120,12 +62,11 @@ describe('TransactionService', () => {
         [],
       );
 
-      expect(result.canCancel).toBe(false);
-      expect(result.reason).toContain('fatura fechada ou paga');
+      expect(result.canDelete).toBe(true);
     });
 
-    it('should return canCancel: false when direct cardBilling is CLOSED', () => {
-      const result = service.computeCancelInfo(
+    it('should return canDelete: true when billing is CLOSED (no restrictions)', () => {
+      const result = service.computeDeleteInfo(
         {
           id: '1',
           status: TransactionStatus.COMPLETED,
@@ -134,31 +75,37 @@ describe('TransactionService', () => {
         [],
       );
 
-      expect(result.canCancel).toBe(false);
+      expect(result.canDelete).toBe(true);
     });
 
-    it('should return canCancel: true when no billing and no installments', () => {
-      const result = service.computeCancelInfo(
+    it('should return canDelete: true when no billing and no installments', () => {
+      const result = service.computeDeleteInfo(
         { id: '1', status: TransactionStatus.COMPLETED },
         [],
       );
 
-      expect(result.canCancel).toBe(true);
+      expect(result.canDelete).toBe(true);
       expect(result.reason).toBeNull();
       expect(result.warningMessage).toBeNull();
     });
 
-    it('should return canCancel: true when direct cardBilling is PENDING', () => {
-      const result = service.computeCancelInfo(
-        {
-          id: '1',
-          status: TransactionStatus.COMPLETED,
-          cardBilling: { status: CardBillingStatus.PENDING },
-        },
-        [],
+    it('should return canDelete: true when installment is in a PAID billing (no restrictions)', () => {
+      const result = service.computeDeleteInfo(
+        { id: '1', status: TransactionStatus.COMPLETED },
+        [
+          {
+            installmentNumber: 1,
+            cardBilling: { status: CardBillingStatus.PAID },
+          },
+          {
+            installmentNumber: 2,
+            cardBilling: { status: CardBillingStatus.PENDING },
+          },
+        ],
       );
 
-      expect(result.canCancel).toBe(true);
+      expect(result.canDelete).toBe(true);
+      expect(result.warningMessage).toContain('2 parcelas');
     });
   });
 
@@ -189,12 +136,6 @@ describe('TransactionService', () => {
           _sum: { amount: 200 },
           _count: { id: 1 },
         },
-        {
-          type: 'EXPENSE',
-          status: TransactionStatus.CANCELED,
-          _sum: { amount: 100 },
-          _count: { id: 1 },
-        },
       ]);
 
       const result = await service.getSummary({
@@ -208,12 +149,12 @@ describe('TransactionService', () => {
       expect(result.realizedExpense).toBe(300);
       expect(result.realizedBalance).toBe(700);
 
-      // Forecast = COMPLETED + PLANNED + OVERDUE (not CANCELED)
+      // Forecast = COMPLETED + PLANNED + OVERDUE (deleted transactions excluded by middleware)
       expect(result.forecastIncome).toBe(1500); // 1000 + 500
       expect(result.forecastExpense).toBe(500); // 300 + 200
       expect(result.forecastBalance).toBe(1000); // 1500 - 500
 
-      expect(result.transactionCount).toBe(6); // all including canceled
+      expect(result.transactionCount).toBe(5);
     });
 
     it('should return all zeros for empty results', async () => {

@@ -36,6 +36,26 @@ export class PrismaService
   async onModuleInit() {
     await this.$connect();
     this.logger.log('Database connection established');
+
+    // Soft-delete middleware: automatically exclude logically-deleted transactions
+    // from all read operations without requiring manual `deletedAt: null` filters.
+    this.$use(async (params, next) => {
+      if (params.model === 'Transaction') {
+        const readActions = [
+          'findMany',
+          'findFirst',
+          'findUnique',
+          'count',
+          'aggregate',
+          'groupBy',
+        ];
+        if (readActions.includes(params.action)) {
+          params.args = params.args ?? {};
+          params.args.where = { ...params.args.where, deletedAt: null };
+        }
+      }
+      return next(params);
+    });
   }
 
   async onModuleDestroy() {

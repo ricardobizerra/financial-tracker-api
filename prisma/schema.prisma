@@ -252,8 +252,12 @@ model Transaction {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([deletedAt])
 }
 
 model TransactionInstallment {
@@ -398,7 +402,6 @@ enum TransactionCategory {
 enum TransactionStatus {
   PLANNED
   COMPLETED
-  CANCELED
   OVERDUE
 }
 
