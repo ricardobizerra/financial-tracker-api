@@ -1774,11 +1774,14 @@ type Mutation {
   createCard(data: CreateCardInput!): Card!
   closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): Card!
+  bulkUpdateTransactions(data: BulkUpdateTransactionsInput!): [TransactionModel!]!
+  bulkCancelTransactions(data: BulkCancelTransactionsInput!): [TransactionModel!]!
   createTransaction(data: CreateTransactionInput!): TransactionModel!
   createInstallmentTransaction(data: CreateInstallmentTransactionInput!): TransactionModel!
   updateTransaction(data: UpdateTransactionInput!): TransactionModel!
   cancelTransaction(id: String!): TransactionModel!
   rescheduleTransaction(data: RescheduleTransactionInput!): TransactionModel!
+  cancelRecurringTransactions(transactionId: String!, scope: UpdateRecurringScope!): TransactionModel!
   updateRecurringTransactions(data: UpdateRecurringTransactionsInput!): TransactionModel!
   createInstitutionLink(data: CreateInstitutionLinkInput!): InstitutionLinkModel!
   createRecurringTransaction(data: CreateRecurringTransactionInput!): RecurringTransactionModel!
@@ -4486,6 +4489,15 @@ input CreateCardInput {
   defaultLimit: Decimal
 }
 
+input BulkUpdateTransactionsInput {
+  ids: [ID!]!
+  category: TransactionCategory
+}
+
+input BulkCancelTransactionsInput {
+  ids: [ID!]!
+}
+
 input CreateTransactionInput {
   description: String!
   amount: Decimal!
@@ -4549,19 +4561,19 @@ input RescheduleTransactionInput {
   newDate: DateTime!
 }
 
+"""Scope for updating recurring transactions"""
+enum UpdateRecurringScope {
+  THIS_ONLY
+  THIS_AND_FUTURE
+  ALL_PLANNED
+}
+
 input UpdateRecurringTransactionsInput {
   transactionId: ID!
   scope: UpdateRecurringScope!
   description: String
   amount: Float
   paymentMethod: PaymentMethod
-}
-
-"""Scope for updating recurring transactions"""
-enum UpdateRecurringScope {
-  THIS_ONLY
-  THIS_AND_FUTURE
-  ALL_PLANNED
 }
 
 input CreateInstitutionLinkInput {

@@ -35,6 +35,8 @@ import {
   UpdateRecurringTransactionsInput,
   UpdateRecurringScope,
 } from './input/update-recurring-transactions.input';
+import { BulkUpdateTransactionsInput } from './input/bulk-update-transactions.input';
+import { BulkCancelTransactionsInput } from './input/bulk-cancel-transactions.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -77,6 +79,46 @@ export class TransactionResolver {
       const cents = baseCents + (i < remainder ? 1 : 0);
       return cents;
     });
+  }
+
+  @Auth()
+  @Mutation(() => [TransactionModel], { name: 'bulkUpdateTransactions' })
+  async bulkUpdateTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: BulkUpdateTransactionsInput,
+  ): Promise<TransactionModel[]> {
+    const updatedTransactions: TransactionModel[] = [];
+
+    // Processar sequencialmente para evitar condições de corrida (ex: recálculo de faturas simultâneas)
+    for (const id of data.ids) {
+      const result = await this.updateTransaction(
+        {
+          id,
+          category: data.category,
+        },
+        user,
+      );
+      updatedTransactions.push(result as any);
+    }
+
+    return updatedTransactions;
+  }
+
+  @Auth()
+  @Mutation(() => [TransactionModel], { name: 'bulkCancelTransactions' })
+  async bulkCancelTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: BulkCancelTransactionsInput,
+  ): Promise<TransactionModel[]> {
+    const canceledTransactions: TransactionModel[] = [];
+
+    // Processar sequencialmente para evitar condições de corrida no cardBilling
+    for (const id of data.ids) {
+      const result = await this.cancelTransaction(user, id);
+      canceledTransactions.push(result as any);
+    }
+
+    return canceledTransactions;
   }
 
   @Auth()
@@ -733,6 +775,83 @@ export class TransactionResolver {
     });
 
     return updatedTransaction;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'cancelRecurringTransactions' })
+  async cancelRecurringTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('transactionId') transactionId: string,
+    @Args('scope', { type: () => UpdateRecurringScope }) scope: UpdateRecurringScope,
+  ): Promise<TransactionModel> {
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    if (!transaction.recurringTransactionId) {
+      throw new Error('Transação não faz parte de uma recorrência');
+    }
+
+    if (scope === UpdateRecurringScope.THIS_ONLY) {
+      const updatedTransaction = await this.cancelTransaction(user, transactionId);
+      return updatedTransaction as any;
+    }
+
+    const transactionsToCancel = await this.prismaService.transaction.findMany({
+      where: {
+        recurringTransactionId: transaction.recurringTransactionId,
+        userId: user.id,
+        status: TransactionStatus.PLANNED,
+        ...(scope === UpdateRecurringScope.THIS_AND_FUTURE ? { date: { gte: transaction.date } } : {}),
+      },
+      select: { id: true, cardBillingId: true },
+    });
+
+    if (transactionsToCancel.length === 0) {
+      return transaction as any;
+    }
+
+    const ids = transactionsToCancel.map(t => t.id);
+    const billingIds = new Set(transactionsToCancel.filter(t => t.cardBillingId).map(t => t.cardBillingId as string));
+
+    await this.prismaService.transaction.updateMany({
+      where: { id: { in: ids } },
+      data: { status: TransactionStatus.CANCELED },
+    });
+
+    await Promise.all(
+      Array.from(billingIds).map(async (billingId) => {
+        await this.cardService.updatePaymentTransaction(billingId);
+      }),
+    );
+
+    // Update endDate of the RecurringTransaction so it stops generating if applicable
+    if (scope === UpdateRecurringScope.THIS_AND_FUTURE) {
+      const yesterday = new Date(transaction.date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      await this.prismaService.recurringTransaction.update({
+        where: { id: transaction.recurringTransactionId },
+        data: { endDate: yesterday },
+      });
+    } else if (scope === UpdateRecurringScope.ALL_PLANNED) {
+      await this.prismaService.recurringTransaction.update({
+        where: { id: transaction.recurringTransactionId },
+        data: { endDate: new Date() },
+      });
+    }
+
+    return this.prismaService.transaction.findUnique({
+      where: { id: transactionId },
+    }) as any;
   }
 
   @Auth()
