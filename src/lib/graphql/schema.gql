@@ -4492,6 +4492,10 @@ input CreateCardInput {
 input BulkUpdateTransactionsInput {
   ids: [ID!]!
   category: TransactionCategory
+  status: TransactionStatus
+  sourceAccountId: ID
+  date: DateTime
+  paymentMethod: PaymentMethod
 }
 
 input BulkCancelTransactionsInput {

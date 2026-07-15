@@ -95,6 +95,10 @@ export class TransactionResolver {
         {
           id,
           category: data.category,
+          status: data.status,
+          sourceAccountId: data.sourceAccountId,
+          date: data.date,
+          paymentMethod: data.paymentMethod,
         },
         user,
       );
