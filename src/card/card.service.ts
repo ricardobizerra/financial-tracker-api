@@ -347,6 +347,7 @@ export class CardService {
       include: {
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },
@@ -441,6 +442,7 @@ export class CardService {
       include: {
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },
@@ -467,6 +469,7 @@ export class CardService {
       include: {
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },
@@ -522,6 +525,7 @@ export class CardService {
         }),
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },
@@ -554,6 +558,7 @@ export class CardService {
           }),
           transactions: {
             where: {
+              deletedAt: null,
               installments: { none: {} },
             },
           },
@@ -671,6 +676,7 @@ export class CardService {
       include: {
         // Transações normais (não-parceladas) vinculadas diretamente ao billing
         transactions: {
+          where: { deletedAt: null },
           include: {
             sourceAccount: {
               include: {
@@ -779,6 +785,7 @@ export class CardService {
       include: {
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },
@@ -1046,6 +1053,7 @@ export class CardService {
         paymentTransaction: true,
         transactions: {
           where: {
+            deletedAt: null,
             installments: { none: {} },
           },
         },

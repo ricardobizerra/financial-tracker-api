@@ -104,9 +104,11 @@ export class AccountService {
         // Garantir que date e status estejam disponíveis para o calculateBalance
         ...(queriedFields.includes('balance') && {
           sourceTransactions: {
+            where: { deletedAt: null },
             select: { amount: true, date: true, status: true },
           },
           destinyTransactions: {
+            where: { deletedAt: null },
             select: { amount: true, date: true, status: true },
           },
           startDate: true,
@@ -130,6 +132,7 @@ export class AccountService {
                 select: {
                   status: true,
                   transactions: {
+                    where: { deletedAt: null },
                     select: { amount: true },
                   },
                 },
@@ -345,9 +348,11 @@ export class AccountService {
           // Garantir que date e status estejam disponíveis para o calculateBalance
           ...(needsBalance && {
             sourceTransactions: {
+              where: { deletedAt: null },
               select: { amount: true, date: true, status: true },
             },
             destinyTransactions: {
+              where: { deletedAt: null },
               select: { amount: true, date: true, status: true },
             },
             startDate: true,
@@ -478,8 +483,7 @@ export class AccountService {
         date: Date;
         status: TransactionStatus;
       }[],
-    ) =>
-      transactions.filter((t) => t.date <= now);
+    ) => transactions.filter((t) => t.date <= now);
 
     const validDestinyTransactions =
       filterValidTransactions(destinyTransactions);

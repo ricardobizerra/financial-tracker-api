@@ -508,7 +508,6 @@ export class TransactionService {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
         date: { lt: startDate },
-        status: { not: 'COMPLETED' },
       },
       select: {
         amount: true,
@@ -1152,9 +1151,6 @@ export class TransactionService {
         date: {
           gte: startDate,
           lte: endDate,
-        },
-        status: {
-          not: 'COMPLETED',
         },
       },
       select: {

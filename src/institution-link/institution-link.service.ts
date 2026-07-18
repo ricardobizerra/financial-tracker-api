@@ -154,9 +154,11 @@ export class InstitutionLinkService {
             select.account.select.initialBalance = true;
             select.account.select.startDate = true;
             select.account.select.sourceTransactions = {
+              where: { deletedAt: null },
               select: { amount: true, date: true, status: true },
             };
             select.account.select.destinyTransactions = {
+              where: { deletedAt: null },
               select: { amount: true, date: true, status: true },
             };
             select.account.select.institutionLinkId = true;
@@ -176,6 +178,7 @@ export class InstitutionLinkService {
                     status: true,
                     transactions: {
                       where: {
+                        deletedAt: null,
                         installments: { none: {} },
                       },
                       select: { amount: true },
@@ -217,6 +220,7 @@ export class InstitutionLinkService {
               include: {
                 transactions: {
                   where: {
+                    deletedAt: null,
                     installments: { none: {} },
                   },
                   select: { amount: true },
@@ -312,7 +316,7 @@ export class InstitutionLinkService {
               new Decimal(0),
             );
             const installmentsTotal = (billing.installments ?? [])
-                          .filter((i: any) => !i.transaction?.deletedAt)
+              .filter((i: any) => !i.transaction?.deletedAt)
               .reduce(
                 (acc: Decimal, i: any) => acc.add(i.amount),
                 new Decimal(0),
