@@ -1053,9 +1053,6 @@ export class RecurringTransactionService {
       where: {
         userId,
         recurringTransactionId: null,
-        status: {
-          not: TransactionStatus.CANCELED,
-        },
         installments: {
           none: {},
         },

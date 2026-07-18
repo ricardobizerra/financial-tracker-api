@@ -1433,9 +1433,7 @@ export class TransactionService {
 
     // Definir filtro de status (aplica filtro explícito se fornecido, middleware exclui deletedAt automaticamente)
     const statusFilter =
-      statuses && statuses.length > 0
-        ? { in: statuses }
-        : undefined;
+      statuses && statuses.length > 0 ? { in: statuses } : undefined;
 
     // Buscar transações com filtros aplicados
     const transactions = await this.prismaService.transaction.findMany({
@@ -1501,7 +1499,7 @@ export class TransactionService {
     // baseado na perspectiva da conta
     // Também computar cancelInfo para cada transação
     const transformedTransactions = transactions.map((tx) => {
-      const cancelInfo = this.computeCancelInfo(
+      const deleteInfo = this.computeDeleteInfo(
         {
           id: tx.id,
           status: tx.status,
@@ -1526,9 +1524,9 @@ export class TransactionService {
         ...tx,
         type: transformedType,
         totalInstallments: tx.installments.length,
-        canCancel: cancelInfo.canCancel,
-        cancelReason: cancelInfo.reason,
-        cancelWarningMessage: cancelInfo.warningMessage,
+        canDelete: deleteInfo.canDelete,
+        deleteReason: deleteInfo.reason,
+        deleteWarningMessage: deleteInfo.warningMessage,
       };
     });
 

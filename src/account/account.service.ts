@@ -130,7 +130,6 @@ export class AccountService {
                 select: {
                   status: true,
                   transactions: {
-                    where: { status: { not: TransactionStatus.CANCELED } },
                     select: { amount: true },
                   },
                 },
@@ -480,9 +479,7 @@ export class AccountService {
         status: TransactionStatus;
       }[],
     ) =>
-      transactions.filter(
-        (t) => t.status !== TransactionStatus.CANCELED && t.date <= now,
-      );
+      transactions.filter((t) => t.date <= now);
 
     const validDestinyTransactions =
       filterValidTransactions(destinyTransactions);

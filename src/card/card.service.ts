@@ -347,7 +347,6 @@ export class CardService {
       include: {
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         },
@@ -379,7 +378,7 @@ export class CardService {
     // Somar installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal =
       billing?.installments
-        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        ?.filter((i) => !i.transaction?.deletedAt)
         .reduce(
           (acc, installment) => acc.add(installment.amount),
           new Decimal(0),
@@ -389,7 +388,7 @@ export class CardService {
 
     const installmentsCount =
       billing?.installments?.filter(
-        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+        (i) => !i.transaction?.deletedAt,
       ).length ?? 0;
 
     return {
@@ -409,7 +408,7 @@ export class CardService {
     const installmentsTotal =
       billing?.installments
         ?.filter(
-          (i: any) => i.transaction?.status !== TransactionStatus.CANCELED,
+          (i: any) => !i.transaction?.deletedAt,
         )
         .reduce(
           (acc: Decimal, installment: any) => acc.add(installment.amount),
@@ -418,7 +417,7 @@ export class CardService {
     const totalAmount = transactionsTotal.add(installmentsTotal);
     const installmentsCount =
       billing?.installments?.filter(
-        (i: any) => i.transaction?.status !== TransactionStatus.CANCELED,
+        (i: any) => !i.transaction?.deletedAt,
       ).length ?? 0;
 
     return {
@@ -442,7 +441,6 @@ export class CardService {
       include: {
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         },
@@ -469,7 +467,6 @@ export class CardService {
       include: {
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         },
@@ -525,7 +522,6 @@ export class CardService {
         }),
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         },
@@ -558,7 +554,6 @@ export class CardService {
           }),
           transactions: {
             where: {
-              status: { not: TransactionStatus.CANCELED },
               installments: { none: {} },
             },
           },
@@ -621,7 +616,7 @@ export class CardService {
     // Soma installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal =
       currentBilling?.installments
-        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        ?.filter((i) => !i.transaction?.deletedAt)
         .reduce(
           (acc, installment) => acc.add(installment.amount),
           new Decimal(0),
@@ -631,7 +626,7 @@ export class CardService {
 
     const installmentsCount =
       currentBilling?.installments?.filter(
-        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+        (i) => !i.transaction?.deletedAt,
       ).length ?? 0;
 
     return {
@@ -695,9 +690,6 @@ export class CardService {
             cardBilling: true,
           },
           where: {
-            status: {
-              not: TransactionStatus.CANCELED,
-            },
             installments: {
               none: {},
             },
@@ -731,9 +723,6 @@ export class CardService {
           },
           where: {
             transaction: {
-              status: {
-                not: TransactionStatus.CANCELED,
-              },
               ...searchCondition,
             },
           },
@@ -790,7 +779,6 @@ export class CardService {
       include: {
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         },
@@ -824,7 +812,7 @@ export class CardService {
 
     // Calcular total de installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal = billing.installments
-      .filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+      .filter((i) => !i.transaction?.deletedAt)
       .reduce(
         (acc, installment) => acc.add(installment.amount),
         new Decimal(0),
@@ -906,7 +894,6 @@ export class CardService {
         const activeTransactionsCount = await this.prisma.transaction.count({
           where: {
             cardBillingId: billing.id,
-            status: { not: TransactionStatus.CANCELED },
             installments: { none: {} },
           },
         });

@@ -175,7 +175,9 @@ export class InstitutionLinkService {
                   select: {
                     status: true,
                     transactions: {
-                      where: { status: { not: 'CANCELED' } },
+                      where: {
+                        installments: { none: {} },
+                      },
                       select: { amount: true },
                     },
                   },
@@ -215,7 +217,6 @@ export class InstitutionLinkService {
               include: {
                 transactions: {
                   where: {
-                    status: { not: 'CANCELED' },
                     installments: { none: {} },
                   },
                   select: { amount: true },
@@ -311,7 +312,7 @@ export class InstitutionLinkService {
               new Decimal(0),
             );
             const installmentsTotal = (billing.installments ?? [])
-              .filter((i: any) => i.transaction?.status !== 'CANCELED')
+                          .filter((i: any) => !i.transaction?.deletedAt)
               .reduce(
                 (acc: Decimal, i: any) => acc.add(i.amount),
                 new Decimal(0),
@@ -327,7 +328,7 @@ export class InstitutionLinkService {
               transactionsCount:
                 (billing.transactions?.length ?? 0) +
                 (billing.installments?.filter(
-                  (i: any) => i.transaction?.status !== 'CANCELED',
+                  (i: any) => !i.transaction?.deletedAt,
                 ).length ?? 0),
             };
           };
