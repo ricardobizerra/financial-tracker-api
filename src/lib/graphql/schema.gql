@@ -1778,6 +1778,7 @@ type Mutation {
   createAccount(data: CreateAccountInput!): AccountModel!
   createCard(data: CreateCardInput!): Card!
   closeBilling(billingId: String!, closingDate: DateTime): CardBilling!
+  changeBillingDates(billingId: String!, closingDate: DateTime, paymentDate: DateTime): CardBilling!
   updateAccountCard(cardId: ID!, billingCycleDay: Float, billingPaymentDay: Float, defaultLimit: Float): Card!
   bulkUpdateTransactions(data: BulkUpdateTransactionsInput!): [TransactionModel!]!
   bulkDeleteTransactions(data: BulkDeleteTransactionsInput!): [TransactionModel!]!

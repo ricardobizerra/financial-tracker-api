@@ -205,6 +205,22 @@ export class CardResolver {
   }
 
   @Auth()
+  @Mutation(() => CardBilling, { name: 'changeBillingDates' })
+  async changeBillingDates(
+    @CurrentUser() user: User,
+    @Args('billingId') billingId: string,
+    @Args('closingDate', { nullable: true }) closingDate?: Date,
+    @Args('paymentDate', { nullable: true }) paymentDate?: Date,
+  ): Promise<CardBilling> {
+    return this.cardService.changeBillingDates({
+      billingId,
+      userId: user.id,
+      closingDate,
+      paymentDate,
+    });
+  }
+
+  @Auth()
   @Mutation(() => Card)
   async updateAccountCard(
     @CurrentUser() user: User,

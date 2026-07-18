@@ -1,13 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import {
-  CardType,
-  Transaction,
-  TransactionCreateInput,
-} from '@/lib/graphql/prisma-client';
+import { CardType, TransactionCreateInput } from '@/lib/graphql/prisma-client';
 import {
   Prisma,
+  Transaction,
   TransactionType,
   TransactionStatus,
   CardBillingStatus,
@@ -134,7 +131,7 @@ export class TransactionService {
       installmentFields.includes(f as string),
     );
 
-    const baseSelect = selectObject<Transaction, TransactionModel>(
+    const baseSelect: any = selectObject<Transaction, TransactionModel>(
       queriedFields.filter(
         (field) =>
           ![
@@ -153,7 +150,7 @@ export class TransactionService {
         installmentNumber: ['installments'],
         totalInstallments: ['installments'],
         installmentId: ['installments'],
-      },
+      } as any,
     );
 
     const transactions = await this.prismaService.transaction.findMany({
@@ -248,8 +245,8 @@ export class TransactionService {
 
       if (needsDeleteInfo) {
         const deleteInfo = this.computeDeleteInfo(
-          transaction,
-          transaction.installments,
+          transaction as any,
+          transaction.installments as any,
         );
         canDelete = deleteInfo.canDelete;
         deleteReason = deleteInfo.reason;
@@ -268,7 +265,7 @@ export class TransactionService {
       };
     });
 
-    const edges = processedTransactions.map((transaction) => ({
+    const edges = processedTransactions.map((transaction: any) => ({
       cursor: transaction.id,
       node: transaction,
     }));

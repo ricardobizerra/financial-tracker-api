@@ -441,7 +441,7 @@ export class TransactionResolver {
       }),
     );
 
-    return transaction;
+    return transaction as any;
   }
 
   @Auth()
@@ -750,7 +750,7 @@ export class TransactionResolver {
       // Marcar a transação pai como excluída
       await this.transactionService.update(id, {
         deletedAt: new Date(),
-      });
+      } as any);
 
       // Recalcular saldo de todas as faturas afetadas
       await Promise.all(
@@ -768,7 +768,7 @@ export class TransactionResolver {
     // Transação única (não-parcela)
     const updatedTransaction = await this.transactionService.update(id, {
       deletedAt: new Date(),
-    });
+    } as any);
 
     // Recalcular saldo da fatura se a transação estava vinculada a uma
     if (transaction.cardBillingId) {
@@ -777,7 +777,7 @@ export class TransactionResolver {
       );
     }
 
-    return updatedTransaction;
+    return updatedTransaction as any;
   }
 
   @Auth()
@@ -809,7 +809,7 @@ export class TransactionResolver {
       date: data.newDate,
     });
 
-    return updatedTransaction;
+    return updatedTransaction as any;
   }
 
   @Auth()
@@ -859,7 +859,7 @@ export class TransactionResolver {
 
     await this.prismaService.transaction.updateMany({
       where: { id: { in: ids } },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: new Date() } as any,
     });
 
     await Promise.all(
@@ -927,7 +927,7 @@ export class TransactionResolver {
           }),
         },
       );
-      return updatedTransaction;
+      return updatedTransaction as any;
     }
 
     // Construir dados de atualização
@@ -989,7 +989,7 @@ export class TransactionResolver {
       where: { id: data.transactionId },
     });
 
-    return updatedTransaction as TransactionModel;
+    return updatedTransaction as any;
   }
 
   @Auth()

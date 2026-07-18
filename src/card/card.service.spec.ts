@@ -566,7 +566,7 @@ describe('CardService', () => {
       });
 
       expect(mockPrisma.cardBilling.create).not.toHaveBeenCalled();
-      expect(mockPrisma.cardBillingHistory.create).not.toHaveBeenCalled();
+      expect(mockPrisma.cardBillingHistory.create).toHaveBeenCalledTimes(1);
     });
 
     it('should resync parent transaction billing when installments are moved', async () => {
@@ -759,6 +759,7 @@ describe('CardService', () => {
   describe('checkBillingStatuses (cron)', () => {
     it('should mark CLOSED/OVERDUE billings with COMPLETED payment as PAID', async () => {
       mockPrisma.cardBilling.findMany
+        .mockResolvedValueOnce([]) // expiredPendingBillings
         .mockResolvedValueOnce([
           // billingsToPay
           {
@@ -774,11 +775,12 @@ describe('CardService', () => {
 
       await service.checkBillingStatuses();
 
-      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(3);
     });
 
     it('should mark CLOSED billings with past paymentDate as OVERDUE', async () => {
       mockPrisma.cardBilling.findMany
+        .mockResolvedValueOnce([]) // expiredPendingBillings
         .mockResolvedValueOnce([]) // billingsToPay
         .mockResolvedValueOnce([
           // overdueBillings
@@ -791,7 +793,46 @@ describe('CardService', () => {
 
       await service.checkBillingStatuses();
 
-      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('changeBillingDates', () => {
+    it('should update dates and shift transactions', async () => {
+      const billing = {
+        id: 'billing-1',
+        cardId: 'card-1',
+        periodStart: new Date(2026, 3, 9),
+        periodEnd: new Date(2026, 4, 8),
+        paymentDate: new Date(2026, 4, 20),
+        status: CardBillingStatus.PENDING,
+        card: {
+          defaultLimit: new Decimal(5000),
+          billingCycleDay: 8,
+          billingPaymentDay: 20,
+        },
+      };
+
+      mockPrisma.cardBilling.findUnique.mockResolvedValue(billing);
+      mockPrisma.cardBilling.findFirst.mockResolvedValue(null);
+      mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
+      mockPrisma.cardBilling.update.mockResolvedValue({
+        ...billing,
+        periodEnd: new Date(2026, 4, 10),
+      });
+
+      const result = await service.changeBillingDates({
+        billingId: 'billing-1',
+        userId: 'user-1',
+        closingDate: new Date(2026, 4, 10),
+        paymentDate: new Date(2026, 4, 22),
+      });
+
+      expect(mockPrisma.cardBilling.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'billing-1' },
+        }),
+      );
     });
   });
 });

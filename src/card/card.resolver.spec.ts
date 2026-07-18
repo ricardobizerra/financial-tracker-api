@@ -18,6 +18,7 @@ describe('CardResolver', () => {
       create: vi.fn(),
       createBilling: vi.fn(),
       closeBilling: vi.fn(),
+      changeBillingDates: vi.fn(),
       updateCard: vi.fn(),
       $transaction: vi.fn((fn: any) => fn({})),
     };
