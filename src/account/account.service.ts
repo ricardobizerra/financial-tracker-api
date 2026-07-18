@@ -135,6 +135,14 @@ export class AccountService {
                     where: { deletedAt: null },
                     select: { amount: true },
                   },
+                  installments: {
+                    where: {
+                      transaction: {
+                        deletedAt: null,
+                      },
+                    },
+                    select: { amount: true },
+                  },
                 },
                 orderBy: { periodStart: 'desc' },
                 take: 1,
@@ -358,6 +366,50 @@ export class AccountService {
             startDate: true,
             institutionLinkId: true,
           }),
+          // Garantir dados para currentBillingAmount
+          ...(queriedFields?.includes('currentBillingAmount') && {
+            type: true,
+            accountCard: {
+              select: {
+                billings: {
+                  where: {
+                    status: {
+                      in: [
+                        CardBillingStatus.PENDING,
+                        CardBillingStatus.CLOSED,
+                        CardBillingStatus.OVERDUE,
+                      ],
+                    },
+                  },
+                  select: {
+                    status: true,
+                    transactions: {
+                      where: { deletedAt: null },
+                      select: { amount: true },
+                    },
+                    installments: {
+                      where: {
+                        transaction: {
+                          deletedAt: null,
+                        },
+                      },
+                      select: { amount: true },
+                    },
+                  },
+                  orderBy: { periodStart: 'desc' },
+                  take: 1,
+                },
+              },
+            },
+          }),
+          // Garantir dados para totalInvested
+          ...(queriedFields?.includes('totalInvested') && {
+            type: true,
+            investments: {
+              where: { status: InvestmentStatus.OPEN },
+              select: { amount: true },
+            },
+          }),
         },
       }),
     });
@@ -524,6 +576,7 @@ export class AccountService {
       billings?: Array<{
         status: CardBillingStatus;
         transactions?: Array<{ amount: Decimal }>;
+        installments?: Array<{ amount: Decimal }>;
       }>;
     };
   }): Decimal | null {
@@ -532,12 +585,19 @@ export class AccountService {
       return new Decimal(0);
     }
 
-    return (
+    const transactionsTotal =
       currentBilling.transactions?.reduce(
         (total, t) => total.plus(t.amount),
         new Decimal(0),
-      ) || new Decimal(0)
-    );
+      ) || new Decimal(0);
+
+    const installmentsTotal =
+      currentBilling.installments?.reduce(
+        (total, i) => total.plus(i.amount),
+        new Decimal(0),
+      ) || new Decimal(0);
+
+    return transactionsTotal.add(installmentsTotal);
   }
 
   calculateTotalInvested(account: {

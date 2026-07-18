@@ -729,6 +729,7 @@ export class CardService {
           },
           where: {
             transaction: {
+              deletedAt: null,
               ...searchCondition,
             },
           },
@@ -754,7 +755,7 @@ export class CardService {
 
     // Adicionar transações parceladas via installments
     for (const installment of billing.installments) {
-      if (!installment.transaction) continue;
+      if (!installment.transaction || installment.transaction.deletedAt) continue;
 
       const totalInstallments =
         installment.transaction.installments?.length ?? 0;

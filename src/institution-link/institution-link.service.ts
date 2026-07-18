@@ -183,6 +183,14 @@ export class InstitutionLinkService {
                       },
                       select: { amount: true },
                     },
+                    installments: {
+                      where: {
+                        transaction: {
+                          deletedAt: null,
+                        },
+                      },
+                      select: { amount: true },
+                    },
                   },
                   orderBy: { periodStart: 'desc' },
                   take: 1,
@@ -226,9 +234,14 @@ export class InstitutionLinkService {
                   select: { amount: true },
                 },
                 installments: {
+                  where: {
+                    transaction: {
+                      deletedAt: null,
+                    },
+                  },
                   include: {
                     transaction: {
-                      select: { status: true },
+                      select: { status: true, deletedAt: true },
                     },
                   },
                 },

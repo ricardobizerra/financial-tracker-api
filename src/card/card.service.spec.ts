@@ -457,6 +457,7 @@ describe('CardService', () => {
       const billing = {
         id: 'billing-1',
         cardId: 'card-1',
+        periodEnd: new Date(2026, 0, 15),
         card: {
           billingCycleDay: 15,
           billingPaymentDay: 25,
@@ -572,6 +573,7 @@ describe('CardService', () => {
       const billing = {
         id: 'billing-1',
         cardId: 'card-1',
+        periodEnd: new Date(2026, 0, 15),
         card: {
           billingCycleDay: 15,
           billingPaymentDay: 25,

@@ -450,7 +450,7 @@ export class TransactionResolver {
     @Args('data') data: UpdateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
-    // Buscar transação existente com installments
+    // Buscar transação existente com installments e sourceCard
     const existingTransaction = await this.prismaService.transaction.findUnique(
       {
         where: { id: data.id },
@@ -459,6 +459,7 @@ export class TransactionResolver {
           billingPayment: {
             select: { id: true, status: true },
           },
+          sourceCard: true,
           installments: {
             include: {
               cardBilling: { select: { id: true, status: true } },
@@ -478,7 +479,103 @@ export class TransactionResolver {
       throw new Error('Transaction does not belong to user');
     }
 
-    const hasInstallments = existingTransaction.installments.length > 0;
+    let hasInstallments = existingTransaction.installments.length > 0;
+    const billingIdsToUpdate = new Set<string>();
+
+    // Determinar datas e métodos de pagamento
+    const oldDate = new Date(existingTransaction.date);
+    const newDateObj = data.date ? new Date(data.date) : oldDate;
+    const dateChanged = data.date !== undefined && oldDate.getTime() !== newDateObj.getTime();
+
+    const oldMethod = existingTransaction.paymentMethod;
+    const newMethod = data.paymentMethod !== undefined ? data.paymentMethod : oldMethod;
+    const methodChanged = data.paymentMethod !== undefined && oldMethod !== newMethod;
+
+    let cardBillingIdToSet: string | null | undefined = undefined;
+
+    // Se o método de pagamento mudou de CREDIT_CARD para outro
+    if (methodChanged && oldMethod === PaymentMethod.CREDIT_CARD && newMethod !== PaymentMethod.CREDIT_CARD) {
+      cardBillingIdToSet = null;
+      if (existingTransaction.cardBillingId) {
+        billingIdsToUpdate.add(existingTransaction.cardBillingId);
+      }
+      if (hasInstallments) {
+        existingTransaction.installments.forEach(i => {
+          if (i.cardBillingId) {
+            billingIdsToUpdate.add(i.cardBillingId);
+          }
+        });
+        await this.prismaService.transactionInstallment.deleteMany({
+          where: { transactionId: existingTransaction.id },
+        });
+        existingTransaction.installments = [];
+        hasInstallments = false;
+      }
+    }
+
+    // Se o método mudou para CREDIT_CARD, ou se já era CREDIT_CARD e a data mudou
+    if (newMethod === PaymentMethod.CREDIT_CARD) {
+      const card = existingTransaction.sourceCard;
+      if (card) {
+        if (hasInstallments) {
+          if (dateChanged || methodChanged) {
+            // Reposicionar faturas de todas as parcelas
+            for (const [idx, installment] of existingTransaction.installments.entries()) {
+              const instDate = new Date(newDateObj);
+              instDate.setMonth(instDate.getMonth() + idx);
+              const billing = await this.cardService.findOrCreateBillingForDate({
+                cardId: card.id,
+                billingCycleDay: card.billingCycleDay,
+                billingPaymentDay: card.billingPaymentDay,
+                limit: card.defaultLimit,
+                date: instDate,
+              });
+
+              if (installment.cardBillingId !== billing.id) {
+                await this.prismaService.transactionInstallment.update({
+                  where: { id: installment.id },
+                  data: { cardBillingId: billing.id },
+                });
+                if (installment.cardBillingId) {
+                  billingIdsToUpdate.add(installment.cardBillingId);
+                }
+                billingIdsToUpdate.add(billing.id);
+              }
+            }
+
+            // Sync parent transaction to first installment's billing
+            const firstBilling = await this.cardService.findOrCreateBillingForDate({
+              cardId: card.id,
+              billingCycleDay: card.billingCycleDay,
+              billingPaymentDay: card.billingPaymentDay,
+              limit: card.defaultLimit,
+              date: newDateObj,
+            });
+            cardBillingIdToSet = firstBilling.id;
+            billingIdsToUpdate.add(firstBilling.id);
+            if (existingTransaction.cardBillingId) {
+              billingIdsToUpdate.add(existingTransaction.cardBillingId);
+            }
+          }
+        } else {
+          // Transação simples (sem parcelas)
+          if (dateChanged || methodChanged) {
+            const billing = await this.cardService.findOrCreateBillingForDate({
+              cardId: card.id,
+              billingCycleDay: card.billingCycleDay,
+              billingPaymentDay: card.billingPaymentDay,
+              limit: card.defaultLimit,
+              date: newDateObj,
+            });
+            cardBillingIdToSet = billing.id;
+            billingIdsToUpdate.add(billing.id);
+            if (existingTransaction.cardBillingId) {
+              billingIdsToUpdate.add(existingTransaction.cardBillingId);
+            }
+          }
+        }
+      }
+    }
 
     // Calcular novo status baseado na data (transição automática)
     let newStatus: TransactionStatus | undefined = data.status as
@@ -544,6 +641,9 @@ export class TransactionResolver {
       ...(newStatus !== undefined && {
         status: newStatus,
       }),
+      ...(cardBillingIdToSet !== undefined && {
+        cardBillingId: cardBillingIdToSet,
+      }),
     });
 
     // Se esta transação é o pagamento de uma fatura e acabou de virar COMPLETED,
@@ -562,9 +662,6 @@ export class TransactionResolver {
         existingTransaction.billingPayment.id,
       );
     }
-
-    // Coletar billings para recalcular
-    const billingIdsToUpdate = new Set<string>();
 
     // Se o valor foi alterado e há parcelas, recalcular os valores das parcelas
     if (

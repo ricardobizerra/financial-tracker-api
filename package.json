@@ -21,11 +21,11 @@
     "generate:dev": "prisma generate && yarn format:prisma",
     "generate:prod": "prisma generate --generator client",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "cross-env NODE_ENV=test vitest run",
-    "test:watch": "cross-env NODE_ENV=test vitest",
-    "test:cov": "cross-env NODE_ENV=test vitest run --coverage",
-    "test:debug": "cross-env NODE_ENV=test vitest --inspect-brk --inspect --logHeapUsage --threads=false",
-    "test:e2e": "cross-env NODE_ENV=test vitest run --config ./vitest.config.e2e.ts"
+    "test": "cross-env TZ=America/Sao_Paulo NODE_ENV=test vitest run",
+    "test:watch": "cross-env TZ=America/Sao_Paulo NODE_ENV=test vitest",
+    "test:cov": "cross-env TZ=America/Sao_Paulo NODE_ENV=test vitest run --coverage",
+    "test:debug": "cross-env TZ=America/Sao_Paulo NODE_ENV=test vitest --inspect-brk --inspect --logHeapUsage --threads=false",
+    "test:e2e": "cross-env TZ=America/Sao_Paulo NODE_ENV=test vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.11.2",
