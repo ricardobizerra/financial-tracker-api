@@ -27,6 +27,7 @@ describe('CardService', () => {
         findMany: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
+        updateMany: vi.fn(),
         delete: vi.fn(),
       },
       cardBillingHistory: {
@@ -40,10 +41,12 @@ describe('CardService', () => {
         updateMany: vi.fn(),
         delete: vi.fn(),
         count: vi.fn(),
+        aggregate: vi.fn(),
       },
       transactionInstallment: {
         updateMany: vi.fn(),
         findFirst: vi.fn(),
+        aggregate: vi.fn(),
       },
       $transaction: vi.fn((fn: any) => fn(mockPrisma)),
     };
@@ -806,6 +809,8 @@ describe('CardService', () => {
         periodEnd: new Date(2026, 4, 8),
         paymentDate: new Date(2026, 4, 20),
         status: CardBillingStatus.PENDING,
+        transactions: [],
+        installments: [],
         card: {
           defaultLimit: new Decimal(5000),
           billingCycleDay: 8,
@@ -814,7 +819,9 @@ describe('CardService', () => {
       };
 
       mockPrisma.cardBilling.findUnique.mockResolvedValue(billing);
-      mockPrisma.cardBilling.findFirst.mockResolvedValue(null);
+      mockPrisma.cardBilling.findFirst
+        .mockResolvedValueOnce(billing)
+        .mockResolvedValueOnce(null);
       mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
       mockPrisma.cardBilling.update.mockResolvedValue({
         ...billing,
@@ -833,6 +840,115 @@ describe('CardService', () => {
           where: { id: 'billing-1' },
         }),
       );
+    });
+  });
+
+  describe('Limit Calculations', () => {
+    const card = {
+      id: 'card-1',
+      name: 'Test Card',
+      defaultLimit: new Decimal(1000),
+    };
+
+    it('Scenario 1: should calculate standard installment scenario', async () => {
+      // Simple transactions = 30 + 40 = 70
+      mockPrisma.transaction.aggregate.mockResolvedValue({
+        _sum: { amount: new Decimal(70) },
+      });
+      // Installment transactions = 250
+      mockPrisma.transactionInstallment.aggregate.mockResolvedValue({
+        _sum: { amount: new Decimal(250) },
+      });
+
+      const unpaidBalance = await service.calculateUnpaidBalance(card.id);
+      const availableLimit = await service.calculateAvailableLimit(card as any);
+      const usagePercentage = await service.calculateUsagePercentage(card as any);
+
+      expect(unpaidBalance.toNumber()).toBe(320);
+      expect(availableLimit.toNumber()).toBe(680);
+      expect(usagePercentage).toBe(32);
+    });
+
+    it('Scenario 2: should recover limit after paying statement', async () => {
+      // Simple transactions = 0 (since they were in the paid statement)
+      mockPrisma.transaction.aggregate.mockResolvedValue({
+        _sum: { amount: new Decimal(0) },
+      });
+      // Installment transactions = 200 (remaining 4 installments)
+      mockPrisma.transactionInstallment.aggregate.mockResolvedValue({
+        _sum: { amount: new Decimal(200) },
+      });
+
+      const unpaidBalance = await service.calculateUnpaidBalance(card.id);
+      const availableLimit = await service.calculateAvailableLimit(card as any);
+      const usagePercentage = await service.calculateUsagePercentage(card as any);
+
+      expect(unpaidBalance.toNumber()).toBe(200);
+      expect(availableLimit.toNumber()).toBe(800);
+      expect(usagePercentage).toBe(20);
+    });
+
+    it('Scenario 3 & 4: should verify queries apply filters correctly (tested via mock calls)', async () => {
+      mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      mockPrisma.transactionInstallment.aggregate.mockResolvedValue({ _sum: { amount: null } });
+
+      await service.calculateUnpaidBalance(card.id);
+
+      // Verifies simple transactions filters out PLANNED status, non-expenses, and only gets dates <= now
+      expect(mockPrisma.transaction.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            sourceCardId: card.id,
+            status: { in: [TransactionStatus.COMPLETED, TransactionStatus.OVERDUE] },
+            type: TransactionType.EXPENSE,
+            date: expect.objectContaining({ lte: expect.any(Date) }),
+          }),
+        }),
+      );
+
+      // Verifies installments checks parent transaction status
+      expect(mockPrisma.transactionInstallment.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            transaction: expect.objectContaining({
+              sourceCardId: card.id,
+              status: { in: [TransactionStatus.COMPLETED, TransactionStatus.OVERDUE] },
+              type: TransactionType.EXPENSE,
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('Scenario 5: should return 0 usage percentage when card limit is 0', async () => {
+      const zeroLimitCard = { ...card, defaultLimit: new Decimal(0) };
+      mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: new Decimal(50) } });
+      mockPrisma.transactionInstallment.aggregate.mockResolvedValue({ _sum: { amount: new Decimal(50) } });
+
+      const usagePercentage = await service.calculateUsagePercentage(zeroLimitCard as any);
+      expect(usagePercentage).toBe(0);
+    });
+
+    it('Scenario 6: should sync defaultLimit updates to all PENDING statements', async () => {
+      mockPrisma.card.findFirst.mockResolvedValue(card);
+      mockPrisma.card.update.mockResolvedValue({ ...card, defaultLimit: new Decimal(2000) });
+      mockPrisma.cardBilling.updateMany.mockResolvedValue({ count: 2 });
+
+      await service.updateCard({
+        cardId: card.id,
+        userId: 'user-1',
+        defaultLimit: new Decimal(2000),
+      });
+
+      expect(mockPrisma.cardBilling.updateMany).toHaveBeenCalledWith({
+        where: {
+          cardId: card.id,
+          status: CardBillingStatus.PENDING,
+        },
+        data: {
+          limit: new Decimal(2000),
+        },
+      });
     });
   });
 });

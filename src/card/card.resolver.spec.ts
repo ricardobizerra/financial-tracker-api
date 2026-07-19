@@ -20,6 +20,9 @@ describe('CardResolver', () => {
       closeBilling: vi.fn(),
       changeBillingDates: vi.fn(),
       updateCard: vi.fn(),
+      calculateUnpaidBalance: vi.fn(),
+      calculateAvailableLimit: vi.fn(),
+      calculateUsagePercentage: vi.fn(),
       $transaction: vi.fn((fn: any) => fn({})),
     };
 
@@ -166,6 +169,31 @@ describe('CardResolver', () => {
           billingCycleDay: 20,
         }),
       );
+    });
+  });
+
+  describe('ResolveFields', () => {
+    const card = { id: 'card-1', defaultLimit: new Decimal(1000) };
+
+    it('should resolve unpaidBalance', async () => {
+      cardService.calculateUnpaidBalance.mockResolvedValue(new Decimal(320));
+      const result = await resolver.unpaidBalance(card as any);
+      expect(result.toNumber()).toBe(320);
+      expect(cardService.calculateUnpaidBalance).toHaveBeenCalledWith(card.id);
+    });
+
+    it('should resolve availableLimit', async () => {
+      cardService.calculateAvailableLimit.mockResolvedValue(new Decimal(680));
+      const result = await resolver.availableLimit(card as any);
+      expect(result.toNumber()).toBe(680);
+      expect(cardService.calculateAvailableLimit).toHaveBeenCalledWith(card);
+    });
+
+    it('should resolve usagePercentage', async () => {
+      cardService.calculateUsagePercentage.mockResolvedValue(32);
+      const result = await resolver.usagePercentage(card as any);
+      expect(result).toBe(32);
+      expect(cardService.calculateUsagePercentage).toHaveBeenCalledWith(card);
     });
   });
 });

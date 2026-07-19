@@ -8,6 +8,7 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
+import { GraphQLDecimal } from 'prisma-graphql-type-decimal';
 import { CardService } from './card.service';
 import { Card, CardBilling, CardType, User } from '@/lib/graphql/prisma-client';
 import { Auth } from '@/auth/auth.decorator';
@@ -85,6 +86,21 @@ export class CardResolver {
       return preloaded;
     }
     return this.cardService.findPayableBillings(card.id);
+  }
+
+  @ResolveField(() => GraphQLDecimal)
+  async unpaidBalance(@Parent() card: Card): Promise<Decimal> {
+    return this.cardService.calculateUnpaidBalance(card.id);
+  }
+
+  @ResolveField(() => GraphQLDecimal)
+  async availableLimit(@Parent() card: Card): Promise<Decimal> {
+    return this.cardService.calculateAvailableLimit(card);
+  }
+
+  @ResolveField(() => Number)
+  async usagePercentage(@Parent() card: Card): Promise<number> {
+    return this.cardService.calculateUsagePercentage(card);
   }
 
   @Auth()
@@ -241,5 +257,15 @@ export class CardResolver {
         defaultLimit: new Decimal(defaultLimit),
       }),
     });
+  }
+}
+
+@Resolver(() => CardBilling)
+export class CardBillingResolver {
+  constructor(private readonly cardService: CardService) {}
+
+  @ResolveField(() => GraphQLDecimal)
+  async totalAmount(@Parent() billing: CardBilling): Promise<Decimal> {
+    return this.cardService.calculateBillingTotalAmount(billing.id);
   }
 }

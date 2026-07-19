@@ -203,6 +203,9 @@ type Card {
   _count: CardCount!
   currentBilling: CardBillingModel
   payableBillings: [CardBillingModel!]
+  unpaidBalance: Decimal!
+  availableLimit: Decimal!
+  usagePercentage: Float!
 }
 
 type CardBillingAvgAggregate {
@@ -284,6 +287,7 @@ type CardBilling {
   installments: [TransactionInstallment!]
   statusHistory: [CardBillingHistory!]
   _count: CardBillingCount!
+  totalAmount: Decimal!
 }
 
 type CardBillingHistoryCountAggregate {

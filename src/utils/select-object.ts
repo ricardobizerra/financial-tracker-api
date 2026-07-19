@@ -52,7 +52,23 @@ export function selectObject<
 >(
   ...args: SelectObjectParams<TDatabase, TModel>
 ): SelectObjectReturn<TDatabase> {
-  const [queriedFields, hashDifferentFields] = args;
+  const [rawQueriedFields, hashDifferentFields] = args;
+
+  const IGNORED_DYNAMIC_FIELDS = new Set([
+    'availableLimit',
+    'unpaidBalance',
+    'usagePercentage',
+    'currentBilling',
+    'payableBillings',
+    'currentBillingAmount',
+    'totalInvested',
+    'totalAmount',
+  ]);
+
+  const queriedFields = rawQueriedFields.filter((field) => {
+    const parts = (field as string).split('.');
+    return !parts.some((part) => IGNORED_DYNAMIC_FIELDS.has(part));
+  });
 
   const processFields = (fields: (keyof TDatabase)[]) =>
     selectObject<TDatabase, TDatabase>(fields);
