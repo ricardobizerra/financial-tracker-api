@@ -1,7 +1,7 @@
 import { TestingModule } from '@nestjs/testing';
 import { UserResolver } from '@/user/user.resolver';
 import { UserService } from '@/user/user.service';
-import { UserModule } from '@/user/user.module';
+import { AuthService } from '@/auth/auth.service';
 import { createTestModel } from '@/utils/create-test-model';
 
 describe('UserResolver', () => {
@@ -9,8 +9,11 @@ describe('UserResolver', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await createTestModel({
-      imports: [UserModule],
-      providers: [UserResolver, UserService],
+      providers: [
+        UserResolver,
+        { provide: UserService, useValue: {} },
+        { provide: AuthService, useValue: {} },
+      ],
     });
 
     resolver = module.get<UserResolver>(UserResolver);

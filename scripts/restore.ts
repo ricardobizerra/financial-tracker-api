@@ -7,32 +7,33 @@ const prisma = new PrismaClient();
 
 // Maps model names to their FK fields that need to be converted to relations
 const RELATION_FIELDS: Record<string, Record<string, string>> = {
-  investment: {
+  institutionLink: {
+    institutionId: 'institution',
     userId: 'user',
-    accountId: 'account',
+  },
+  investment: {
+    institutionLinkId: 'institutionLink',
   },
   account: {
-    userId: 'user',
-    institutionId: 'institution',
+    institutionLinkId: 'institutionLink',
   },
-  accountCard: {
-    accountId: 'account',
+  card: {
+    institutionLinkId: 'institutionLink',
   },
   cardBilling: {
-    accountCardId: 'accountCard',
+    cardId: 'card',
     paymentTransactionId: 'paymentTransaction',
   },
   cardBillingHistory: {
     cardBillingId: 'cardBilling',
-    changedById: 'changedBy',
   },
   investmentTransaction: {
     investmentId: 'investment',
-    accountId: 'account',
   },
   transaction: {
     sourceAccountId: 'sourceAccount',
     destinyAccountId: 'destinyAccount',
+    sourceCardId: 'sourceCard',
     cardBillingId: 'cardBilling',
     recurringTransactionId: 'recurringTransaction',
     userId: 'user',
@@ -44,6 +45,7 @@ const RELATION_FIELDS: Record<string, Record<string, string>> = {
   recurringTransaction: {
     sourceAccountId: 'sourceAccount',
     destinyAccountId: 'destinyAccount',
+    sourceCardId: 'sourceCard',
     userId: 'user',
   },
 };

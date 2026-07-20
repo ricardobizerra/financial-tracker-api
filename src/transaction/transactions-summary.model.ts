@@ -43,7 +43,7 @@ export class TransactionsSummaryModel {
   @Transform(transformToDecimal)
   realizedBalance: Decimal;
 
-  // Saldo Previsto (COMPLETED + PLANNED + OVERDUE, exclui CANCELED)
+  // Saldo Previsto (COMPLETED + PLANNED + OVERDUE, exclui transações excluídas)
   @Field(() => GraphQLDecimal)
   @Type(() => Object)
   @Transform(transformToDecimal)

@@ -1,22 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import {
-  Transaction,
-  TransactionCreateInput,
-} from '@/lib/graphql/prisma-client';
+import { CardType, TransactionCreateInput } from '@/lib/graphql/prisma-client';
 import {
   Prisma,
+  Transaction,
   TransactionType,
   TransactionStatus,
   CardBillingStatus,
-  AccountType,
 } from '@prisma/client';
 import {
   TransactionModel,
   OrdenationTransactionArgs,
   TransactionFilterArgs,
-  CancelCheckInfo,
+  DeleteCheckInfo,
+  TransactionConnection,
 } from './transaction.model';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { SearchArgs } from '@/utils/args/search.args';
@@ -44,6 +42,9 @@ export class TransactionService {
           { destinyAccountId: filterArgs.accountId },
         ],
       }),
+      ...(filterArgs.cardId && {
+        sourceCardId: filterArgs.cardId,
+      }),
       ...(filterArgs.cardBillingId && {
         cardBillingId: filterArgs.cardBillingId,
       }),
@@ -61,12 +62,12 @@ export class TransactionService {
         filterArgs.types.length > 0 && {
           type: { in: filterArgs.types },
         }),
-      ...(filterArgs.statuses &&
-        filterArgs.statuses.length > 0 && {
-          status: { in: filterArgs.statuses },
-        }),
+      status:
+        filterArgs.statuses && filterArgs.statuses.length > 0
+          ? { in: filterArgs.statuses }
+          : undefined,
       ...(searchArgs.search && {
-        OR: ['name', 'description'].map((field) => ({
+        OR: ['description'].map((field) => ({
           [field]: {
             contains: searchArgs.search,
             mode: 'insensitive',
@@ -90,237 +91,228 @@ export class TransactionService {
     paginationArgs: PaginationArgs;
     searchArgs: SearchArgs;
     ordenationArgs: OrdenationTransactionArgs;
-  }) {
+  }): Promise<TransactionConnection> {
     const { after, before, first, last } = paginationArgs;
-    const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+    const { orderBy = 'date', orderDirection = OrderDirection.Desc } =
+      ordenationArgs;
 
-    const unbufferedCursor = after
-      ? Number(Buffer.from(after, 'base64').toString('utf-8'))
-      : before
-        ? Number(Buffer.from(before, 'base64').toString('utf-8'))
-        : 0;
-
+    // Build the where clause
     const whereClause = this.buildWhereClause({
       userId,
-      filterArgs,
+      filterArgs: {
+        ...filterArgs,
+        // When paginating with cursors, we ignore hard date boundaries to allow
+        // crossing into the past/future
+        ...(after || before
+          ? { startDate: undefined, endDate: undefined }
+          : {}),
+      },
       searchArgs,
     });
 
-    const transactionsLengthQuery = last
-      ? await this.prismaService.transaction.count({
-          where: whereClause,
-        })
-      : undefined;
-
-    const transactionsLength = !!transactionsLengthQuery
-      ? Number(transactionsLengthQuery)
-      : undefined;
+    // Determine pagination parameters for Prisma
+    const take = first ? first : last ? -last : undefined;
+    const cursor = after ? { id: after } : before ? { id: before } : undefined;
+    const skip = cursor ? 1 : 0;
 
     // Determinar quais campos "computados" foram solicitados
-    const cancelFields = ['canCancel', 'cancelReason', 'cancelWarningMessage'];
-    const installmentFields = ['installments', 'installmentStartDate'];
-    const needsCancelInfo = queriedFields.some((f) =>
-      cancelFields.includes(f as string),
+    const deleteFields = ['canDelete', 'deleteReason', 'deleteWarningMessage'];
+    const installmentFields = [
+      'installments',
+      'installmentStartDate',
+      'totalInstallments',
+      'installmentNumber',
+      'installmentId',
+    ];
+    const needsDeleteInfo = queriedFields.some((f) =>
+      deleteFields.includes(f as string),
     );
     const needsInstallments = queriedFields.some((f) =>
       installmentFields.includes(f as string),
     );
 
+    const baseSelect: any = selectObject<Transaction, TransactionModel>(
+      queriedFields.filter(
+        (field) =>
+          ![
+            'canDelete',
+            'deleteReason',
+            'deleteWarningMessage',
+            'installmentStartDate',
+            'installments',
+          ].includes(field as string),
+      ) as (keyof TransactionModel)[],
+      {
+        canDelete: ['status'],
+        deleteReason: ['status'],
+        deleteWarningMessage: ['status'],
+        installmentStartDate: ['recurringTransactionId'],
+        installmentNumber: ['installments'],
+        totalInstallments: ['installments'],
+        installmentId: ['installments'],
+      } as any,
+    );
+
     const transactions = await this.prismaService.transaction.findMany({
-      take: last
-        ? unbufferedCursor
-          ? last
-          : transactionsLength % last === 0
-            ? last
-            : transactionsLength % last
-        : first
-          ? first
-          : undefined,
-      skip: unbufferedCursor
-        ? last
-          ? transactionsLength - unbufferedCursor + 1
-          : unbufferedCursor
-        : last
-          ? 0
-          : undefined,
-      orderBy: orderBy
-        ? {
-            [orderBy]: last
-              ? orderDirection === OrderDirection.Asc
-                ? OrderDirection.Desc
-                : OrderDirection.Asc
-              : orderDirection === OrderDirection.Asc
-                ? OrderDirection.Asc
-                : OrderDirection.Desc,
-          }
-        : undefined,
-      // Excluir campos virtuais que são computados no service
+      take,
+      skip,
+      cursor,
+      orderBy: [
+        { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+      ],
       select: {
-        ...selectObject<Transaction, TransactionModel>(
-          queriedFields.filter(
-            (field) =>
-              ![
-                'canCancel',
-                'cancelReason',
-                'cancelWarningMessage',
-                'installmentStartDate',
-                'installments',
-              ].includes(field as string),
-          ) as (keyof TransactionModel)[],
-          {
-            canCancel: ['status'],
-            cancelReason: ['status'],
-            cancelWarningMessage: ['status'],
-            installmentStartDate: ['recurringTransactionId'],
-            installmentNumber: ['installments'],
-            totalInstallments: ['installments'],
-            installmentId: ['installments'],
-          },
-        ),
-        // Sempre incluir id e status para cancelInfo
+        ...baseSelect,
         id: true,
         status: true,
-        // Incluir relações necessárias para cancelInfo
-        ...(needsCancelInfo && {
-          cardBilling: { select: { status: true } },
-          sourceAccount: { select: { type: true } },
-        }),
-        // Incluir installments se necessário (evita N+1)
-        ...((needsInstallments || needsCancelInfo) && {
-          installments: {
-            include: {
-              cardBilling: { select: { status: true, periodStart: true } },
-            },
-            orderBy: { installmentNumber: 'asc' as const },
-          },
-        }),
+        date: true,
+        cardBilling: needsDeleteInfo
+          ? baseSelect.cardBilling &&
+            typeof baseSelect.cardBilling === 'object' &&
+            'select' in baseSelect.cardBilling
+            ? {
+                select: {
+                  ...(baseSelect.cardBilling as any).select,
+                  status: true,
+                },
+              }
+            : { select: { status: true } }
+          : baseSelect.cardBilling,
+        installments:
+          needsInstallments || needsDeleteInfo
+            ? {
+                include: {
+                  cardBilling: {
+                    select: {
+                      id: true,
+                      status: true,
+                      periodStart: true,
+                      periodEnd: true,
+                      paymentDate: true,
+                    },
+                  },
+                },
+                orderBy: { installmentNumber: 'asc' as const },
+              }
+            : (baseSelect.installments as any),
       },
       where: whereClause,
     });
-
-    if (last) {
-      transactions.reverse();
-    }
 
     if (transactions.length === 0) {
       return {
         edges: [],
         pageInfo: {
           hasNextPage: false,
-          hasPreviousPage: !!after,
+          hasPreviousPage: false,
           startCursor: null,
           endCursor: null,
         },
       };
     }
 
-    // Processar transações e anexar dados computados
-    const processedTransactions = transactions.map((transaction: any) => {
-      const txWithExtras = transaction;
-      const installments = transaction.installments || [];
+    // Process transactions and attach computed data
+    const processedTransactions = transactions.map((transaction) => {
+      let totalInstallments: TransactionModel['totalInstallments'] = null;
+      let installmentNumber: TransactionModel['installmentNumber'] = null;
+      let installmentId: TransactionModel['installmentId'] = null;
+      let installmentStartDate: TransactionModel['installmentStartDate'];
+      let canDelete: TransactionModel['canDelete'];
+      let deleteReason: TransactionModel['deleteReason'];
+      let deleteWarningMessage: TransactionModel['deleteWarningMessage'];
 
-      // Computar installmentStartDate se solicitado
       if (needsInstallments) {
+        const installments = transaction.installments || [];
+        totalInstallments = installments.length || null;
+
         const firstInstallment = installments.find(
-          (i: any) => i.installmentNumber === 1,
+          (i) => i.installmentNumber === 1,
         );
-        if (firstInstallment) {
-          txWithExtras.installmentStartDate =
-            firstInstallment.cardBilling?.periodStart ?? transaction.date;
+        installmentStartDate =
+          (firstInstallment as any)?.cardBilling?.periodStart ??
+          transaction.date;
+
+        if (filterArgs.cardBillingId) {
+          const currentInstallment = installments.find(
+            (i) => i.cardBillingId === filterArgs.cardBillingId,
+          );
+          if (currentInstallment) {
+            installmentNumber = currentInstallment.installmentNumber;
+            installmentId = currentInstallment.id;
+          }
         }
       }
 
-      // Computar cancelInfo e popular campos diretamente
-      if (needsCancelInfo) {
-        const cancelInfo = this.computeCancelInfo(
+      if (needsDeleteInfo) {
+        const deleteInfo = this.computeDeleteInfo(
           transaction as any,
-          installments,
+          transaction.installments as any,
         );
-        txWithExtras.canCancel = cancelInfo.canCancel;
-        txWithExtras.cancelReason = cancelInfo.reason;
-        txWithExtras.cancelWarningMessage = cancelInfo.warningMessage;
+        canDelete = deleteInfo.canDelete;
+        deleteReason = deleteInfo.reason;
+        deleteWarningMessage = deleteInfo.warningMessage;
       }
 
-      return txWithExtras as TransactionModel;
-    });
-
-    const edges = processedTransactions.map((transaction, index) => {
-      const cursorIndex =
-        index +
-        1 +
-        (last
-          ? unbufferedCursor
-            ? unbufferedCursor - last - 1
-            : transactionsLength - transactions.length
-          : unbufferedCursor || 0);
-
-      const bufferedCursor = Buffer.from(cursorIndex.toString())
-        .toString('base64')
-        .split('=')[0];
-
       return {
-        cursor: bufferedCursor,
-        node: transaction,
+        ...transaction,
+        installmentStartDate,
+        totalInstallments,
+        installmentNumber,
+        installmentId,
+        canDelete,
+        deleteReason,
+        deleteWarningMessage,
       };
     });
+
+    const edges = processedTransactions.map((transaction: any) => ({
+      cursor: transaction.id,
+      node: transaction,
+    }));
 
     const startCursor = edges[0].cursor;
     const endCursor = edges[edges.length - 1].cursor;
 
-    if (!first && !last) {
-      return {
-        edges,
-        pageInfo: {
-          hasNextPage: false,
-          hasPreviousPage: !!after,
-          startCursor,
-          endCursor,
-        },
-      };
-    }
+    // Detect if there's more data in either direction, ignoring date limits
+    // to allow infinite scroll to cross the initial window.
+    const whereWithoutDates = { ...whereClause, date: undefined };
 
-    const extraItem = !(
-      last && Number(Buffer.from(startCursor, 'base64').toString('utf-8')) <= 1
-    )
-      ? await this.prismaService.transaction.findFirst({
-          take: 1,
-          skip: last
-            ? Number(Buffer.from(startCursor, 'base64').toString('utf-8')) - 2
-            : first
-              ? Number(Buffer.from(endCursor, 'base64').toString('utf-8'))
-              : unbufferedCursor,
-          orderBy: orderBy
-            ? {
-                [orderBy]: last
-                  ? orderDirection === OrderDirection.Asc
-                    ? OrderDirection.Desc
-                    : OrderDirection.Asc
-                  : orderDirection === OrderDirection.Asc
-                    ? OrderDirection.Asc
-                    : OrderDirection.Desc,
-              }
-            : undefined,
-          select: {
-            id: true,
-          },
-          where: whereClause,
-        })
-      : undefined;
+    const hasNextPage = await this.prismaService.transaction
+      .findFirst({
+        take: 1,
+        skip: 1,
+        cursor: { id: endCursor },
+        orderBy: [
+          { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+          { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        ],
+        where: whereWithoutDates,
+        select: { id: true },
+      })
+      .then((item) => !!item);
 
-    const hasNextPage = last ? !!before : !!extraItem;
-
-    const hasPreviousPage = last ? !!extraItem : !!after;
-
-    const pageInfo = {
-      hasNextPage,
-      hasPreviousPage,
-      startCursor,
-      endCursor,
-    };
+    const hasPreviousPage = await this.prismaService.transaction
+      .findFirst({
+        take: -1,
+        skip: 1,
+        cursor: { id: startCursor },
+        orderBy: [
+          { [orderBy]: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+          { id: orderDirection === OrderDirection.Asc ? 'asc' : 'desc' },
+        ],
+        where: whereWithoutDates,
+        select: { id: true },
+      })
+      .then((item) => !!item);
 
     return {
       edges,
-      pageInfo,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage,
+        startCursor,
+        endCursor,
+      },
     };
   }
 
@@ -360,7 +352,7 @@ export class TransactionService {
     let realizedIncome = 0;
     let realizedExpense = 0;
 
-    // Saldo Previsto (COMPLETED + PLANNED + OVERDUE, exclui CANCELED)
+    // Saldo Previsto (COMPLETED + PLANNED + OVERDUE)
     let forecastIncome = 0;
     let forecastExpense = 0;
 
@@ -404,74 +396,30 @@ export class TransactionService {
   }
 
   /**
-   * Computa informações de cancelamento para uma transação.
-   * Usa dados pré-carregados (installments, cardBilling, sourceAccount) para evitar N+1.
+   * Computa informações de exclusão para uma transação.
+   * Usa dados pré-carregados (installments, cardBilling) para evitar N+1.
    */
-  computeCancelInfo(
+  computeDeleteInfo(
     transaction: {
       id: string;
       status: TransactionStatus;
       cardBilling?: { status: CardBillingStatus } | null;
-      sourceAccount?: { type: AccountType } | null;
     },
     installments: Array<{
       installmentNumber: number;
       cardBilling?: { status: CardBillingStatus } | null;
     }>,
-  ): CancelCheckInfo {
-    // Se já está cancelada, não pode cancelar novamente
-    if (transaction.status === TransactionStatus.CANCELED) {
-      return {
-        canCancel: false,
-        reason: 'Transação já cancelada',
-        warningMessage: null,
-      };
-    }
-
+  ): DeleteCheckInfo {
     // Se é uma transação parcelada (tem installments associados)
     if (installments.length > 0) {
-      const firstInstallment = installments.find(
-        (i) => i.installmentNumber === 1,
-      );
-
-      if (firstInstallment?.cardBilling) {
-        const closedStatuses: CardBillingStatus[] = [
-          CardBillingStatus.PAID,
-          CardBillingStatus.CLOSED,
-          CardBillingStatus.COMPLETED,
-        ];
-        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          return {
-            canCancel: false,
-            reason: 'A primeira parcela está em uma fatura fechada ou paga',
-            warningMessage: null,
-          };
-        }
-      }
-
       return {
-        canCancel: true,
+        canDelete: true,
         reason: null,
-        warningMessage: `Ao cancelar esta transação, todas as ${installments.length} parcelas serão canceladas.`,
+        warningMessage: `Ao excluir esta transação, todas as ${installments.length} parcelas serão excluídas.`,
       };
     }
 
-    if (transaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(transaction.cardBilling.status)) {
-        return {
-          canCancel: false,
-          reason: 'Transação está em uma fatura fechada ou paga',
-          warningMessage: null,
-        };
-      }
-    }
-
-    return { canCancel: true, reason: null, warningMessage: null };
+    return { canDelete: true, reason: null, warningMessage: null };
   }
 
   async find(
@@ -497,34 +445,43 @@ export class TransactionService {
   async getBalanceForecast({
     userId,
     accountId,
+    accounts,
     startDate,
     endDate,
-    initialBalance,
+    investmentEvents,
   }: {
     userId: string;
     accountId?: string;
+    accounts: {
+      id: string;
+      name: string;
+      color: string | null;
+      initialBalance: number;
+      startDate: Date | null;
+    }[];
     startDate: Date;
     endDate: Date;
-    initialBalance: number;
+    investmentEvents?: {
+      accountId: string;
+      date: Date;
+      amount: number;
+      type: 'FUNDING' | 'REDEMPTION';
+    }[];
   }) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(3, 0, 0, 0);
 
-    // Buscar todas as transações no período
-    // Inclui cardBillingId e sourceAccount.type para filtrar transações de cartão de crédito
+    const chartStart = new Date(startDate);
+    chartStart.setHours(3, 0, 0, 0);
+
+    // Fetch all transactions in the period
     const transactions = await this.prismaService.transaction.findMany({
       where: {
         userId,
         ...(accountId && {
           OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
         }),
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: {
-          not: 'CANCELED',
-        },
+        date: { gte: startDate, lte: endDate },
       },
       select: {
         id: true,
@@ -536,157 +493,631 @@ export class TransactionService {
         sourceAccountId: true,
         destinyAccountId: true,
         cardBillingId: true,
-        sourceAccount: {
-          select: {
-            type: true,
-          },
-        },
+        sourceCard: { select: { id: true, type: true } },
       },
-      orderBy: {
-        date: 'asc',
+      orderBy: { date: 'asc' },
+    });
+
+    const preTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { lt: startDate },
+      },
+      select: {
+        amount: true,
+        type: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { type: true } },
       },
     });
 
-    // Agrupar transações por dia
-    const transactionsByDate = new Map<string, typeof transactions>();
+    const accountSeries = accounts.map((account) => {
+      let seedBalance = 0;
+      const inWindowByDate = new Map<string, number>();
 
-    transactions.forEach((tx) => {
-      const dateKey = tx.date.toISOString().split('T')[0];
-      const existing = transactionsByDate.get(dateKey) || [];
-      existing.push(tx);
-      transactionsByDate.set(dateKey, existing);
-    });
-
-    // Gerar pontos do gráfico dia a dia
-    const dataPoints: {
-      date: Date;
-      balance: number;
-      isProjected: boolean;
-      incomeAmount: number;
-      expenseAmount: number;
-      transactionCount: number;
-      transactions: {
-        id: string;
-        description: string;
-        amount: number;
-        type: string;
-        isIncome: boolean;
-      }[];
-    }[] = [];
-
-    let runningBalance = initialBalance;
-    const currentDate = new Date(startDate);
-    let currentBalance = initialBalance;
-    let projectedBalance = initialBalance;
-
-    while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split('T')[0];
-      const dayTransactions = transactionsByDate.get(dateKey) || [];
-      const isProjected = currentDate > today;
-
-      let incomeAmount = 0;
-      let expenseAmount = 0;
-
-      const dayTxList: {
-        id: string;
-        description: string;
-        amount: number;
-        type: string;
-        isIncome: boolean;
-      }[] = [];
-
-      dayTransactions.forEach((tx) => {
-        // Pular transações que fazem parte de faturas de cartão de crédito
-        // Essas transações afetam o fluxo de caixa apenas quando a fatura é paga
-        // (via transação de pagamento da fatura)
+      let preWindowTxBalance = 0;
+      preTransactions.forEach((tx) => {
         if (tx.cardBillingId) return;
-
-        // Pular despesas de cartão de crédito que ainda não foram associadas a uma fatura
-        // (também serão capturadas via transação de pagamento da fatura)
         if (
-          tx.type === TransactionType.EXPENSE &&
-          tx.sourceAccount?.type === AccountType.CREDIT_CARD
-        ) {
+          tx.type === 'EXPENSE' &&
+          tx.sourceCard &&
+          tx.sourceCard.type === 'CREDIT'
+        )
           return;
-        }
-
-        // Para projeções, incluir apenas transações agendadas
-        if (isProjected && tx.status === 'COMPLETED') return;
-        // Para histórico, incluir apenas transações completadas
-        if (!isProjected && tx.status !== 'COMPLETED') return;
 
         const amount = Number(tx.amount);
-        let included = false;
-        let isIncome = false;
-
-        if (tx.type === TransactionType.INCOME) {
-          if (!accountId || tx.destinyAccountId === accountId) {
-            runningBalance += amount;
-            incomeAmount += amount;
-            included = true;
-            isIncome = true;
-          }
-        } else if (tx.type === TransactionType.EXPENSE) {
-          if (!accountId || tx.sourceAccountId === accountId) {
-            runningBalance -= amount;
-            expenseAmount += amount;
-            included = true;
-            isIncome = false;
-          }
-        } else if (tx.type === TransactionType.BETWEEN_ACCOUNTS && accountId) {
-          if (tx.destinyAccountId === accountId) {
-            runningBalance += amount;
-            incomeAmount += amount;
-            included = true;
-            isIncome = true;
-          }
-          if (tx.sourceAccountId === accountId) {
-            runningBalance -= amount;
-            expenseAmount += amount;
-            included = true;
-            isIncome = false;
-          }
-        }
-
-        if (included) {
-          dayTxList.push({
-            id: tx.id,
-            description: tx.description || 'Sem descrição',
-            amount,
-            type: tx.type,
-            isIncome,
-          });
+        if (tx.type === 'INCOME') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+        } else if (tx.type === 'EXPENSE') {
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
         }
       });
 
-      dataPoints.push({
-        date: new Date(currentDate),
-        balance: runningBalance,
-        isProjected,
-        incomeAmount,
-        expenseAmount,
-        transactionCount: dayTxList.length,
-        transactions: dayTxList,
-      });
-
-      // Guardar saldo atual e projetado
-      if (
-        currentDate.toISOString().split('T')[0] ===
-        today.toISOString().split('T')[0]
-      ) {
-        currentBalance = runningBalance;
+      if (!account.startDate) {
+        seedBalance = account.initialBalance + preWindowTxBalance;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d < chartStart) {
+          seedBalance = account.initialBalance + preWindowTxBalance;
+        } else {
+          const key = d.toISOString().split('T')[0];
+          inWindowByDate.set(key, account.initialBalance);
+        }
       }
 
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+      const accountInvestmentEvents =
+        investmentEvents?.filter((e) => e.accountId === account.id) || [];
+      const investmentEventsByDate = new Map<
+        string,
+        typeof accountInvestmentEvents
+      >();
 
-    projectedBalance = runningBalance;
+      accountInvestmentEvents.forEach((event) => {
+        const key = event.date.toISOString().split('T')[0];
+        const existing = investmentEventsByDate.get(key) || [];
+        existing.push(event);
+        investmentEventsByDate.set(key, existing);
+      });
+
+      let preWindowInvestmentBalance = 0;
+      accountInvestmentEvents.forEach((event) => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(3, 0, 0, 0);
+        if (eventDate < chartStart) {
+          if (event.type === 'FUNDING') {
+            preWindowInvestmentBalance -= event.amount;
+          } else if (event.type === 'REDEMPTION') {
+            preWindowInvestmentBalance += event.amount;
+          }
+        }
+      });
+
+      const transactionsByDate = new Map<string, typeof transactions>();
+      transactions.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = transactionsByDate.get(dateKey) || [];
+        existing.push(tx);
+        transactionsByDate.set(dateKey, existing);
+      });
+
+      const dataPoints: any[] = [];
+      let runningBalance = seedBalance + preWindowInvestmentBalance;
+      const currentDate = new Date(startDate);
+      currentDate.setHours(3, 0, 0, 0);
+      let currentBalance = seedBalance + preWindowInvestmentBalance;
+      let projectedBalance = seedBalance + preWindowInvestmentBalance;
+      let chartStarted = false;
+      if (!account.startDate) {
+        chartStarted = true;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d <= chartStart) chartStarted = true;
+      }
+
+      while (currentDate <= endDate) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const dayTransactions = transactionsByDate.get(dateKey) || [];
+        const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
+        const isProjected = currentDate >= today;
+
+        const inWindowAmount = inWindowByDate.get(dateKey);
+        if (inWindowAmount) {
+          chartStarted = true;
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance + inWindowAmount,
+            isProjected,
+            incomeAmount: 0,
+            expenseAmount: 0,
+            transactionCount: 0,
+            isInitialBalance: true,
+            transactions: [],
+          });
+          runningBalance += inWindowAmount;
+        }
+
+        let incomeAmount = 0;
+        let expenseAmount = 0;
+        const dayTxList: any[] = [];
+
+        dayTransactions.forEach((tx) => {
+          if (tx.cardBillingId) return;
+          if (
+            tx.type === 'EXPENSE' &&
+            tx.sourceCard &&
+            tx.sourceCard.type === 'CREDIT'
+          ) {
+            return;
+          }
+
+          if (!isProjected && tx.status !== 'COMPLETED') return;
+
+          const amount = Number(tx.amount);
+          let included = false;
+          let isIncome = false;
+
+          if (tx.type === 'INCOME') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+          } else if (tx.type === 'EXPENSE') {
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          }
+
+          if (included) {
+            dayTxList.push({
+              id: tx.id,
+              description: tx.description || 'Sem descrição',
+              amount,
+              type: tx.type,
+              isIncome,
+            });
+          }
+        });
+
+        for (const invEvent of dayInvestmentEvents) {
+          if (invEvent.type === 'FUNDING') {
+            runningBalance -= invEvent.amount;
+            expenseAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-funding-${dateKey}`,
+              description: 'Investimento (aporte)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_FUNDING',
+              isIncome: false,
+            });
+          } else if (invEvent.type === 'REDEMPTION') {
+            runningBalance += invEvent.amount;
+            incomeAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-redemption-${dateKey}`,
+              description: 'Investimento (resgate)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_REDEMPTION',
+              isIncome: true,
+            });
+          }
+        }
+
+        if (dayTxList.length > 0) {
+          chartStarted = true;
+        }
+
+        if (chartStarted) {
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance,
+            isProjected,
+            incomeAmount,
+            expenseAmount,
+            transactionCount: dayTxList.length,
+            transactions: dayTxList,
+          });
+        }
+
+        if (
+          currentDate.toISOString().split('T')[0] ===
+          today.toISOString().split('T')[0]
+        ) {
+          currentBalance = runningBalance;
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      projectedBalance = runningBalance;
+
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        color: account.color,
+        dataPoints,
+        currentBalance,
+        projectedBalance,
+        balanceTrend: projectedBalance - currentBalance,
+      };
+    });
 
     return {
-      dataPoints,
-      currentBalance,
-      projectedBalance,
-      balanceTrend: projectedBalance - currentBalance,
+      accountSeries,
+      startDate,
+      endDate,
+    };
+  }
+
+  /**
+   * Runs a balance forecast simulation
+   */
+  async simulateBalanceForecast({
+    userId,
+    accountId,
+    accounts,
+    startDate,
+    endDate,
+    investmentEvents,
+    simulatedTransactions,
+  }: {
+    userId: string;
+    accountId?: string;
+    accounts: {
+      id: string;
+      name: string;
+      color: string | null;
+      initialBalance: number;
+      startDate: Date | null;
+    }[];
+    startDate: Date;
+    endDate: Date;
+    investmentEvents?: {
+      accountId: string;
+      date: Date;
+      amount: number;
+      type: 'FUNDING' | 'REDEMPTION';
+    }[];
+    simulatedTransactions: {
+      description: string;
+      amount: number;
+      type: TransactionType;
+      date: Date;
+      isIncome: boolean;
+      isSimulated: true;
+      accountId?: string | null;
+    }[];
+  }) {
+    const today = new Date();
+    today.setHours(3, 0, 0, 0);
+
+    const chartStart = new Date(startDate);
+    chartStart.setHours(3, 0, 0, 0);
+
+    const realTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { gte: startDate, lte: endDate },
+      },
+      select: {
+        id: true,
+        date: true,
+        amount: true,
+        type: true,
+        status: true,
+        description: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { id: true, type: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const preTransactions = await this.prismaService.transaction.findMany({
+      where: {
+        userId,
+        ...(accountId && {
+          OR: [{ sourceAccountId: accountId }, { destinyAccountId: accountId }],
+        }),
+        date: { lt: startDate },
+        status: { in: ['PLANNED', 'OVERDUE'] },
+      },
+      select: {
+        amount: true,
+        type: true,
+        sourceAccountId: true,
+        destinyAccountId: true,
+        cardBillingId: true,
+        sourceCard: { select: { type: true } },
+      },
+    });
+
+    const accountSeries = accounts.map((account) => {
+      let seedBalance = 0;
+      const inWindowByDate = new Map<string, number>();
+
+      let preWindowTxBalance = 0;
+      preTransactions.forEach((tx) => {
+        if (tx.cardBillingId) return;
+        if (
+          tx.type === 'EXPENSE' &&
+          tx.sourceCard &&
+          tx.sourceCard.type === 'CREDIT'
+        )
+          return;
+
+        const amount = Number(tx.amount);
+        if (tx.type === 'INCOME') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+        } else if (tx.type === 'EXPENSE') {
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+          if (tx.destinyAccountId === account.id) preWindowTxBalance += amount;
+          if (tx.sourceAccountId === account.id) preWindowTxBalance -= amount;
+        }
+      });
+
+      if (!account.startDate) {
+        seedBalance = account.initialBalance + preWindowTxBalance;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d < chartStart) {
+          seedBalance = account.initialBalance + preWindowTxBalance;
+        } else {
+          const key = d.toISOString().split('T')[0];
+          inWindowByDate.set(key, account.initialBalance);
+        }
+      }
+
+      const accountInvestmentEvents =
+        investmentEvents?.filter((e) => e.accountId === account.id) || [];
+      const investmentEventsByDate = new Map<
+        string,
+        typeof accountInvestmentEvents
+      >();
+
+      accountInvestmentEvents.forEach((event) => {
+        const key = event.date.toISOString().split('T')[0];
+        const existing = investmentEventsByDate.get(key) || [];
+        existing.push(event);
+        investmentEventsByDate.set(key, existing);
+      });
+
+      let preWindowInvestmentBalance = 0;
+      accountInvestmentEvents.forEach((event) => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(3, 0, 0, 0);
+        if (eventDate < chartStart) {
+          if (event.type === 'FUNDING') {
+            preWindowInvestmentBalance -= event.amount;
+          } else if (event.type === 'REDEMPTION') {
+            preWindowInvestmentBalance += event.amount;
+          }
+        }
+      });
+
+      const realTxsByDate = new Map<string, typeof realTransactions>();
+      realTransactions.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = realTxsByDate.get(dateKey) || [];
+        existing.push(tx);
+        realTxsByDate.set(dateKey, existing);
+      });
+
+      const accountSimTxs = simulatedTransactions.filter(
+        (tx) => !tx.accountId || tx.accountId === account.id,
+      );
+      const simTxsByDate = new Map<string, typeof accountSimTxs>();
+      accountSimTxs.forEach((tx) => {
+        const dateKey = tx.date.toISOString().split('T')[0];
+        const existing = simTxsByDate.get(dateKey) || [];
+        existing.push(tx);
+        simTxsByDate.set(dateKey, existing);
+      });
+
+      const dataPoints: any[] = [];
+      let runningBalance = seedBalance + preWindowInvestmentBalance;
+      const currentDate = new Date(startDate);
+      currentDate.setHours(3, 0, 0, 0);
+      let currentBalance = seedBalance + preWindowInvestmentBalance;
+      let projectedBalance = seedBalance + preWindowInvestmentBalance;
+      let chartStarted = false;
+      if (!account.startDate) {
+        chartStarted = true;
+      } else {
+        const d = new Date(account.startDate);
+        d.setHours(3, 0, 0, 0);
+        if (d <= chartStart) chartStarted = true;
+      }
+
+      while (currentDate <= endDate) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const dayRealTxs = realTxsByDate.get(dateKey) || [];
+        const daySimTxs = simTxsByDate.get(dateKey) || [];
+        const dayInvestmentEvents = investmentEventsByDate.get(dateKey) || [];
+        const isProjected = currentDate >= today;
+
+        const inWindowAmount = inWindowByDate.get(dateKey);
+        if (inWindowAmount) {
+          chartStarted = true;
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance + inWindowAmount,
+            isProjected,
+            incomeAmount: 0,
+            expenseAmount: 0,
+            transactionCount: 0,
+            isInitialBalance: true,
+            transactions: [],
+          });
+          runningBalance += inWindowAmount;
+        }
+
+        let incomeAmount = 0;
+        let expenseAmount = 0;
+        const dayTxList: any[] = [];
+
+        dayRealTxs.forEach((tx) => {
+          if (tx.cardBillingId) return;
+          if (
+            tx.type === 'EXPENSE' &&
+            tx.sourceCard &&
+            tx.sourceCard.type === 'CREDIT'
+          ) {
+            return;
+          }
+
+          if (!isProjected && tx.status !== 'COMPLETED') return;
+
+          const amount = Number(tx.amount);
+          let included = false;
+          let isIncome = false;
+
+          if (tx.type === 'INCOME') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+          } else if (tx.type === 'EXPENSE') {
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.destinyAccountId === account.id) {
+              runningBalance += amount;
+              incomeAmount += amount;
+              included = true;
+              isIncome = true;
+            }
+            if (tx.sourceAccountId === account.id) {
+              runningBalance -= amount;
+              expenseAmount += amount;
+              included = true;
+              isIncome = false;
+            }
+          }
+
+          if (included) {
+            dayTxList.push({
+              id: tx.id,
+              description: tx.description || 'Sem descrição',
+              amount,
+              type: tx.type,
+              isIncome,
+            });
+          }
+        });
+
+        daySimTxs.forEach((tx) => {
+          const amount = Number(tx.amount);
+          if (tx.type === 'INCOME') {
+            runningBalance += amount;
+            incomeAmount += amount;
+          } else if (tx.type === 'EXPENSE') {
+            runningBalance -= amount;
+            expenseAmount += amount;
+          } else if (tx.type === 'BETWEEN_ACCOUNTS') {
+            if (tx.isIncome) {
+              runningBalance += amount;
+              incomeAmount += amount;
+            } else {
+              runningBalance -= amount;
+              expenseAmount += amount;
+            }
+          }
+          dayTxList.push({
+            id: `sim-${dateKey}-${dayTxList.length}`,
+            description: tx.description,
+            amount,
+            type: tx.type,
+            isIncome: tx.isIncome,
+            isSimulated: true,
+          });
+        });
+
+        for (const invEvent of dayInvestmentEvents) {
+          if (invEvent.type === 'FUNDING') {
+            runningBalance -= invEvent.amount;
+            expenseAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-funding-${dateKey}`,
+              description: 'Investimento (aporte)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_FUNDING',
+              isIncome: false,
+            });
+          } else if (invEvent.type === 'REDEMPTION') {
+            runningBalance += invEvent.amount;
+            incomeAmount += invEvent.amount;
+            dayTxList.push({
+              id: `inv-redemption-${dateKey}`,
+              description: 'Investimento (resgate)',
+              amount: invEvent.amount,
+              type: 'INVESTMENT_REDEMPTION',
+              isIncome: true,
+            });
+          }
+        }
+
+        if (dayTxList.length > 0) chartStarted = true;
+
+        const hasSimulated = dayTxList.some((tx) => tx.isSimulated);
+
+        if (chartStarted) {
+          dataPoints.push({
+            date: new Date(`${dateKey}T03:00:00.000Z`),
+            balance: runningBalance,
+            isProjected: isProjected || hasSimulated,
+            incomeAmount,
+            expenseAmount,
+            transactionCount: dayTxList.length,
+            isSimulated: hasSimulated,
+            transactions: dayTxList,
+          });
+        }
+
+        if (
+          currentDate.toISOString().split('T')[0] ===
+          today.toISOString().split('T')[0]
+        ) {
+          currentBalance = runningBalance;
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      projectedBalance = runningBalance;
+
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        color: account.color,
+        dataPoints,
+        currentBalance,
+        projectedBalance,
+        balanceTrend: projectedBalance - currentBalance,
+      };
+    });
+
+    return {
+      accountSeries,
       startDate,
       endDate,
     };
@@ -717,9 +1148,6 @@ export class TransactionService {
         date: {
           gte: startDate,
           lte: endDate,
-        },
-        status: {
-          not: 'CANCELED',
         },
       },
       select: {
@@ -857,7 +1285,7 @@ export class TransactionService {
           lte: endDate,
         },
         status: {
-          notIn: ['COMPLETED', 'CANCELED'],
+          notIn: ['COMPLETED'],
         },
       },
       select: {
@@ -996,11 +1424,9 @@ export class TransactionService {
       0,
     );
 
-    // Definir filtro de status (excluir CANCELED a menos que explicitamente solicitado)
+    // Definir filtro de status (aplica filtro explícito se fornecido, middleware exclui deletedAt automaticamente)
     const statusFilter =
-      statuses && statuses.length > 0
-        ? { in: statuses }
-        : { not: TransactionStatus.CANCELED };
+      statuses && statuses.length > 0 ? { in: statuses } : undefined;
 
     // Buscar transações com filtros aplicados
     const transactions = await this.prismaService.transaction.findMany({
@@ -1016,12 +1442,27 @@ export class TransactionService {
       },
       orderBy: { date: 'asc' },
       include: {
-        sourceAccount: { include: { institution: true } },
-        destinyAccount: { include: { institution: true } },
+        sourceAccount: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
+        destinyAccount: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
+        sourceCard: {
+          include: {
+            institutionLink: { include: { institution: true } },
+          },
+        },
         billingPayment: {
           include: {
-            accountCard: {
-              include: { account: { include: { institution: true } } },
+            card: {
+              include: {
+                institutionLink: { include: { institution: true } },
+              },
             },
           },
         },
@@ -1032,7 +1473,15 @@ export class TransactionService {
         },
         installments: {
           include: {
-            cardBilling: { select: { status: true } },
+            cardBilling: {
+              select: {
+                id: true,
+                status: true,
+                periodStart: true,
+                periodEnd: true,
+                paymentDate: true,
+              },
+            },
           },
           orderBy: { installmentNumber: 'asc' as const },
         },
@@ -1043,12 +1492,11 @@ export class TransactionService {
     // baseado na perspectiva da conta
     // Também computar cancelInfo para cada transação
     const transformedTransactions = transactions.map((tx) => {
-      const cancelInfo = this.computeCancelInfo(
+      const deleteInfo = this.computeDeleteInfo(
         {
           id: tx.id,
           status: tx.status,
           cardBilling: tx.cardBilling,
-          sourceAccount: tx.sourceAccount,
         },
         tx.installments,
       );
@@ -1069,9 +1517,9 @@ export class TransactionService {
         ...tx,
         type: transformedType,
         totalInstallments: tx.installments.length,
-        canCancel: cancelInfo.canCancel,
-        cancelReason: cancelInfo.reason,
-        cancelWarningMessage: cancelInfo.warningMessage,
+        canDelete: deleteInfo.canDelete,
+        deleteReason: deleteInfo.reason,
+        deleteWarningMessage: deleteInfo.warningMessage,
       };
     });
 
@@ -1156,9 +1604,9 @@ export class TransactionService {
 
   /**
    * Cron job que roda diariamente à meia-noite para atualizar status de transações.
-   * Transações PLANNED com data no passado são marcadas como COMPLETED.
+   * Transações PLANNED com data no passado são marcadas como OVERDUE.
    */
-  @Cron('0 0 0 * * *') // Every day at midnight
+  @Cron('0 0 0 * * *', { timeZone: 'America/Sao_Paulo' }) // Every day at midnight GMT-3
   async updateTransactionStatuses(): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1169,13 +1617,13 @@ export class TransactionService {
         date: { lt: today },
       },
       data: {
-        status: TransactionStatus.COMPLETED,
+        status: TransactionStatus.OVERDUE,
       },
     });
 
     if (result.count > 0) {
       this.logger.log(
-        `Updated ${result.count} transactions from PLANNED to COMPLETED`,
+        `Updated ${result.count} transactions from PLANNED to OVERDUE`,
       );
     }
   }

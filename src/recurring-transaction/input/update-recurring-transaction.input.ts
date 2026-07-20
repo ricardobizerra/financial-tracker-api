@@ -32,4 +32,7 @@ export class UpdateRecurringTransactionInput {
 
   @Field(() => ID, { nullable: true })
   destinyAccountId?: string;
+
+  @Field(() => ID, { nullable: true })
+  sourceCardId?: string;
 }

@@ -16,6 +16,7 @@ export const envSchema = z.object({
   POSTGRES_HOST: z.coerce.string(),
   POSTGRES_PORT: z.coerce.number().optional().default(5432),
   DATABASE_URL: z.coerce.string(),
+  DATABASE_TEST_URL: z.coerce.string(),
 
   REDIS_PORT: z.coerce.number().optional().default(6379),
   REDIS_HOST: z.coerce.string(),

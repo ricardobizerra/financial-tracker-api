@@ -28,6 +28,8 @@ import { RecurringTransactionModule } from './recurring-transaction/recurring-tr
 import { QueueModule } from '@/lib/queue/queue.module';
 import { MailModule } from './mail/mail.module';
 import { AiModule } from './ai/ai.module';
+import { InstitutionLinkModule } from './institution-link/institution-link.module';
+import { TesouroTransparenteModule } from './external/tesouro-transparente/tesouro-transparente.module';
 
 @Module({
   imports: [
@@ -79,6 +81,8 @@ import { AiModule } from './ai/ai.module';
     QueueModule,
     MailModule,
     AiModule,
+    InstitutionLinkModule,
+    TesouroTransparenteModule,
   ],
   controllers: [AppController],
   providers: [

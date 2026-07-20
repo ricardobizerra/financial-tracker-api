@@ -5,6 +5,7 @@ import { RedisSubscriptionService } from '@/lib/redis/redis-subscription.service
 import { ModuleMetadata } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CacheModule } from '@nestjs/cache-manager';
 
 export const createTestModel = async (
   metadata: ModuleMetadata,
@@ -15,13 +16,13 @@ export const createTestModel = async (
       ...(!!metadata.imports ? metadata.imports : []),
       RedisModule,
       PrismaModule,
-      ConfigModule,
+      ConfigModule.forRoot({ isGlobal: true }),
+      CacheModule.register({ isGlobal: true }),
     ],
     providers: [
       ...(!!metadata.providers ? metadata.providers : []),
       RedisSubscriptionService,
       PrismaService,
-      ConfigService,
     ],
   }).compile();
 };

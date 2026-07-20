@@ -10,12 +10,58 @@ import {
   OmitType,
 } from '@nestjs/graphql';
 
+import { registerEnumType } from '@nestjs/graphql';
+
+export enum ApplicableTaxEnum {
+  IRPF = 'IRPF',
+  IOF = 'IOF',
+  B3_CUSTODY = 'B3_CUSTODY',
+  BROKERAGE = 'BROKERAGE',
+}
+
+registerEnumType(ApplicableTaxEnum, { name: 'ApplicableTaxEnum' });
+
+export enum SellFeasibilityStatus {
+  FAVORABLE = 'FAVORABLE',
+  UNFAVORABLE = 'UNFAVORABLE',
+  NEUTRAL = 'NEUTRAL',
+  NOT_APPLICABLE = 'NOT_APPLICABLE',
+}
+
+registerEnumType(SellFeasibilityStatus, { name: 'SellFeasibilityStatus' });
+
 @ObjectType()
-export class InvestmentModel extends OmitType(Investment, [
-  'user',
-  'userId',
-  '_count',
-] as const) {
+export class SellFeasibility {
+  @Field(() => SellFeasibilityStatus, { nullable: false })
+  status!: SellFeasibilityStatus;
+
+  @Field(() => String, { nullable: false })
+  message!: string;
+}
+
+@ObjectType()
+export class InvestmentTaxDetail {
+  @Field(() => String, { nullable: false })
+  label!: string;
+
+  @Field(() => Float, { nullable: false })
+  amount!: number;
+
+  @Field(() => String, { nullable: false })
+  reason!: string;
+}
+
+@ObjectType()
+export class InvestmentTaxesAndFees {
+  @Field(() => [InvestmentTaxDetail], { nullable: false })
+  details!: InvestmentTaxDetail[];
+
+  @Field(() => Float, { nullable: false })
+  totalTaxesAndFees!: number;
+}
+
+@ObjectType()
+export class InvestmentModel extends OmitType(Investment, ['_count'] as const) {
   @Field(() => String, { nullable: false })
   currentVariation!: string;
 
@@ -24,6 +70,27 @@ export class InvestmentModel extends OmitType(Investment, [
 
   @Field(() => String, { nullable: false })
   taxedVariation!: string;
+
+  @Field(() => InvestmentTaxesAndFees, { nullable: false })
+  taxesAndFees!: InvestmentTaxesAndFees;
+
+  @Field(() => SellFeasibility, { nullable: false })
+  sellFeasibility!: SellFeasibility;
+
+  @Field(() => Float, { nullable: true })
+  currentMarketRate?: number | null;
+}
+
+@ObjectType()
+export class InvestmentChartDataPoint {
+  @Field(() => String, { nullable: false })
+  date!: string;
+
+  @Field(() => Float, { nullable: false })
+  theoreticalValue!: number;
+
+  @Field(() => Float, { nullable: true })
+  marketValue?: number | null;
 }
 
 @ObjectType()
@@ -38,20 +105,23 @@ export class OrdenationInvestmentArgs extends Ordenation(InvestmentModel, [
 
 @ObjectType()
 export class TotalInvestmentsModel {
-  @Field(() => Float, { nullable: false })
-  initialAmount!: number;
+  @Field(() => Float, { nullable: true })
+  initialAmount?: number;
 
-  @Field(() => Float, { nullable: false })
-  currentAmount!: number;
+  @Field(() => Float, { nullable: true })
+  currentAmount?: number;
 
-  @Field(() => String, { nullable: false })
-  currentVariation!: string;
+  @Field(() => String, { nullable: true })
+  currentVariation?: string;
 
-  @Field(() => Float, { nullable: false })
-  taxedAmount!: number;
+  @Field(() => Float, { nullable: true })
+  taxedAmount?: number;
 
-  @Field(() => String, { nullable: false })
-  taxedVariation!: string;
+  @Field(() => String, { nullable: true })
+  taxedVariation?: string;
+
+  @Field(() => String, { nullable: true })
+  realVariation?: string;
 }
 
 @ObjectType()
@@ -90,9 +160,6 @@ export class AccountWithInvestmentCount {
 
   @Field(() => String, { nullable: false })
   name!: string;
-
-  @Field(() => String, { nullable: true })
-  institutionName?: string;
 
   @Field(() => String, { nullable: true })
   institutionLogoUrl?: string;

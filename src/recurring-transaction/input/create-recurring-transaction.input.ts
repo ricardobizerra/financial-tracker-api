@@ -29,7 +29,7 @@ export class CreateRecurringTransactionInput {
   dayMode?: keyof typeof DayMode;
 
   @Field(() => Int, { nullable: true })
-  dayOfMonth?: number; // 1-28 for SPECIFIC_DAY mode (monthly)
+  dayOfMonth?: number; // 1-31 for SPECIFIC_DAY mode (monthly, clamped to last day of month)
 
   @Field(() => Int, { nullable: true })
   dayOfWeek?: number; // 0-6 (Sun-Sat) for WEEKLY/BI_WEEKLY
@@ -52,6 +52,9 @@ export class CreateRecurringTransactionInput {
   @Field(() => ID, { nullable: true })
   destinyAccountId?: string;
 
+  @Field(() => ID, { nullable: true })
+  sourceCardId?: string;
+
   // Campos de parcelamento
   @Field(() => RecurrenceType, { nullable: true, defaultValue: 'PERIODIC' })
   recurrenceType?: keyof typeof RecurrenceType;
@@ -59,6 +62,15 @@ export class CreateRecurringTransactionInput {
   @Field(() => Int, { nullable: true })
   totalInstallments?: number;
 
+  @Field(() => Int, { nullable: true })
+  repeatCount?: number;
+
   @Field(() => TransactionCategory, { nullable: true })
   category?: TransactionCategory;
+
+  @Field(() => [ID], { nullable: true })
+  transactionIdsToLink?: string[];
+
+  @Field(() => Boolean, { nullable: true, defaultValue: true })
+  isActive?: boolean;
 }

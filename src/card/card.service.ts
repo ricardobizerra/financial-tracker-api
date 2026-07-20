@@ -1,38 +1,310 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../lib/prisma/prisma.service';
 import {
-  AccountCard,
+  Card,
   CardBilling,
   CardBillingCreateInput,
+  CardCreateInput,
 } from '@/lib/graphql/prisma-client';
 import { TransactionModel } from '@/transaction/transaction.model';
 import {
   Account,
   CardBillingStatus,
+  CardType,
   PaymentMethod,
   Prisma,
   Transaction,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
-import { CardBillingModel, CardBillingOnDate } from './card.model';
+import {
+  CardBillingModel,
+  CardBillingOnDate,
+  CardFilterArgs,
+  OrdenationCardArgs,
+} from './card.model';
 import { selectObject } from '@/utils/select-object';
 import { Decimal } from '@prisma/client/runtime/library';
 import { format } from 'date-fns';
+import { PaginationArgs } from '@/utils/args/pagination.args';
+import { SearchArgs } from '@/utils/args/search.args';
+import { OrderDirection } from '@/utils/args/ordenation.args';
 
 @Injectable()
-export class CardService {
+export class CardService implements OnApplicationBootstrap {
   constructor(private prisma: PrismaService) {}
 
-  async find(
-    where: Prisma.AccountCardWhereUniqueInput,
-  ): Promise<AccountCard | null> {
-    const accountCard = await this.prisma.accountCard.findUnique({
-      where,
+  async onApplicationBootstrap() {
+    await this.checkBillingStatuses();
+  }
+
+  async findOrCreateBillingForDate(
+    {
+      cardId,
+      billingCycleDay,
+      billingPaymentDay,
+      limit,
+      date,
+    }: {
+      cardId: string;
+      billingCycleDay: number;
+      billingPaymentDay: number;
+      limit: Decimal;
+      date: Date;
+    },
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<CardBilling> {
+    const billing = await transactionClient.cardBilling.findFirst({
+      where: {
+        cardId,
+        periodStart: { lte: date },
+        OR: [{ periodEnd: { gte: date } }, { periodEnd: null }],
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
-    return accountCard;
+    if (billing) {
+      return billing;
+    }
+
+    return this.createBilling(
+      {
+        cardId,
+        cardBillingCycleDay: billingCycleDay,
+        cardBillingPaymentDay: billingPaymentDay,
+        periodStart: date,
+        limit,
+      },
+      transactionClient,
+    );
+  }
+
+  async syncParentTransactionBillingFromFirstInstallment(
+    transactionId: string,
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<string | null> {
+    const firstInstallment =
+      await transactionClient.transactionInstallment.findFirst({
+        where: {
+          transactionId,
+          installmentNumber: 1,
+        },
+        select: {
+          cardBillingId: true,
+        },
+      });
+
+    if (!firstInstallment) {
+      return null;
+    }
+
+    await transactionClient.transaction.update({
+      where: { id: transactionId },
+      data: {
+        cardBillingId: firstInstallment.cardBillingId ?? null,
+      },
+    });
+
+    return firstInstallment.cardBillingId ?? null;
+  }
+
+  async find(
+    where: Prisma.CardWhereUniqueInput,
+    queriedFields?: (keyof Card)[],
+  ): Promise<Card | null> {
+    const card = await this.prisma.card.findUnique({
+      where,
+      select: queriedFields
+        ? selectObject<Card, Card>(queriedFields)
+        : undefined,
+    });
+
+    return card;
+  }
+
+  async findMany({
+    userId,
+    queriedFields,
+    paginationArgs,
+    searchArgs,
+    ordenationArgs,
+    filterArgs,
+  }: {
+    userId: string;
+    queriedFields: (keyof Card)[];
+    paginationArgs: PaginationArgs;
+    searchArgs: SearchArgs;
+    ordenationArgs: OrdenationCardArgs;
+    filterArgs: CardFilterArgs;
+  }) {
+    const { after, before, first, last } = paginationArgs;
+    const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
+
+    const unbufferedCursor = after
+      ? Number(Buffer.from(after, 'base64').toString('utf-8'))
+      : before
+        ? Number(Buffer.from(before, 'base64').toString('utf-8'))
+        : 0;
+
+    const queryWhere: Prisma.CardWhereInput = {
+      institutionLink: {
+        userId,
+        ...(filterArgs.institutionLinkId && {
+          id: filterArgs.institutionLinkId,
+        }),
+      },
+      ...(filterArgs.types?.length && {
+        type: { in: filterArgs.types },
+      }),
+      ...(!!searchArgs.search && {
+        name: {
+          contains: searchArgs.search,
+          mode: 'insensitive' as const,
+        },
+      }),
+    };
+
+    const lengthQuery = last
+      ? await this.prisma.card.count({ where: queryWhere })
+      : undefined;
+
+    const length = !!lengthQuery ? Number(lengthQuery) : undefined;
+
+    const cards = await this.prisma.card.findMany({
+      take: last
+        ? unbufferedCursor
+          ? last
+          : length % last === 0
+            ? last
+            : length % last
+        : first
+          ? first
+          : undefined,
+      skip: unbufferedCursor
+        ? last
+          ? length - unbufferedCursor + 1
+          : unbufferedCursor
+        : last
+          ? 0
+          : undefined,
+      orderBy: orderBy
+        ? {
+            [orderBy]: last
+              ? orderDirection === OrderDirection.Asc
+                ? OrderDirection.Desc
+                : OrderDirection.Asc
+              : orderDirection === OrderDirection.Asc
+                ? OrderDirection.Asc
+                : OrderDirection.Desc,
+          }
+        : undefined,
+      select: selectObject<Card, Card>(queriedFields),
+      where: queryWhere,
+    });
+
+    if (last) {
+      cards.reverse();
+    }
+
+    if (cards.length === 0) {
+      return {
+        edges: [],
+        pageInfo: {
+          hasNextPage: false,
+          hasPreviousPage: !!after,
+          startCursor: null,
+          endCursor: null,
+        },
+      };
+    }
+
+    const edges = cards.map((card, index) => {
+      const cursorIndex =
+        index +
+        1 +
+        (last
+          ? unbufferedCursor
+            ? unbufferedCursor - last - 1
+            : length - cards.length
+          : unbufferedCursor || 0);
+
+      const bufferedCursor = Buffer.from(cursorIndex.toString())
+        .toString('base64')
+        .split('=')[0];
+
+      return {
+        cursor: bufferedCursor,
+        node: card,
+      };
+    });
+
+    const startCursor = edges[0].cursor;
+    const endCursor = edges[edges.length - 1].cursor;
+
+    if (!first && !last) {
+      return {
+        edges,
+        pageInfo: {
+          hasNextPage: false,
+          hasPreviousPage: !!after,
+          startCursor,
+          endCursor,
+        },
+      };
+    }
+
+    const extraItem = !(
+      last && Number(Buffer.from(startCursor, 'base64').toString('utf-8')) <= 1
+    )
+      ? await this.prisma.card.findFirst({
+          take: 1,
+          skip: last
+            ? Number(Buffer.from(startCursor, 'base64').toString('utf-8')) - 2
+            : first
+              ? Number(Buffer.from(endCursor, 'base64').toString('utf-8'))
+              : unbufferedCursor,
+          orderBy: orderBy
+            ? {
+                [orderBy]: last
+                  ? orderDirection === OrderDirection.Asc
+                    ? OrderDirection.Desc
+                    : OrderDirection.Asc
+                  : orderDirection === OrderDirection.Asc
+                    ? OrderDirection.Asc
+                    : OrderDirection.Desc,
+              }
+            : undefined,
+          select: { id: true },
+          where: queryWhere,
+        })
+      : undefined;
+
+    const hasNextPage = last ? !!before : !!extraItem;
+    const hasPreviousPage = last ? !!extraItem : !!after;
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage,
+        startCursor,
+        endCursor,
+      },
+    };
+  }
+
+  async $transaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(fn);
+  }
+
+  async create(
+    data: CardCreateInput,
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ) {
+    return transactionClient.card.create({ data });
   }
 
   async updateCard({
@@ -47,11 +319,11 @@ export class CardService {
     billingCycleDay?: number;
     billingPaymentDay?: number;
     defaultLimit?: Decimal;
-  }): Promise<AccountCard> {
-    const card = await this.prisma.accountCard.findFirst({
+  }): Promise<Card> {
+    const card = await this.prisma.card.findFirst({
       where: {
         id: cardId,
-        account: {
+        institutionLink: {
           userId,
         },
       },
@@ -61,31 +333,52 @@ export class CardService {
       throw new NotFoundException('Card not found');
     }
 
-    return this.prisma.accountCard.update({
-      where: { id: cardId },
-      data: {
-        ...(billingCycleDay !== undefined && { billingCycleDay }),
-        ...(billingPaymentDay !== undefined && { billingPaymentDay }),
-        ...(defaultLimit !== undefined && { defaultLimit }),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updatedCard = await tx.card.update({
+        where: { id: cardId },
+        data: {
+          ...(billingCycleDay !== undefined && { billingCycleDay }),
+          ...(billingPaymentDay !== undefined && { billingPaymentDay }),
+          ...(defaultLimit !== undefined && { defaultLimit }),
+        },
+      });
+
+      if (defaultLimit !== undefined) {
+        await tx.cardBilling.updateMany({
+          where: {
+            cardId,
+            status: { in: [CardBillingStatus.PENDING, CardBillingStatus.FUTURE] },
+          },
+          data: {
+            limit: defaultLimit,
+          },
+        });
+      }
+
+      return updatedCard;
     });
   }
 
   async findBilling(
     where: Prisma.CardBillingWhereUniqueInput,
   ): Promise<CardBillingModel | null> {
-    const billing = await this.prisma.cardBilling.findUnique({
+    let billing = await this.prisma.cardBilling.findUnique({
       where,
       include: {
-        transactions: true,
+        transactions: {
+          where: {
+            deletedAt: null,
+            installments: { none: {} },
+          },
+        },
         installments: {
           include: {
             transaction: true,
           },
         },
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionLink: {
               include: {
                 user: true,
               },
@@ -95,9 +388,17 @@ export class CardService {
       },
     });
 
-    const activeTransactions = billing?.transactions.filter(
-      (t) => t.status !== TransactionStatus.CANCELED,
-    );
+    if (billing && billing.status === CardBillingStatus.PENDING) {
+      const today = new Date();
+      if (today > new Date(billing.periodEnd!)) {
+        await this.closeBillingInternal(billing.id, undefined, billing.periodEnd!);
+        return this.findBilling(where);
+      }
+    }
+
+    if (!billing) return null;
+
+    const activeTransactions = billing.transactions ?? [];
 
     // Somar transações normais
     const transactionsTotal = activeTransactions?.reduce(
@@ -108,7 +409,7 @@ export class CardService {
     // Somar installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal =
       billing?.installments
-        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        ?.filter((i) => !i.transaction?.deletedAt)
         .reduce(
           (acc, installment) => acc.add(installment.amount),
           new Decimal(0),
@@ -118,7 +419,7 @@ export class CardService {
 
     const installmentsCount =
       billing?.installments?.filter(
-        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+        (i) => !i.transaction?.deletedAt,
       ).length ?? 0;
 
     return {
@@ -129,12 +430,261 @@ export class CardService {
     };
   }
 
+  private mapBillingWithComputedTotals(billing: any): CardBillingModel {
+    const activeTransactions = billing?.transactions ?? [];
+    const transactionsTotal = activeTransactions.reduce(
+      (acc: Decimal, transaction: any) => acc.add(transaction.amount),
+      new Decimal(0),
+    );
+    const installmentsTotal =
+      billing?.installments
+        ?.filter(
+          (i: any) => !i.transaction?.deletedAt,
+        )
+        .reduce(
+          (acc: Decimal, installment: any) => acc.add(installment.amount),
+          new Decimal(0),
+        ) ?? new Decimal(0);
+    const totalAmount = transactionsTotal.add(installmentsTotal);
+    const installmentsCount =
+      billing?.installments?.filter(
+        (i: any) => !i.transaction?.deletedAt,
+      ).length ?? 0;
+
+    return {
+      ...billing,
+      totalAmount,
+      usagePercentage: totalAmount.div(billing?.limit).mul(100).toNumber(),
+      transactionsCount: (activeTransactions?.length ?? 0) + installmentsCount,
+    };
+  }
+
+  async findCurrentPendingBilling(
+    cardId: string,
+  ): Promise<CardBillingModel | null> {
+    const billing = await this.prisma.cardBilling.findFirst({
+      where: {
+        cardId,
+        periodStart: { lte: new Date() },
+        status: CardBillingStatus.PENDING,
+      },
+      orderBy: { periodStart: 'desc' },
+      include: {
+        transactions: {
+          where: {
+            deletedAt: null,
+            installments: { none: {} },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
+      },
+    });
+
+    if (billing) {
+      const today = new Date();
+      if (today > new Date(billing.periodEnd!)) {
+        await this.closeBillingInternal(billing.id, undefined, billing.periodEnd!);
+        return this.findCurrentPendingBilling(cardId);
+      }
+    }
+
+    if (!billing) return null;
+    return this.mapBillingWithComputedTotals(billing);
+  }
+
+  async findPayableBillings(cardId: string): Promise<CardBillingModel[]> {
+    const expiredPending = await this.prisma.cardBilling.findFirst({
+      where: {
+        cardId,
+        status: CardBillingStatus.PENDING,
+        periodEnd: { lt: new Date() },
+      },
+    });
+
+    if (expiredPending) {
+      await this.closeBillingInternal(expiredPending.id, undefined, expiredPending.periodEnd!);
+      return this.findPayableBillings(cardId);
+    }
+
+    const billings = await this.prisma.cardBilling.findMany({
+      where: {
+        cardId,
+        periodStart: { lte: new Date() },
+        status: { in: [CardBillingStatus.CLOSED, CardBillingStatus.OVERDUE] },
+      },
+      orderBy: [{ paymentDate: 'asc' }, { periodStart: 'asc' }],
+      include: {
+        transactions: {
+          where: {
+            deletedAt: null,
+            installments: { none: {} },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
+      },
+    });
+
+    return billings.map((billing) =>
+      this.mapBillingWithComputedTotals(billing),
+    );
+  }
+
+  async healCardBillingData(cardId: string): Promise<void> {
+    // Delete any corrupted billings (periodStart > periodEnd)
+    const billings = await this.prisma.cardBilling.findMany({
+      where: { cardId },
+    });
+    for (const b of billings) {
+      if (b.periodEnd && new Date(b.periodStart) > new Date(b.periodEnd)) {
+        await this.prisma.cardBilling.delete({
+          where: { id: b.id },
+        });
+      }
+    }
+
+    const activeBillings = await this.prisma.cardBilling.findMany({
+      where: { cardId },
+      orderBy: { periodStart: 'asc' },
+    });
+
+    if (activeBillings.length === 0) return;
+
+    // Move floating or mismatched transactions to their correct billing periods
+    const cardTransactions = await this.prisma.transaction.findMany({
+      where: { sourceCardId: cardId, deletedAt: null },
+    });
+
+    for (const tx of cardTransactions) {
+      const correctBilling = activeBillings.find(
+        (b) => tx.date >= b.periodStart && tx.date <= b.periodEnd,
+      );
+
+      if (correctBilling && tx.cardBillingId !== correctBilling.id) {
+        await this.prisma.transaction.update({
+          where: { id: tx.id },
+          data: { cardBillingId: correctBilling.id },
+        });
+      }
+    }
+
+    // Move floating or mismatched installments to their correct billing periods
+    const cardInstallments = await this.prisma.transactionInstallment.findMany({
+      where: {
+        transaction: { sourceCardId: cardId, deletedAt: null },
+      },
+      include: {
+        transaction: true,
+      },
+    });
+
+    for (const inst of cardInstallments) {
+      if (!inst.transaction) continue;
+      const instDate = new Date(inst.transaction.date);
+      instDate.setMonth(instDate.getMonth() + (inst.installmentNumber - 1));
+
+      const correctBilling = activeBillings.find(
+        (b) => instDate >= b.periodStart && instDate <= b.periodEnd,
+      );
+
+      if (correctBilling && inst.cardBillingId !== correctBilling.id) {
+        await this.prisma.transactionInstallment.update({
+          where: { id: inst.id },
+          data: { cardBillingId: correctBilling.id },
+        });
+      }
+    }
+
+    // Sync parent transactions
+    const parentIds = Array.from(new Set(cardInstallments.map((i) => i.transactionId)));
+    for (const parentId of parentIds) {
+      await this.syncParentTransactionBillingFromFirstInstallment(parentId);
+    }
+
+    // Recalculate totals for all active billings to make sure they match new transaction locations
+    for (const b of activeBillings) {
+      await this.updatePaymentTransaction(b.id);
+    }
+  }
+
+  async fillBillingGaps(cardId: string, userId: string): Promise<void> {
+    await this.healCardBillingData(cardId);
+
+    const card = await this.prisma.card.findFirst({
+      where: {
+        id: cardId,
+        institutionLink: { userId },
+      },
+      include: {
+        billings: {
+          orderBy: { periodStart: 'asc' },
+        },
+      },
+    });
+
+    if (!card || card.billings.length <= 1) {
+      return;
+    }
+
+    const billings = card.billings;
+    for (let i = 0; i < billings.length - 1; i++) {
+      const current = billings[i];
+      const next = billings[i + 1];
+
+      const currentEnd = new Date(current.periodEnd);
+      const nextStart = new Date(next.periodStart);
+
+      // A gap exists if nextStart is more than 2 days after currentEnd
+      const diffTime = nextStart.getTime() - currentEnd.getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+      if (diffDays > 2) {
+        const gapStart = new Date(currentEnd);
+        gapStart.setDate(gapStart.getDate() + 1);
+        gapStart.setUTCHours(3, 0, 0, 0);
+
+        await this.findOrCreateBillingForDate({
+          cardId,
+          billingCycleDay: card.billingCycleDay,
+          billingPaymentDay: card.billingPaymentDay,
+          limit: card.defaultLimit,
+          date: gapStart,
+        });
+
+        // Recurse to find any subsequent gaps
+        return this.fillBillingGaps(cardId, userId);
+      }
+    }
+  }
+
   async findCurrentBilling(
     queriedFields: (keyof CardBillingOnDate)[],
-    accountId: string,
+    cardId: string,
     userId: string,
     billingId?: string,
   ): Promise<CardBillingOnDate> {
+    await this.fillBillingGaps(cardId, userId);
+
+    if (!billingId) {
+      const expiredPending = await this.prisma.cardBilling.findFirst({
+        where: {
+          cardId,
+          status: CardBillingStatus.PENDING,
+          periodEnd: { lt: new Date() },
+        },
+      });
+      if (expiredPending) {
+        await this.closeBillingInternal(expiredPending.id, userId, expiredPending.periodEnd!);
+      }
+    }
+
     const billingQueriedFields = queriedFields.reduce(
       (acc, field) => {
         if (field.startsWith('billing.')) {
@@ -146,17 +696,17 @@ export class CardService {
       [] as (keyof CardBillingModel)[],
     );
 
-    let currentBilling = await this.prisma.cardBilling.findFirst({
+    let currentBilling: any = await this.prisma.cardBilling.findFirst({
       where: {
         ...(billingId
           ? { id: billingId }
           : {
               periodStart: { lte: new Date() },
             }),
-        accountCard: {
-          account: {
-            id: accountId,
-            user: { id: userId },
+        card: {
+          id: cardId,
+          institutionLink: {
+            userId,
           },
         },
       },
@@ -166,7 +716,12 @@ export class CardService {
           usagePercentage: [],
           transactionsCount: [],
         }),
-        transactions: true,
+        transactions: {
+          where: {
+            deletedAt: null,
+            installments: { none: {} },
+          },
+        },
         installments: {
           include: {
             transaction: true,
@@ -181,10 +736,10 @@ export class CardService {
       currentBilling = await this.prisma.cardBilling.findFirst({
         where: {
           periodStart: { lte: new Date() },
-          accountCard: {
-            account: {
-              id: accountId,
-              user: { id: userId },
+          card: {
+            id: cardId,
+            institutionLink: {
+              userId,
             },
           },
         },
@@ -194,7 +749,12 @@ export class CardService {
             usagePercentage: [],
             transactionsCount: [],
           }),
-          transactions: true,
+          transactions: {
+            where: {
+              deletedAt: null,
+              installments: { none: {} },
+            },
+          },
           installments: {
             include: {
               transaction: true,
@@ -212,10 +772,10 @@ export class CardService {
               periodStart: {
                 lt: currentBilling.periodStart,
               },
-              accountCard: {
-                account: {
-                  id: accountId,
-                  user: { id: userId },
+              card: {
+                id: cardId,
+                institutionLink: {
+                  userId,
                 },
               },
             },
@@ -231,10 +791,10 @@ export class CardService {
               periodStart: {
                 gt: currentBilling.periodStart,
               },
-              accountCard: {
-                account: {
-                  id: accountId,
-                  user: { id: userId },
+              card: {
+                id: cardId,
+                institutionLink: {
+                  userId,
                 },
               },
             },
@@ -243,9 +803,7 @@ export class CardService {
           })
         : undefined;
 
-    const activeTransactions = currentBilling?.transactions.filter(
-      (t) => t.status !== TransactionStatus.CANCELED,
-    );
+    const activeTransactions = currentBilling?.transactions ?? [];
 
     // Soma transações normais
     const transactionsTotal = activeTransactions?.reduce(
@@ -256,7 +814,7 @@ export class CardService {
     // Soma installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal =
       currentBilling?.installments
-        ?.filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+        ?.filter((i) => !i.transaction?.deletedAt)
         .reduce(
           (acc, installment) => acc.add(installment.amount),
           new Decimal(0),
@@ -266,7 +824,7 @@ export class CardService {
 
     const installmentsCount =
       currentBilling?.installments?.filter(
-        (i) => i.transaction?.status !== TransactionStatus.CANCELED,
+        (i) => !i.transaction?.deletedAt,
       ).length ?? 0;
 
     return {
@@ -288,12 +846,22 @@ export class CardService {
   async findBillingTransactions(
     billingId: string,
     userId: string,
+    searchArgs: SearchArgs,
   ): Promise<TransactionModel[]> {
+    const searchCondition = searchArgs.search
+      ? {
+          description: {
+            contains: searchArgs.search,
+            mode: 'insensitive' as const,
+          },
+        }
+      : {};
+
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
+        card: {
+          institutionLink: {
             userId,
           },
         },
@@ -303,17 +871,28 @@ export class CardService {
         transactions: {
           include: {
             sourceAccount: {
-              include: { institution: true },
+              include: {
+                institutionLink: { include: { institution: true } },
+              },
             },
             destinyAccount: {
-              include: { institution: true },
+              include: {
+                institutionLink: { include: { institution: true } },
+              },
+            },
+            sourceCard: {
+              include: {
+                institutionLink: { include: { institution: true } },
+              },
             },
             cardBilling: true,
           },
           where: {
-            status: {
-              not: TransactionStatus.CANCELED,
+            deletedAt: null,
+            installments: {
+              none: {},
             },
+            ...searchCondition,
           },
         },
         // Parcelas (installments) vinculadas ao billing
@@ -322,10 +901,19 @@ export class CardService {
             transaction: {
               include: {
                 sourceAccount: {
-                  include: { institution: true },
+                  include: {
+                    institutionLink: { include: { institution: true } },
+                  },
                 },
                 destinyAccount: {
-                  include: { institution: true },
+                  include: {
+                    institutionLink: { include: { institution: true } },
+                  },
+                },
+                sourceCard: {
+                  include: {
+                    institutionLink: { include: { institution: true } },
+                  },
                 },
                 cardBilling: true,
                 installments: true, // Para contar total de parcelas
@@ -334,11 +922,10 @@ export class CardService {
           },
           where: {
             transaction: {
-              status: {
-                not: TransactionStatus.CANCELED,
-              },
+              deletedAt: null,
+              ...searchCondition,
             },
-          },
+          } as any,
         },
       },
     });
@@ -361,7 +948,7 @@ export class CardService {
 
     // Adicionar transações parceladas via installments
     for (const installment of billing.installments) {
-      if (!installment.transaction) continue;
+      if (!installment.transaction || installment.transaction.deletedAt) continue;
 
       const totalInstallments =
         installment.transaction.installments?.length ?? 0;
@@ -386,13 +973,15 @@ export class CardService {
 
   async updatePaymentTransaction(
     billingId: string,
+    transactionClient: Prisma.TransactionClient = this.prisma,
   ): Promise<Transaction | null> {
-    const billing = await this.prisma.cardBilling.findUnique({
+    const billing = (await transactionClient.cardBilling.findUnique({
       where: { id: billingId },
       include: {
         transactions: {
           where: {
-            status: { not: TransactionStatus.CANCELED },
+            deletedAt: null,
+            installments: { none: {} },
           },
         },
         installments: {
@@ -400,9 +989,9 @@ export class CardService {
             transaction: true,
           },
         },
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionLink: {
               include: {
                 institution: true,
                 user: true,
@@ -411,7 +1000,7 @@ export class CardService {
           },
         },
       },
-    });
+    })) as any;
 
     if (!billing) {
       throw new NotFoundException('Card billing not found');
@@ -425,7 +1014,7 @@ export class CardService {
 
     // Calcular total de installments (parcelas) - apenas de transações não canceladas
     const installmentsTotal = billing.installments
-      .filter((i) => i.transaction?.status !== TransactionStatus.CANCELED)
+      .filter((i) => !i.transaction?.deletedAt)
       .reduce(
         (acc, installment) => acc.add(installment.amount),
         new Decimal(0),
@@ -433,7 +1022,7 @@ export class CardService {
 
     const totalAmount = transactionsTotal.add(installmentsTotal);
 
-    const existing = await this.prisma.transaction.findFirst({
+    const existing = await transactionClient.transaction.findFirst({
       where: {
         billingPayment: {
           id: billingId,
@@ -444,20 +1033,15 @@ export class CardService {
 
     // Se amount > 0 e transação não existe, criar
     if (totalAmount.greaterThan(0) && !existing) {
-      return this.prisma.transaction.create({
+      return transactionClient.transaction.create({
         data: {
           amount: totalAmount,
           date: billing.paymentDate,
-          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.accountCard.account.institution.name}`,
+          description: `Pagamento - Fatura ${format(billing.periodStart, 'MM/yyyy')} - Cartão ${billing.card.name}`,
           status: TransactionStatus.PLANNED,
           type: TransactionType.EXPENSE,
           paymentEnabled: false,
           paymentLimit: billing.paymentDate,
-          destinyAccount: {
-            connect: {
-              id: billing.accountCard.account.id,
-            },
-          },
           billingPayment: {
             connect: {
               id: billing.id,
@@ -465,7 +1049,7 @@ export class CardService {
           },
           user: {
             connect: {
-              id: billing.accountCard.account.user.id,
+              id: billing.card.institutionLink.user.id,
             },
           },
         },
@@ -474,7 +1058,7 @@ export class CardService {
 
     // Se amount > 0 e transação existe, atualizar
     if (totalAmount.greaterThan(0) && existing) {
-      return this.prisma.transaction.update({
+      return transactionClient.transaction.update({
         where: { id: existing.id },
         data: { amount: totalAmount },
       });
@@ -483,12 +1067,12 @@ export class CardService {
     // Se amount == 0 e transação existe, desassociar do billing e deletar
     if (totalAmount.equals(0) && existing) {
       // Primeiro desassociar do billingPayment
-      await this.prisma.transaction.update({
+      await transactionClient.transaction.update({
         where: { id: existing.id },
         data: { billingPayment: { disconnect: true } },
       });
       // Depois deletar
-      await this.prisma.transaction.delete({
+      await transactionClient.transaction.delete({
         where: { id: existing.id },
       });
     }
@@ -497,9 +1081,9 @@ export class CardService {
     if (totalAmount.equals(0)) {
       // Buscar a fatura corrente (primeira com periodStart <= hoje)
       const today = new Date();
-      const currentBilling = await this.prisma.cardBilling.findFirst({
+      const currentBilling = await transactionClient.cardBilling.findFirst({
         where: {
-          accountCardId: billing.accountCard.id,
+          cardId: billing.card.id,
           periodStart: { lte: today },
         },
         orderBy: { periodStart: 'desc' },
@@ -509,15 +1093,24 @@ export class CardService {
       // Se não é a fatura corrente e não tem transações ativas, deletar
       if (currentBilling?.id !== billing.id) {
         // Verificar se realmente não tem transações ativas
-        const activeTransactionsCount = await this.prisma.transaction.count({
+        const activeTransactionsCount = await transactionClient.transaction.count({
           where: {
             cardBillingId: billing.id,
-            status: { not: TransactionStatus.CANCELED },
+            installments: { none: {} },
           },
         });
 
-        if (activeTransactionsCount === 0) {
-          await this.prisma.cardBilling.delete({
+        // Não deletar se existir uma fatura posterior (evita furos na linha do tempo)
+        const nextBillingExists = await transactionClient.cardBilling.findFirst({
+          where: {
+            cardId: billing.card.id,
+            periodStart: { gt: billing.periodStart },
+          },
+          select: { id: true },
+        });
+
+        if (activeTransactionsCount === 0 && !nextBillingExists) {
+          await transactionClient.cardBilling.delete({
             where: { id: billing.id },
           });
         }
@@ -529,43 +1122,66 @@ export class CardService {
     return null;
   }
 
-  async createBilling({
-    cardId,
-    cardBillingCycleDay,
-    cardBillingPaymentDay,
-    periodStart,
-    limit,
-  }: {
-    cardId: string;
-    cardBillingCycleDay: number;
-    cardBillingPaymentDay: number;
-    periodStart: Date;
-    limit: Decimal;
-  }): Promise<CardBilling> {
+  async createBilling(
+    {
+      cardId,
+      cardBillingCycleDay,
+      cardBillingPaymentDay,
+      periodStart,
+      limit,
+    }: {
+      cardId: string;
+      cardBillingCycleDay: number;
+      cardBillingPaymentDay: number;
+      periodStart: Date;
+      limit: Decimal;
+    },
+    transactionClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<CardBilling> {
     // Calcular o início correto do período baseado no dia de fechamento
     // O período começa no dia seguinte ao fechamento do ciclo anterior
     const calculatedPeriodStart = new Date(periodStart);
     const periodEnd = new Date(periodStart);
     const paymentDate = new Date(periodStart);
 
-    // Se a data está antes ou no dia de fechamento, pertence ao ciclo atual
-    // Se está depois, pertence ao próximo ciclo
-    if (periodStart.getDate() <= cardBillingCycleDay) {
+    // Se a data está antes do dia de fechamento, pertence ao ciclo atual
+    // Se está no dia de fechamento ou depois, pertence ao próximo ciclo
+    // (transações NO dia de fechamento vão para a fatura corrente que está fechando)
+    if (periodStart.getDate() < cardBillingCycleDay) {
       // A transação está no ciclo atual
       // periodStart deve ser o dia após o fechamento do mês anterior
       calculatedPeriodStart.setMonth(calculatedPeriodStart.getMonth() - 1);
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23, 59, 59, 999);
     } else {
-      // A transação está no próximo ciclo
+      // A transação está no dia de fechamento ou depois → próximo ciclo
       // periodStart é o dia após o fechamento do mês atual
       calculatedPeriodStart.setDate(cardBillingCycleDay + 1);
 
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       periodEnd.setDate(cardBillingCycleDay);
-      periodEnd.setHours(23, 59, 59, 999);
+    }
+
+    // Normalize period boundaries to UTC-3 day anchors represented in UTC:
+    // start: 03:00:00.000Z (00:00 local), end: next day 02:59:59.999Z (23:59:59.999 local)
+    calculatedPeriodStart.setUTCHours(3, 0, 0, 0);
+    periodEnd.setDate(periodEnd.getDate() + 1);
+    periodEnd.setUTCHours(2, 59, 59, 999);
+
+    // Ajustar calculatedPeriodStart caso a fatura anterior tenha uma data de fechamento customizada
+    const overlappingPreviousBilling = await transactionClient.cardBilling.findFirst({
+      where: {
+        cardId,
+        periodEnd: { lt: periodEnd },
+      },
+      orderBy: { periodEnd: 'desc' },
+    });
+
+    if (overlappingPreviousBilling) {
+      calculatedPeriodStart.setTime(new Date(overlappingPreviousBilling.periodEnd).getTime());
+      calculatedPeriodStart.setDate(calculatedPeriodStart.getDate() + 1);
+      calculatedPeriodStart.setUTCHours(3, 0, 0, 0);
     }
 
     // Calcular data de pagamento - deve ser baseada em periodEnd, não periodStart
@@ -582,11 +1198,17 @@ export class CardService {
       paymentDate.setMonth(periodEnd.getMonth());
     }
     paymentDate.setDate(cardBillingPaymentDay);
-    paymentDate.setHours(23, 59, 59, 999);
+    paymentDate.setUTCHours(3, 0, 0, 0);
 
-    const billing = await this.prisma.cardBilling.create({
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const initialStatus = calculatedPeriodStart > today
+      ? CardBillingStatus.FUTURE
+      : CardBillingStatus.PENDING;
+
+    const billing = await transactionClient.cardBilling.create({
       data: {
-        accountCard: {
+        card: {
           connect: {
             id: cardId,
           },
@@ -594,13 +1216,13 @@ export class CardService {
         periodStart: calculatedPeriodStart,
         periodEnd,
         paymentDate,
-        status: CardBillingStatus.PENDING,
+        status: initialStatus,
         limit,
       },
       include: {
-        accountCard: {
+        card: {
           include: {
-            account: {
+            institutionLink: {
               include: {
                 institution: true,
                 user: true,
@@ -614,56 +1236,69 @@ export class CardService {
     // Criar apenas o histórico da fatura
     // A transação de pagamento será criada automaticamente pelo updatePaymentTransaction
     // quando a primeira despesa for adicionada à fatura
-    await this.prisma.cardBillingHistory.create({
+    await transactionClient.cardBillingHistory.create({
       data: {
         cardBilling: {
           connect: {
             id: billing.id,
           },
         },
-        status: CardBillingStatus.PENDING,
+        status: initialStatus,
       },
     });
 
     return billing;
   }
 
-  async closeBilling({
-    billingId,
-    userId,
-    closingDate = new Date(),
-  }: {
-    billingId: string;
-    userId: string;
-    closingDate?: Date;
-  }) {
-    const billing = await this.prisma.cardBilling.findFirst({
+  async closeBillingInternal(
+    billingId: string,
+    userId?: string,
+    closingDate?: Date,
+    txClient: Prisma.TransactionClient = this.prisma,
+  ): Promise<CardBilling> {
+    const billing = (await txClient.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
-            userId,
-          },
-        },
         status: CardBillingStatus.PENDING,
+        ...(userId && {
+          card: {
+            institutionLink: {
+              userId,
+            },
+          },
+        }),
       },
       include: {
-        accountCard: {
+        card: {
           include: {
-            account: true,
+            institutionLink: true,
           },
         },
         paymentTransaction: true,
-        transactions: true,
+        transactions: {
+          where: {
+            deletedAt: null,
+            installments: { none: {} },
+          },
+        },
+        installments: {
+          include: {
+            transaction: true,
+          },
+        },
       },
-    });
+    })) as any;
 
     if (!billing) {
       throw new NotFoundException('Billing not found or already closed');
     }
 
+    if (!closingDate && !billing.periodEnd) {
+      throw new Error('periodEnd on a CardBilling cannot be null');
+    }
+
     // Normalize closing date to end of day
-    const closeDateNormalized = new Date(closingDate);
+    const closeDateNormalized = new Date(closingDate ?? billing.periodEnd!);
     closeDateNormalized.setHours(23, 59, 59, 999);
 
     // Separate transactions: those within the closing period vs those after
@@ -674,28 +1309,25 @@ export class CardService {
       (t) => new Date(t.date) > closeDateNormalized,
     );
 
-    // Calculate billing total (only transactions within period)
-    const billingTotal = transactionsInBilling.reduce(
-      (acc, t) => acc.add(t.amount),
-      new Decimal(0),
-    );
-
-    // Create next billing cycle
-    const nextPeriodStart = new Date(closeDateNormalized);
+    // Create/reuse next billing cycle
+    const nextPeriodStart = new Date(billing.periodEnd ?? closeDateNormalized);
     nextPeriodStart.setDate(nextPeriodStart.getDate() + 1);
-    nextPeriodStart.setHours(0, 0, 0, 0);
+    nextPeriodStart.setUTCHours(3, 0, 0, 0);
 
-    const nextBilling = await this.createBilling({
-      cardId: billing.accountCardId,
-      cardBillingCycleDay: billing.accountCard.billingCycleDay,
-      cardBillingPaymentDay: billing.accountCard.billingPaymentDay,
-      periodStart: nextPeriodStart,
-      limit: billing.accountCard.defaultLimit,
-    });
+    const nextBilling = await this.findOrCreateBillingForDate(
+      {
+        cardId: billing.cardId,
+        billingCycleDay: billing.card.billingCycleDay,
+        billingPaymentDay: billing.card.billingPaymentDay,
+        limit: billing.card.defaultLimit,
+        date: nextPeriodStart,
+      },
+      txClient,
+    );
 
     // Move transactions after closing date to new billing
     if (transactionsForNextBilling.length > 0) {
-      await this.prisma.transaction.updateMany({
+      await txClient.transaction.updateMany({
         where: {
           id: { in: transactionsForNextBilling.map((t) => t.id) },
         },
@@ -705,26 +1337,368 @@ export class CardService {
       });
     }
 
+    // Move installments after closing date to new billing
+    if (billing.installments && billing.installments.length > 0) {
+      const installmentsForNextBilling = billing.installments.filter(
+        (i) =>
+          i.transaction && new Date(i.transaction.date) > closeDateNormalized,
+      );
+
+      if (installmentsForNextBilling.length > 0) {
+        await txClient.transactionInstallment.updateMany({
+          where: {
+            id: { in: installmentsForNextBilling.map((i) => i.id) },
+          },
+          data: {
+            cardBillingId: nextBilling.id,
+          },
+        });
+
+        const parentTransactionIds = Array.from(
+          new Set(installmentsForNextBilling.map((i) => i.transactionId)),
+        );
+
+        await Promise.all(
+          parentTransactionIds.map((transactionId: any) =>
+            this.syncParentTransactionBillingFromFirstInstallment(
+              transactionId,
+              txClient,
+            ),
+          ),
+        );
+      }
+    }
+
     // Garantir que a transação de pagamento existe e atualizar com o valor correto
-    // (updatePaymentTransaction cria se não existir)
-    const paymentTransaction = await this.updatePaymentTransaction(billingId);
+    const paymentTransaction = await this.updatePaymentTransaction(billingId, txClient);
 
     // Se a transação existe, habilitar para pagamento
     if (paymentTransaction) {
-      await this.prisma.transaction.update({
+      await txClient.transaction.update({
         where: { id: paymentTransaction.id },
         data: { paymentEnabled: true },
       });
     }
 
+    // Determine target status
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const status = (billing.paymentDate && new Date(billing.paymentDate) < today)
+      ? CardBillingStatus.OVERDUE
+      : CardBillingStatus.CLOSED;
+
+    await txClient.cardBillingHistory.create({
+      data: {
+        cardBilling: { connect: { id: billing.id } },
+        status,
+      },
+    });
+
     // Close current billing with actual period end
-    return this.prisma.cardBilling.update({
+    return txClient.cardBilling.update({
       where: { id: billingId },
       data: {
-        status: CardBillingStatus.CLOSED,
+        status,
         periodEnd: closeDateNormalized,
       },
     });
+  }
+
+  async closeBilling({
+    billingId,
+    userId,
+    closingDate,
+  }: {
+    billingId: string;
+    userId: string;
+    closingDate?: Date;
+  }): Promise<CardBilling> {
+    return this.closeBillingInternal(billingId, userId, closingDate);
+  }
+
+  async changeBillingDates({
+    billingId,
+    userId,
+    closingDate,
+    paymentDate,
+  }: {
+    billingId: string;
+    userId: string;
+    closingDate?: Date;
+    paymentDate?: Date;
+  }): Promise<CardBilling> {
+    return this.prisma.$transaction(async (tx) => {
+      const billing = await tx.cardBilling.findFirst({
+        where: {
+          id: billingId,
+          card: {
+            institutionLink: {
+              userId,
+            },
+          },
+        },
+        include: {
+          card: true,
+          paymentTransaction: true,
+        },
+      });
+
+      if (!billing) {
+        throw new NotFoundException('Billing not found');
+      }
+
+      if (billing.status === CardBillingStatus.PAID) {
+        throw new Error('Não é possível alterar datas de uma fatura paga.');
+      }
+
+      const updateData: Prisma.CardBillingUpdateInput = {};
+
+      let closeDateNormalized: Date | undefined;
+      if (closingDate !== undefined && closingDate !== null) {
+        closeDateNormalized = new Date(closingDate);
+        closeDateNormalized.setHours(23, 59, 59, 999);
+        updateData.periodEnd = closeDateNormalized;
+      }
+
+      if (paymentDate !== undefined && paymentDate !== null) {
+        const paymentDateNormalized = new Date(paymentDate);
+        paymentDateNormalized.setUTCHours(3, 0, 0, 0);
+        updateData.paymentDate = paymentDateNormalized;
+      }
+
+      // If closingDate changed, handle transaction/installment shifts and pullbacks
+      if (closeDateNormalized && closeDateNormalized.getTime() !== billing.periodEnd?.getTime()) {
+        const oldClosingDate = billing.periodEnd ? new Date(billing.periodEnd) : new Date(billing.periodStart);
+
+        const nextBilling = await tx.cardBilling.findFirst({
+          where: {
+            cardId: billing.cardId,
+            periodStart: { gt: billing.periodStart },
+          },
+          orderBy: { periodStart: 'asc' },
+        });
+
+        if (closeDateNormalized > oldClosingDate) {
+          if (nextBilling) {
+            // Empurra o início da próxima fatura para o dia seguinte ao novo fechamento
+            const newNextPeriodStart = new Date(closeDateNormalized);
+            newNextPeriodStart.setDate(newNextPeriodStart.getDate() + 1);
+            newNextPeriodStart.setUTCHours(3, 0, 0, 0);
+
+            await tx.cardBilling.update({
+              where: { id: nextBilling.id },
+              data: { periodStart: newNextPeriodStart },
+            });
+
+            const transactionsToPull = await tx.transaction.findMany({
+              where: {
+                cardBillingId: nextBilling.id,
+                date: { lte: closeDateNormalized },
+                deletedAt: null,
+                installments: { none: {} },
+              },
+              select: { id: true },
+            });
+
+            if (transactionsToPull.length > 0) {
+              await tx.transaction.updateMany({
+                where: {
+                  id: { in: transactionsToPull.map((t) => t.id) },
+                },
+                data: {
+                  cardBillingId: billing.id,
+                },
+              });
+            }
+
+            const nextBillingInstallments = await tx.transactionInstallment.findMany({
+              where: {
+                cardBillingId: nextBilling.id,
+              },
+              include: {
+                transaction: true,
+              },
+            });
+
+            const installmentsToPull = nextBillingInstallments.filter((inst) => {
+              if (!inst.transaction || inst.transaction.deletedAt) return false;
+              const instDate = new Date(inst.transaction.date);
+              instDate.setMonth(instDate.getMonth() + (inst.installmentNumber - 1));
+              return instDate <= closeDateNormalized;
+            });
+
+            if (installmentsToPull.length > 0) {
+              await tx.transactionInstallment.updateMany({
+                where: {
+                  id: { in: installmentsToPull.map((i) => i.id) },
+                },
+                data: {
+                  cardBillingId: billing.id,
+                },
+              });
+
+              const parentIds = Array.from(new Set(installmentsToPull.map((i) => i.transactionId)));
+              await Promise.all(
+                parentIds.map((txId) =>
+                  this.syncParentTransactionBillingFromFirstInstallment(txId, tx),
+                ),
+              );
+            }
+          }
+        } else {
+          const nextPeriodStart = new Date(closeDateNormalized);
+          nextPeriodStart.setDate(nextPeriodStart.getDate() + 1);
+          nextPeriodStart.setUTCHours(3, 0, 0, 0);
+
+          const targetNextBilling = nextBilling ?? await this.findOrCreateBillingForDate(
+            {
+              cardId: billing.cardId,
+              billingCycleDay: billing.card.billingCycleDay,
+              billingPaymentDay: billing.card.billingPaymentDay,
+              limit: billing.card.defaultLimit,
+              date: nextPeriodStart,
+            },
+            tx,
+          );
+
+          const transactionsToShift = await tx.transaction.findMany({
+            where: {
+              cardBillingId: billing.id,
+              date: { gt: closeDateNormalized },
+              deletedAt: null,
+              installments: { none: {} },
+            },
+            select: { id: true },
+          });
+
+          if (transactionsToShift.length > 0) {
+            await tx.transaction.updateMany({
+              where: {
+                id: { in: transactionsToShift.map((t) => t.id) },
+              },
+              data: {
+                cardBillingId: targetNextBilling.id,
+              },
+            });
+          }
+
+          const currentBillingInstallments = await tx.transactionInstallment.findMany({
+            where: {
+              cardBillingId: billing.id,
+            },
+            include: {
+              transaction: true,
+            },
+          });
+
+          const installmentsToShift = currentBillingInstallments.filter((inst) => {
+            if (!inst.transaction || inst.transaction.deletedAt) return false;
+            const instDate = new Date(inst.transaction.date);
+            instDate.setMonth(instDate.getMonth() + (inst.installmentNumber - 1));
+            return instDate > closeDateNormalized;
+          });
+
+          if (installmentsToShift.length > 0) {
+            await tx.transactionInstallment.updateMany({
+              where: {
+                id: { in: installmentsToShift.map((i) => i.id) },
+              },
+              data: {
+                cardBillingId: targetNextBilling.id,
+              },
+            });
+
+            const parentIds = Array.from(new Set(installmentsToShift.map((i) => i.transactionId)));
+            await Promise.all(
+              parentIds.map((txId) =>
+                this.syncParentTransactionBillingFromFirstInstallment(txId, tx),
+              ),
+            );
+          }
+        }
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const finalClosingDate = closeDateNormalized ?? (billing.periodEnd ? new Date(billing.periodEnd) : new Date(billing.periodStart));
+      const finalPaymentDate = updateData.paymentDate ? new Date(updateData.paymentDate as Date) : (billing.paymentDate ? new Date(billing.paymentDate) : null);
+
+      let newStatus: CardBillingStatus = CardBillingStatus.PENDING;
+      if (billing.periodStart > today) {
+        newStatus = CardBillingStatus.FUTURE;
+      } else if (finalClosingDate < today) {
+        if (finalPaymentDate && finalPaymentDate < today) {
+          newStatus = CardBillingStatus.OVERDUE;
+        } else {
+          newStatus = CardBillingStatus.CLOSED;
+        }
+      }
+
+      updateData.status = newStatus;
+
+      const updatedBilling = await tx.cardBilling.update({
+        where: { id: billingId },
+        data: updateData,
+      });
+
+      if (newStatus !== billing.status) {
+        await tx.cardBillingHistory.create({
+          data: {
+            cardBilling: { connect: { id: billing.id } },
+            status: newStatus,
+          },
+        });
+      }
+
+      if (updateData.paymentDate && billing.paymentTransaction) {
+        await tx.transaction.update({
+          where: { id: billing.paymentTransaction.id },
+          data: {
+            date: updateData.paymentDate as Date,
+            paymentLimit: updateData.paymentDate as Date,
+          },
+        });
+      }
+
+      await this.updatePaymentTransaction(billing.id, tx);
+      
+      const nextBillingObj = await tx.cardBilling.findFirst({
+        where: {
+          cardId: billing.cardId,
+          periodStart: { gt: billing.periodStart },
+        },
+        orderBy: { periodStart: 'asc' },
+      });
+      if (nextBillingObj) {
+        await this.updatePaymentTransaction(nextBillingObj.id, tx);
+      }
+
+      return updatedBilling;
+    });
+  }
+
+  /**
+   * Marks a billing as PAID and records a history entry.
+   * Accepts an optional Prisma transaction client to run within an existing transaction.
+   */
+  async markBillingPaid(
+    billingId: string,
+    tx: Prisma.TransactionClient = this.prisma,
+  ): Promise<void> {
+    await Promise.all([
+      tx.cardBilling.update({
+        where: { id: billingId },
+        data: { status: CardBillingStatus.PAID },
+      }),
+      tx.cardBillingHistory.create({
+        data: {
+          cardBilling: { connect: { id: billingId } },
+          status: CardBillingStatus.PAID,
+        },
+      }),
+    ]);
   }
 
   async payBilling({
@@ -744,24 +1718,30 @@ export class CardService {
     const billing = await this.prisma.cardBilling.findFirst({
       where: {
         id: billingId,
-        accountCard: {
-          account: {
-            user: { id: userId },
+        card: {
+          institutionLink: {
+            userId,
           },
         },
       },
       include: {
         paymentTransaction: true,
-        accountCard: {
-          include: {
-            account: true,
-          },
-        },
       },
     });
 
     if (!billing) {
       throw new NotFoundException('Billing not found');
+    }
+
+    // Rejeitar pagamento para faturas PENDING ou já PAID
+    if (billing.status === CardBillingStatus.PENDING) {
+      throw new Error(
+        'Não é possível pagar uma fatura que ainda não foi fechada.',
+      );
+    }
+
+    if (billing.status === CardBillingStatus.PAID) {
+      throw new Error('Esta fatura já foi paga.');
     }
 
     if (!billing.paymentTransaction) {
@@ -788,21 +1768,12 @@ export class CardService {
         },
       });
 
-      // Update the billing status to PAID if it's currently CLOSED
-      if (billing.status === CardBillingStatus.CLOSED) {
-        await Promise.all([
-          tx.cardBilling.update({
-            where: { id: billingId },
-            data: { status: CardBillingStatus.PAID },
-          }),
-          // Add history entry for the payment
-          tx.cardBillingHistory.create({
-            data: {
-              cardBilling: { connect: { id: billingId } },
-              status: CardBillingStatus.PAID,
-            },
-          }),
-        ]);
+      // Update the billing status to PAID if it's CLOSED or OVERDUE
+      if (
+        billing.status === CardBillingStatus.CLOSED ||
+        billing.status === CardBillingStatus.OVERDUE
+      ) {
+        await this.markBillingPaid(billingId, tx);
       }
 
       return updatedTransaction;
@@ -814,6 +1785,48 @@ export class CardService {
   async checkBillingStatuses(): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // 0.0. Transition FUTURE billings that have started (periodStart <= today) -> PENDING
+    const startedFutureBillings = await this.prisma.cardBilling.findMany({
+      where: {
+        status: CardBillingStatus.FUTURE,
+        periodStart: { lte: today },
+      },
+    });
+
+    for (const b of startedFutureBillings) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.cardBilling.update({
+            where: { id: b.id },
+            data: { status: CardBillingStatus.PENDING },
+          });
+          await tx.cardBillingHistory.create({
+            data: {
+              cardBilling: { connect: { id: b.id } },
+              status: CardBillingStatus.PENDING,
+            },
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to transition future billing ${b.id} to pending:`, err);
+      }
+    }
+
+    // 0. Auto-close PENDING billings that have expired (periodEnd < today)
+    const expiredPendingBillings = await this.prisma.cardBilling.findMany({
+      where: {
+        status: CardBillingStatus.PENDING,
+        periodEnd: { lt: today },
+      },
+    });
+    for (const b of expiredPendingBillings) {
+      try {
+        await this.closeBillingInternal(b.id, undefined, b.periodEnd);
+      } catch (err) {
+        console.error(`Failed to auto-close billing ${b.id}:`, err);
+      }
+    }
 
     // 1. Find billings where payment transaction is COMPLETED -> mark as PAID
     const billingsToPay = await this.prisma.cardBilling.findMany({
@@ -830,20 +1843,7 @@ export class CardService {
 
     // Update to PAID and create history entries
     await Promise.all(
-      billingsToPay.map((billing) =>
-        this.prisma.$transaction([
-          this.prisma.cardBilling.update({
-            where: { id: billing.id },
-            data: { status: CardBillingStatus.PAID },
-          }),
-          this.prisma.cardBillingHistory.create({
-            data: {
-              cardBilling: { connect: { id: billing.id } },
-              status: CardBillingStatus.PAID,
-            },
-          }),
-        ]),
-      ),
+      billingsToPay.map((billing) => this.markBillingPaid(billing.id)),
     );
 
     // 2. Find CLOSED billings with paymentDate in the past -> mark as OVERDUE
@@ -872,4 +1872,110 @@ export class CardService {
       ),
     );
   }
+
+  async calculateUnpaidBalance(cardId: string): Promise<Decimal> {
+    const now = new Date();
+
+    // 1. Sum simple transactions (no installments) on unpaid billings with date <= now and status != PLANNED
+    const simpleTransactions = await this.prisma.transaction.aggregate({
+      where: {
+        sourceCardId: cardId,
+        deletedAt: null,
+        type: TransactionType.EXPENSE,
+        status: { in: [TransactionStatus.COMPLETED, TransactionStatus.OVERDUE] },
+        installments: { none: {} },
+        cardBilling: {
+          status: {
+            in: [
+              CardBillingStatus.FUTURE,
+              CardBillingStatus.PENDING,
+              CardBillingStatus.CLOSED,
+              CardBillingStatus.OVERDUE,
+            ],
+          },
+        },
+        date: { lte: now },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    // 2. Sum installments on unpaid billings with parent transaction status != PLANNED
+    const installments = await this.prisma.transactionInstallment.aggregate({
+      where: {
+        transaction: {
+          sourceCardId: cardId,
+          deletedAt: null,
+          type: TransactionType.EXPENSE,
+          status: { in: [TransactionStatus.COMPLETED, TransactionStatus.OVERDUE] },
+        },
+        cardBilling: {
+          status: {
+            in: [
+              CardBillingStatus.FUTURE,
+              CardBillingStatus.PENDING,
+              CardBillingStatus.CLOSED,
+              CardBillingStatus.OVERDUE,
+            ],
+          },
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const simpleSum = simpleTransactions._sum.amount
+      ? new Decimal(simpleTransactions._sum.amount)
+      : new Decimal(0);
+    const installmentsSum = installments._sum.amount
+      ? new Decimal(installments._sum.amount)
+      : new Decimal(0);
+
+    return simpleSum.add(installmentsSum);
+  }
+
+  async calculateAvailableLimit(card: Card): Promise<Decimal> {
+    const unpaidBalance = await this.calculateUnpaidBalance(card.id);
+    return new Decimal(card.defaultLimit).minus(unpaidBalance);
+  }
+
+  async calculateUsagePercentage(card: Card): Promise<number> {
+    const limit = new Decimal(card.defaultLimit);
+    if (limit.isZero() || limit.isNegative()) {
+      return 0;
+    }
+    const unpaidBalance = await this.calculateUnpaidBalance(card.id);
+    return unpaidBalance.div(limit).mul(100).toNumber();
+  }
+
+  async calculateBillingTotalAmount(billingId: string): Promise<Decimal> {
+    const simpleTransactions = await this.prisma.transaction.aggregate({
+      where: {
+        cardBillingId: billingId,
+        deletedAt: null,
+        installments: { none: {} },
+      },
+      _sum: { amount: true },
+    });
+
+    const installments = await this.prisma.transactionInstallment.aggregate({
+      where: {
+        cardBillingId: billingId,
+        transaction: { deletedAt: null },
+      },
+      _sum: { amount: true },
+    });
+
+    const simpleSum = simpleTransactions._sum.amount
+      ? new Decimal(simpleTransactions._sum.amount)
+      : new Decimal(0);
+    const installmentsSum = installments._sum.amount
+      ? new Decimal(installments._sum.amount)
+      : new Decimal(0);
+
+    return simpleSum.add(installmentsSum);
+  }
 }
+

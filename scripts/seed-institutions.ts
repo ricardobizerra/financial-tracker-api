@@ -1,4 +1,4 @@
-import { PrismaClient, AccountType } from '@prisma/client';
+import { PrismaClient, InstitutionType } from '@prisma/client';
 
 /**
  * Normaliza um código hex (ex: #F0A -> #FF00AA)
@@ -357,9 +357,11 @@ async function fetchOpenFinanceParticipants(): Promise<
 /**
  * Função principal que implementa a lógica de categorização
  */
-function getAccountTypesForServer(server: AuthorisationServer): AccountType[] {
+function getInstitutionTypesForServer(
+  server: AuthorisationServer,
+): InstitutionType[] {
   // Usar um Set garante que não teremos tipos duplicados
-  const outputTypes = new Set<AccountType>();
+  const outputTypes = new Set<InstitutionType>();
 
   // Primeiro, pegamos todos os tipos de família únicos que este servidor oferece
   const apiFamilies = new Set(
@@ -373,19 +375,17 @@ function getAccountTypesForServer(server: AuthorisationServer): AccountType[] {
 
     if (family === 'accounts' || family.startsWith('opendata-accounts_')) {
       // A API 'accounts' cobre os três tipos
-      outputTypes.add(AccountType.CHECKING);
-      outputTypes.add(AccountType.SAVINGS);
-      outputTypes.add(AccountType.WALLET);
+      outputTypes.add(InstitutionType.CHECKING);
     } else if (
       family === 'credit-cards-accounts' ||
       family.startsWith('opendata-creditcards_')
     ) {
-      outputTypes.add(AccountType.CREDIT_CARD);
+      outputTypes.add(InstitutionType.CARD);
     } else if (
       INVESTMENT_FAMILIES.has(family) ||
       family.startsWith('opendata-investments_')
     ) {
-      outputTypes.add(AccountType.INVESTMENT);
+      outputTypes.add(InstitutionType.INVESTMENT);
     }
   }
 
@@ -454,7 +454,7 @@ async function seedInstitutions() {
     name: string;
     logoUrl: string;
     status: string;
-    types: AccountType[];
+    types: InstitutionType[];
     code: string | null;
   }> = [];
 
@@ -494,7 +494,7 @@ async function seedInstitutions() {
         continue;
       }
 
-      const types = getAccountTypesForServer(authorisationServer);
+      const types = getInstitutionTypesForServer(authorisationServer);
 
       if (types.length === 0) {
         console.log('Pulando participante sem tipos de contas');

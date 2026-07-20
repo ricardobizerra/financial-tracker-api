@@ -1,10 +1,19 @@
-import { Mutation, Query, Resolver, Args, Info } from '@nestjs/graphql';
+import {
+  Mutation,
+  Query,
+  Resolver,
+  Args,
+  Info,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { RecurringTransactionService } from './recurring-transaction.service';
 import {
   RecurringTransactionConnection,
   RecurringTransactionModel,
   OrdenationRecurringTransactionArgs,
   RecurringTransactionFilterArgs,
+  RecurringTransactionSuggestion,
 } from './recurring-transaction.model';
 import { Auth } from '@/auth/auth.decorator';
 import { PaginationArgs } from '@/utils/args/pagination.args';
@@ -15,12 +24,24 @@ import { CurrentUser } from '@/user/user.decorator';
 import { UserModel } from '@/user/models/user.model';
 import { CreateRecurringTransactionInput } from './input/create-recurring-transaction.input';
 import { UpdateRecurringTransactionInput } from './input/update-recurring-transaction.input';
+import { TransactionModel } from '@/transaction/transaction.model';
 
-@Resolver()
+@Resolver(() => RecurringTransactionModel)
 export class RecurringTransactionResolver {
   constructor(
     private readonly recurringTransactionService: RecurringTransactionService,
   ) {}
+
+  @ResolveField(() => [TransactionModel])
+  async transactions(
+    @Parent() recurring: RecurringTransactionModel,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.recurringTransactionService.findTransactionsByRecurrence(
+      recurring.id,
+      user.id,
+    );
+  }
 
   @Auth()
   @Mutation(() => RecurringTransactionModel, {
@@ -94,9 +115,15 @@ export class RecurringTransactionResolver {
   })
   async deleteRecurringTransaction(
     @Args('id') id: string,
+    @Args('deleteAllTransactions', { type: () => Boolean, defaultValue: false })
+    deleteAllTransactions: boolean,
     @CurrentUser() user: UserModel,
   ) {
-    return this.recurringTransactionService.delete(id, user.id);
+    return this.recurringTransactionService.delete(
+      id,
+      user.id,
+      deleteAllTransactions,
+    );
   }
 
   @Auth()
@@ -136,5 +163,26 @@ export class RecurringTransactionResolver {
       ordenationArgs,
       filterArgs,
     });
+  }
+
+  @Auth()
+  @Query(() => [RecurringTransactionSuggestion], {
+    name: 'possibleRecurringTransactions',
+  })
+  async possibleRecurringTransactions(@CurrentUser() user: UserModel) {
+    return this.recurringTransactionService.findSuggestions(user.id);
+  }
+
+  @Auth()
+  @Mutation(() => Boolean, { name: 'ignorePossibleRecurrence' })
+  async ignorePossibleRecurrence(
+    @Args('description') description: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    await this.recurringTransactionService.ignoreSuggestion(
+      user.id,
+      description,
+    );
+    return true;
   }
 }

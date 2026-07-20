@@ -1,0 +1,1212 @@
+import { TransactionResolver } from './transaction.resolver';
+import { TransactionService } from './transaction.service';
+import { AccountService } from '@/account/account.service';
+import { CardService } from '@/card/card.service';
+import { PrismaService } from '@/lib/prisma/prisma.service';
+import {
+  TransactionType,
+  TransactionStatus,
+  CardType,
+  CardBillingStatus,
+} from '@prisma/client';
+
+describe('TransactionResolver', () => {
+  let resolver: TransactionResolver;
+  let transactionService: any;
+  let accountService: any;
+  let cardService: any;
+  let prismaService: any;
+
+  const mockUser = { id: 'user-1', email: 'test@test.com', name: 'Test User' };
+
+  beforeEach(() => {
+    transactionService = {
+      create: vi.fn(),
+      update: vi.fn(),
+      find: vi.fn(),
+      delete: vi.fn(),
+      findMany: vi.fn(),
+      getSummary: vi.fn(),
+    };
+
+    accountService = {
+      find: vi.fn(),
+    };
+
+    cardService = {
+      find: vi.fn(),
+      createBilling: vi.fn(),
+      findOrCreateBillingForDate: vi.fn(),
+      updatePaymentTransaction: vi.fn(),
+      syncParentTransactionBillingFromFirstInstallment: vi.fn(),
+      markBillingPaid: vi.fn().mockResolvedValue(undefined),
+    };
+
+    prismaService = {
+      transaction: {
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      transactionInstallment: {
+        update: vi.fn(),
+        create: vi.fn(),
+        findMany: vi.fn(),
+      },
+      cardBilling: {
+        findFirst: vi.fn(),
+      },
+      recurringTransaction: {
+        update: vi.fn(),
+      },
+      account: {
+        findMany: vi.fn(),
+      },
+    };
+
+    resolver = new TransactionResolver(
+      transactionService,
+      accountService,
+      cardService,
+      prismaService,
+    );
+  });
+
+  it('should be defined', () => {
+    expect(resolver).toBeDefined();
+  });
+
+  describe('createTransaction', () => {
+    describe('status auto-calculation', () => {
+      it('should set status to PLANNED for future dates', async () => {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 10);
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+        transactionService.create.mockResolvedValue({
+          id: 'tx-1',
+          status: TransactionStatus.PLANNED,
+        });
+
+        await resolver.createTransaction(
+          {
+            description: 'Future tx',
+            amount: 100 as any,
+            date: futureDate,
+            type: TransactionType.INCOME,
+            destinyAccountId: 'acc-1',
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: TransactionStatus.PLANNED,
+          }),
+        );
+      });
+
+      it('should set status to COMPLETED for past dates', async () => {
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 10);
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+        transactionService.create.mockResolvedValue({
+          id: 'tx-1',
+          status: TransactionStatus.COMPLETED,
+        });
+
+        await resolver.createTransaction(
+          {
+            description: 'Past tx',
+            amount: 100 as any,
+            date: pastDate,
+            type: TransactionType.INCOME,
+            destinyAccountId: 'acc-1',
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: TransactionStatus.COMPLETED,
+          }),
+        );
+      });
+
+      it('should set status to COMPLETED for today with isCompleted=true', async () => {
+        const today = new Date();
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+        transactionService.create.mockResolvedValue({
+          id: 'tx-1',
+          status: TransactionStatus.COMPLETED,
+        });
+
+        await resolver.createTransaction(
+          {
+            description: 'Today completed',
+            amount: 100 as any,
+            date: today,
+            type: TransactionType.INCOME,
+            destinyAccountId: 'acc-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: TransactionStatus.COMPLETED,
+          }),
+        );
+      });
+
+      it('should set status to PLANNED for today with isCompleted=false', async () => {
+        const today = new Date();
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+        transactionService.create.mockResolvedValue({
+          id: 'tx-1',
+          status: TransactionStatus.PLANNED,
+        });
+
+        await resolver.createTransaction(
+          {
+            description: 'Today planned',
+            amount: 100 as any,
+            date: today,
+            type: TransactionType.INCOME,
+            destinyAccountId: 'acc-1',
+            isCompleted: false,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: TransactionStatus.PLANNED,
+          }),
+        );
+      });
+    });
+
+    describe('status validation', () => {
+      it('should reject OVERDUE status', async () => {
+        const today = new Date();
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Test',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.INCOME,
+              destinyAccountId: 'acc-1',
+              status: TransactionStatus.OVERDUE,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow('OVERDUE status cannot be set manually');
+      });
+
+      it('should reject COMPLETED for future dates', async () => {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 10);
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Test',
+              amount: 100 as any,
+              date: futureDate,
+              type: TransactionType.INCOME,
+              destinyAccountId: 'acc-1',
+              status: TransactionStatus.COMPLETED,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Transactions with future dates cannot be marked as COMPLETED',
+        );
+      });
+
+      it('should reject PLANNED for past dates', async () => {
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 10);
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Test',
+              amount: 100 as any,
+              date: pastDate,
+              type: TransactionType.INCOME,
+              destinyAccountId: 'acc-1',
+              status: TransactionStatus.PLANNED,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Transactions with past dates cannot be marked as PLANNED',
+        );
+      });
+    });
+
+    describe('type validations', () => {
+      it('should require destinyAccountId for INCOME', async () => {
+        const today = new Date();
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Income without destiny',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.INCOME,
+              isCompleted: true,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Destiny account is mandatory for income transactions',
+        );
+      });
+
+      it('should require sourceAccountId or sourceCardId for EXPENSE', async () => {
+        const today = new Date();
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Expense without source',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.EXPENSE,
+              isCompleted: true,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Source account is mandatory for expense transactions',
+        );
+      });
+
+      it('should require both source and destiny for BETWEEN_ACCOUNTS', async () => {
+        const today = new Date();
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Transfer without accounts',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.BETWEEN_ACCOUNTS,
+              isCompleted: true,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Source and destiny accounts are mandatory for transactions between accounts',
+        );
+      });
+
+      it('should reject cards as source for BETWEEN_ACCOUNTS', async () => {
+        const today = new Date();
+
+        accountService.find.mockResolvedValueOnce({ id: 'acc-1' }); // destiny
+        cardService.find.mockResolvedValueOnce({
+          id: 'card-1',
+          type: CardType.CREDIT,
+        }); // source card
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Transfer with card',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.BETWEEN_ACCOUNTS,
+              sourceCardId: 'card-1',
+              destinyAccountId: 'acc-1',
+              isCompleted: true,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Cards cannot be used in between-accounts transactions',
+        );
+      });
+    });
+
+    describe('payment method', () => {
+      it('should auto-detect CREDIT_CARD payment for credit cards', async () => {
+        const today = new Date();
+
+        cardService.find
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+          })
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
+          });
+        cardService.findOrCreateBillingForDate.mockResolvedValue({
+          id: 'billing-1',
+        });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'Card expense',
+            amount: 100 as any,
+            date: today,
+            type: TransactionType.EXPENSE,
+            sourceCardId: 'card-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            paymentMethod: 'CREDIT_CARD',
+          }),
+        );
+      });
+
+      it('should auto-detect DEBIT_CARD payment for debit cards', async () => {
+        const today = new Date();
+
+        cardService.find
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.DEBIT,
+          })
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.DEBIT,
+          });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'Debit card expense',
+            amount: 100 as any,
+            date: today,
+            type: TransactionType.EXPENSE,
+            sourceCardId: 'card-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            paymentMethod: 'DEBIT_CARD',
+          }),
+        );
+      });
+
+      it('should default to PIX for regular accounts', async () => {
+        const today = new Date();
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'PIX payment',
+            amount: 100 as any,
+            date: today,
+            type: TransactionType.EXPENSE,
+            sourceAccountId: 'acc-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            paymentMethod: 'PIX',
+          }),
+        );
+      });
+
+      it('should reject card payment methods without a card source', async () => {
+        const today = new Date();
+
+        accountService.find.mockResolvedValue({ id: 'acc-1' });
+
+        await expect(
+          resolver.createTransaction(
+            {
+              description: 'Invalid card payment',
+              amount: 100 as any,
+              date: today,
+              type: TransactionType.EXPENSE,
+              sourceAccountId: 'acc-1',
+              paymentMethod: 'CREDIT_CARD',
+              isCompleted: true,
+            } as any,
+            mockUser as any,
+          ),
+        ).rejects.toThrow(
+          'Credit card and debit card payment methods can only be used with card-type accounts',
+        );
+      });
+    });
+
+    describe('debit card billing', () => {
+      it('should NOT associate billing for debit card transactions', async () => {
+        const today = new Date();
+
+        cardService.find
+          .mockResolvedValueOnce({ id: 'card-1', type: CardType.DEBIT })
+          .mockResolvedValueOnce({ id: 'card-1', type: CardType.DEBIT });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'Debit expense',
+            amount: 50 as any,
+            date: today,
+            type: TransactionType.EXPENSE,
+            sourceCardId: 'card-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        // Should not call updatePaymentTransaction (no billing)
+        expect(cardService.updatePaymentTransaction).not.toHaveBeenCalled();
+      });
+
+      it('should associate billing for credit card non-installment expense', async () => {
+        const txDate = new Date(2026, 3, 6); // Apr/06
+
+        cardService.find
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
+          })
+          .mockResolvedValueOnce({
+            id: 'card-1',
+            type: CardType.CREDIT,
+            billingCycleDay: 8,
+            billingPaymentDay: 15,
+            defaultLimit: 5000 as any,
+          });
+
+        cardService.findOrCreateBillingForDate.mockResolvedValue({
+          id: 'billing-mar-apr',
+        });
+        transactionService.create.mockResolvedValue({ id: 'tx-1' });
+
+        await resolver.createTransaction(
+          {
+            description: 'Padaria',
+            amount: 1047 as any,
+            date: txDate,
+            type: TransactionType.EXPENSE,
+            sourceCardId: 'card-1',
+            isCompleted: true,
+          } as any,
+          mockUser as any,
+        );
+
+        expect(cardService.findOrCreateBillingForDate).toHaveBeenCalledWith({
+          cardId: 'card-1',
+          billingCycleDay: 8,
+          billingPaymentDay: 15,
+          limit: 5000,
+          date: txDate,
+        });
+
+        expect(transactionService.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            cardBilling: {
+              connect: {
+                id: 'billing-mar-apr',
+              },
+            },
+          }),
+        );
+
+        expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+          'billing-mar-apr',
+        );
+      });
+    });
+  });
+
+  describe('createInstallmentTransaction', () => {
+    it('should reject debit cards', async () => {
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.DEBIT,
+      });
+
+      await expect(
+        resolver.createInstallmentTransaction(
+          {
+            description: 'Installment tx',
+            totalAmount: 1200 as any,
+            totalInstallments: 12,
+            startDate: new Date(),
+            sourceCardId: 'card-1',
+          } as any,
+          mockUser as any,
+        ),
+      ).rejects.toThrow(
+        'Transações parceladas não são permitidas para cartões de débito',
+      );
+    });
+
+    it('should reject when card is not found', async () => {
+      cardService.find.mockResolvedValue(null);
+
+      await expect(
+        resolver.createInstallmentTransaction(
+          {
+            description: 'Test',
+            totalAmount: 1200 as any,
+            totalInstallments: 12,
+            startDate: new Date(),
+            sourceCardId: 'nonexistent',
+          } as any,
+          mockUser as any,
+        ),
+      ).rejects.toThrow('Cartão não encontrado');
+    });
+
+    it('should link parent billing from first installment and recalc billings', async () => {
+      const startDate = new Date(2026, 0, 10);
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({
+        id: 'tx-parent',
+      });
+
+      cardService.findOrCreateBillingForDate
+        .mockResolvedValueOnce({
+          id: 'billing-first',
+        })
+        .mockResolvedValueOnce({
+          id: 'billing-second',
+        });
+
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-first',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 1200 as any,
+          totalInstallments: 2,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(prismaService.transactionInstallment.create).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(
+        cardService.syncParentTransactionBillingFromFirstInstallment,
+      ).toHaveBeenCalledWith('tx-parent');
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-first',
+      );
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-second',
+      );
+    });
+
+    it('should distribute rounding cents to first installments', async () => {
+      const startDate = new Date(2026, 0, 10);
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({ id: 'tx-parent' });
+      cardService.findOrCreateBillingForDate.mockResolvedValue({
+        id: 'billing-1',
+      });
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-1',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 33893 as any,
+          totalInstallments: 4,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 8474 }),
+        }),
+      );
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 8473 }),
+        }),
+      );
+    });
+
+    it('should force billing for installment #1 even before first known billing', async () => {
+      const startDate = new Date(2026, 3, 6); // Apr/06
+
+      cardService.find.mockResolvedValue({
+        id: 'card-1',
+        type: CardType.CREDIT,
+        billingCycleDay: 15,
+        billingPaymentDay: 25,
+        defaultLimit: 5000 as any,
+      });
+
+      transactionService.create.mockResolvedValue({
+        id: 'tx-parent',
+      });
+
+      cardService.findOrCreateBillingForDate
+        .mockResolvedValueOnce({ id: 'billing-mar-apr' }) // #1 Apr/06 -> Mar/09-Apr/08
+        .mockResolvedValueOnce({ id: 'billing-apr-may' }) // #2 May/06 -> Apr/09-May/08
+        .mockResolvedValueOnce({ id: 'billing-may-jun' }) // #3 Jun/06 -> May/09-Jun/08
+        .mockResolvedValueOnce({ id: 'billing-jun-jul' }); // #4 Jul/06 -> Jun/09-Jul/08
+
+      prismaService.transactionInstallment.create.mockResolvedValue({});
+      cardService.syncParentTransactionBillingFromFirstInstallment.mockResolvedValue(
+        'billing-mar-apr',
+      );
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.createInstallmentTransaction(
+        {
+          description: 'Installment tx',
+          totalAmount: 1200 as any,
+          totalInstallments: 4,
+          startDate,
+          sourceCardId: 'card-1',
+        } as any,
+        mockUser as any,
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 1,
+            cardBillingId: 'billing-mar-apr',
+          }),
+        }),
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 2,
+            cardBillingId: 'billing-apr-may',
+          }),
+        }),
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 3,
+            cardBillingId: 'billing-may-jun',
+          }),
+        }),
+      );
+
+      expect(
+        prismaService.transactionInstallment.create,
+      ).toHaveBeenNthCalledWith(
+        4,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            installmentNumber: 4,
+            cardBillingId: 'billing-jun-jul',
+          }),
+        }),
+      );
+
+      expect(
+        cardService.syncParentTransactionBillingFromFirstInstallment,
+      ).toHaveBeenCalledWith('tx-parent');
+
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenCalledTimes(4);
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          date: new Date(2026, 3, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          date: new Date(2026, 4, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          date: new Date(2026, 5, 6),
+        }),
+      );
+      expect(cardService.findOrCreateBillingForDate).toHaveBeenNthCalledWith(
+        4,
+        expect.objectContaining({
+          date: new Date(2026, 6, 6),
+        }),
+      );
+    });
+  });
+
+  describe('updateTransaction', () => {
+    it('should throw when transaction not found', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue(null);
+
+      await expect(
+        resolver.updateTransaction(
+          { id: 'nonexistent', description: 'Test' } as any,
+          mockUser as any,
+        ),
+      ).rejects.toThrow('Transaction not found');
+    });
+
+    it('should throw when transaction belongs to another user', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'other-user',
+        status: TransactionStatus.COMPLETED,
+        installments: [],
+      });
+
+      await expect(
+        resolver.updateTransaction(
+          { id: 'tx-1', description: 'Test' } as any,
+          mockUser as any,
+        ),
+      ).rejects.toThrow('Transaction does not belong to user');
+    });
+
+    it('should auto-complete when date changes to past', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 5);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.PLANNED,
+        date: new Date(),
+        installments: [],
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-1', date: pastDate } as any,
+        mockUser as any,
+      );
+
+      expect(transactionService.update).toHaveBeenCalledWith(
+        'tx-1',
+        expect.objectContaining({
+          status: TransactionStatus.COMPLETED,
+        }),
+      );
+    });
+
+    it('should switch to PLANNED when date changes to future', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 10);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        date: new Date(),
+        installments: [],
+        billingPayment: null,
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        status: TransactionStatus.PLANNED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-1', date: futureDate } as any,
+        mockUser as any,
+      );
+
+      expect(transactionService.update).toHaveBeenCalledWith(
+        'tx-1',
+        expect.objectContaining({
+          status: TransactionStatus.PLANNED,
+        }),
+      );
+    });
+
+    it('should mark CLOSED billing as PAID immediately when payment tx becomes COMPLETED', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 1);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-pay',
+        userId: 'user-1',
+        status: TransactionStatus.PLANNED,
+        date: pastDate,
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-1', status: CardBillingStatus.CLOSED },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-pay',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-pay', date: pastDate } as any,
+        mockUser as any,
+      );
+
+      expect(cardService.markBillingPaid).toHaveBeenCalledWith('billing-1');
+    });
+
+    it('should mark OVERDUE billing as PAID immediately when payment tx becomes COMPLETED', async () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 5);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-pay-overdue',
+        userId: 'user-1',
+        status: TransactionStatus.OVERDUE,
+        date: pastDate,
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-2', status: CardBillingStatus.OVERDUE },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-pay-overdue',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-pay-overdue', date: pastDate } as any,
+        mockUser as any,
+      );
+
+      expect(cardService.markBillingPaid).toHaveBeenCalledWith('billing-2');
+    });
+
+    it('should NOT mark billing as PAID when tx was already COMPLETED before update', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-already',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        date: new Date(),
+        installments: [],
+        cardBillingId: null,
+        cardBilling: null,
+        billingPayment: { id: 'billing-3', status: CardBillingStatus.CLOSED },
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-already',
+        description: 'Updated description',
+      });
+
+      await resolver.updateTransaction(
+        { id: 'tx-already', description: 'Updated description' } as any,
+        mockUser as any,
+      );
+
+      expect(cardService.markBillingPaid).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteTransaction', () => {
+    it('should throw when transaction not found', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue(null);
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
+
+      await expect(
+        resolver.deleteTransaction(mockUser as any, 'nonexistent'),
+      ).rejects.toThrow('Transação não encontrada');
+    });
+
+    it('should throw when transaction belongs to another user', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'other-user',
+        status: TransactionStatus.COMPLETED,
+      });
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
+
+      await expect(
+        resolver.deleteTransaction(mockUser as any, 'tx-1'),
+      ).rejects.toThrow('Transação não pertence ao usuário');
+    });
+
+    it('should successfully delete a simple transaction (no billing restrictions)', async () => {
+      prismaService.transaction.findUnique.mockResolvedValueOnce({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        cardBillingId: null,
+      });
+
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
+
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        deletedAt: new Date(),
+      });
+
+      await resolver.deleteTransaction(mockUser as any, 'tx-1');
+
+      expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
+        deletedAt: expect.any(Date),
+      });
+    });
+
+    it('should delete a transaction in a PAID billing (no restrictions)', async () => {
+      prismaService.transaction.findUnique.mockResolvedValueOnce({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+        cardBillingId: 'billing-1',
+      });
+
+      prismaService.transactionInstallment.findMany =
+        vi.fn().mockResolvedValue([]);
+
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        deletedAt: new Date(),
+      });
+      cardService.updatePaymentTransaction.mockResolvedValue(null);
+
+      await resolver.deleteTransaction(mockUser as any, 'tx-1');
+
+      expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
+        deletedAt: expect.any(Date),
+      });
+      expect(cardService.updatePaymentTransaction).toHaveBeenCalledWith(
+        'billing-1',
+      );
+    });
+  });
+
+  describe('rescheduleTransaction', () => {
+    it('should only allow rescheduling PLANNED transactions', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.COMPLETED,
+      });
+
+      await expect(
+        resolver.rescheduleTransaction(
+          mockUser as any,
+          {
+            id: 'tx-1',
+            newDate: new Date(),
+          } as any,
+        ),
+      ).rejects.toThrow('Apenas transações planejadas podem ser reagendadas');
+    });
+
+    it('should throw when transaction not found', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue(null);
+
+      await expect(
+        resolver.rescheduleTransaction(
+          mockUser as any,
+          {
+            id: 'nonexistent',
+            newDate: new Date(),
+          } as any,
+        ),
+      ).rejects.toThrow('Transação não encontrada');
+    });
+
+    it('should throw when transaction belongs to another user', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'other-user',
+        status: TransactionStatus.PLANNED,
+      });
+
+      await expect(
+        resolver.rescheduleTransaction(
+          mockUser as any,
+          {
+            id: 'tx-1',
+            newDate: new Date(),
+          } as any,
+        ),
+      ).rejects.toThrow('Transação não pertence ao usuário');
+    });
+
+    it('should successfully reschedule a PLANNED transaction', async () => {
+      const newDate = new Date();
+      newDate.setDate(newDate.getDate() + 5);
+
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        status: TransactionStatus.PLANNED,
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        date: newDate,
+      });
+
+      const result = await resolver.rescheduleTransaction(
+        mockUser as any,
+        {
+          id: 'tx-1',
+          newDate,
+        } as any,
+      );
+
+      expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
+        date: newDate,
+      });
+    });
+  });
+
+  describe('updateRecurringTransactions', () => {
+    it('should throw for non-recurring transactions regardless of scope', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        recurringTransactionId: null,
+      });
+
+      await expect(
+        resolver.updateRecurringTransactions(
+          mockUser as any,
+          {
+            transactionId: 'tx-1',
+            scope: 'THIS_ONLY',
+            description: 'Updated',
+          } as any,
+        ),
+      ).rejects.toThrow('Transação não faz parte de uma recorrência');
+    });
+
+    it('should throw when transaction not found', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue(null);
+
+      await expect(
+        resolver.updateRecurringTransactions(
+          mockUser as any,
+          {
+            transactionId: 'nonexistent',
+            scope: 'THIS_ONLY',
+            description: 'test',
+          } as any,
+        ),
+      ).rejects.toThrow('Transação não encontrada');
+    });
+
+    it('should throw when transaction belongs to another user', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'other-user',
+        recurringTransactionId: 'rec-1',
+      });
+
+      await expect(
+        resolver.updateRecurringTransactions(
+          mockUser as any,
+          {
+            transactionId: 'tx-1',
+            scope: 'THIS_ONLY',
+            description: 'test',
+          } as any,
+        ),
+      ).rejects.toThrow('Transação não pertence ao usuário');
+    });
+
+    it('should update single transaction for THIS_ONLY scope', async () => {
+      prismaService.transaction.findUnique.mockResolvedValue({
+        id: 'tx-1',
+        userId: 'user-1',
+        recurringTransactionId: 'rec-1',
+      });
+      transactionService.update.mockResolvedValue({
+        id: 'tx-1',
+        description: 'Updated',
+      });
+
+      const result = await resolver.updateRecurringTransactions(
+        mockUser as any,
+        {
+          transactionId: 'tx-1',
+          scope: 'THIS_ONLY',
+          description: 'Updated',
+        } as any,
+      );
+
+      expect(transactionService.update).toHaveBeenCalledWith('tx-1', {
+        description: 'Updated',
+      });
+    });
+  });
+});

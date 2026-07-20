@@ -34,4 +34,10 @@ export class UpdateTransactionInput {
 
   @Field(() => TransactionCategory, { nullable: true })
   category?: TransactionCategory;
+
+  @Field(() => ID, { nullable: true })
+  sourceAccountId?: string;
+
+  @Field(() => ID, { nullable: true })
+  destinyAccountId?: string;
 }

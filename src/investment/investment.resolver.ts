@@ -1,15 +1,4 @@
-import {
-  Args,
-  Field,
-  Float,
-  ID,
-  Info,
-  Mutation,
-  ObjectType,
-  PickType,
-  Query,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, ID, Info, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InvestmentService } from './investment.service';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { UserModel } from '@/user/models/user.model';
@@ -23,36 +12,47 @@ import {
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
   AccountWithInvestmentCount,
+  InvestmentChartDataPoint,
 } from './investment.model';
 import { CurrentUser } from '@/user/user.decorator';
 import { Auth } from '@/auth/auth.decorator';
 import {
-  Account,
   Investment,
-  InvestmentCreateWithoutUserInput,
   Regime,
-  Transaction,
-  TransactionStatus,
-  TransactionType,
+  InstitutionType,
+  InvestmentStatus,
 } from '@/lib/graphql/prisma-client';
-import { AccountService } from '@/account/account.service';
-import { AccountType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { CreateInvestmentInput } from './input/create-investment.input';
-import { TransactionService } from '@/transaction/transaction.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { UpdateInvestmentInput } from './input/update-investment.input';
 import {
   InvestmentEvolutionModel,
   InvestmentEvolutionArgs,
 } from './investment-evolution.model';
-
+import { InstitutionLinkService } from '@/institution-link/institution-link.service';
+import { RedeemInvestmentInput } from './input/redeem-investment.input';
+import { RegimeTaxesHistoryModel, InvestmentTaxesHistoryModel } from './investment-taxes.model';
 @Resolver(() => InvestmentModel)
 export class InvestmentResolver {
   constructor(
     private readonly investmentService: InvestmentService,
-    private readonly accountService: AccountService,
-    private readonly transactionService: TransactionService,
+    private readonly institutionLinkService: InstitutionLinkService,
   ) {}
+
+  @Auth()
+  @Query(() => InvestmentModel, { name: 'investment' })
+  async findOne(
+    @Args('id', { type: () => String }) id: string,
+    @Info() info: GraphQLResolveInfo,
+    @CurrentUser() user: UserModel,
+  ) {
+    const queriedFields = getQueriedFields<InvestmentModel>(
+      info,
+      'investment',
+      false,
+    );
+    return this.investmentService.findOne(id, queriedFields, user.id);
+  }
 
   @Auth()
   @Query(() => InvestmentConnection, { name: 'investments' })
@@ -61,8 +61,10 @@ export class InvestmentResolver {
     @Args() ordenationArgs: OrdenationInvestmentArgs,
     @Args('regime', { type: () => Regime, nullable: true })
     regime: Regime | null,
-    @Args('accountIds', { type: () => [String!], nullable: true })
-    accountIds: string[] | null,
+    @Args('status', { type: () => InvestmentStatus, nullable: true })
+    status: InvestmentStatus | null,
+    @Args('institutionLinkIds', { type: () => [ID!], nullable: true })
+    institutionLinkIds: string[] | null,
     @Info() info: GraphQLResolveInfo,
     @CurrentUser() user: UserModel,
   ) {
@@ -77,8 +79,34 @@ export class InvestmentResolver {
       ordenationArgs,
       userId: user?.id,
       regime,
-      accountIds,
+      status,
+      institutionLinkIds,
     });
+  }
+
+  @Auth()
+  @Query(() => [String], { name: 'availableTreasuryBonds' })
+  async availableTreasuryBonds(
+    @Args('regime', { type: () => Regime }) regime: Regime,
+  ) {
+    return this.investmentService.getAvailableTreasuryBonds(regime);
+  }
+
+  @Auth()
+  @Query(() => RegimeTaxesHistoryModel, { name: 'regimeTaxesHistory' })
+  async getRegimeTaxesHistory(
+    @Args('regime', { type: () => Regime }) regime: Regime,
+  ) {
+    return this.investmentService.getRegimeTaxesHistory(regime);
+  }
+
+  @Auth()
+  @Query(() => InvestmentTaxesHistoryModel, { name: 'investmentTaxesHistory' })
+  async getInvestmentTaxesHistory(
+    @Args('investmentId', { type: () => String }) investmentId: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentTaxesHistory(investmentId, user.id);
   }
 
   @Auth()
@@ -87,36 +115,20 @@ export class InvestmentResolver {
     @Args('data') data: CreateInvestmentInput,
     @CurrentUser() user: UserModel,
   ) {
-    const account = await this.accountService.find({
-      id: data.accountId,
-      type: {
-        in: [AccountType.SAVINGS, AccountType.INVESTMENT],
+    const institutionLink = await this.institutionLinkService.find({
+      id: data.institutionLinkId,
+      institution: {
+        types: {
+          has: InstitutionType.INVESTMENT,
+        },
       },
       user: {
         id: user.id,
       },
     });
 
-    if (!account) {
+    if (!institutionLink) {
       throw new NotFoundException('Conta não encontrada');
-    }
-
-    if (
-      account.type === AccountType.SAVINGS &&
-      data.regimeName !== Regime.POUPANCA
-    ) {
-      throw new NotFoundException(
-        'Investimento em poupança deve ser criado a partir de uma conta-poupança',
-      );
-    }
-
-    if (
-      account.type === AccountType.INVESTMENT &&
-      data.regimeName === Regime.POUPANCA
-    ) {
-      throw new NotFoundException(
-        'Investimento que não seja em poupança deve ser criado a partir de uma conta de investimento',
-      );
     }
 
     const createdInvestment = await this.investmentService.create(
@@ -163,12 +175,38 @@ export class InvestmentResolver {
   }
 
   @Auth()
+  @Mutation(() => Investment, { name: 'redeemInvestment' })
+  async redeemInvestment(
+    @Args('data') data: RedeemInvestmentInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const result = await this.investmentService.redeem(
+      data.investmentId,
+      user.id,
+      data.finishedAt,
+    );
+
+    return result.investment;
+  }
+
+  @Auth()
+  @Mutation(() => Investment, { name: 'updateInvestment' })
+  async updateInvestment(
+    @Args('data') data: UpdateInvestmentInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const result = await this.investmentService.update(data, user.id);
+
+    return result.investment;
+  }
+
+  @Auth()
   @Query(() => InvestmentRegimeSummaryConnection, { name: 'investmentRegimes' })
   async investmentRegimes(
     @CurrentUser() user: UserModel,
     @Info() info: GraphQLResolveInfo,
-    @Args('accountId', { type: () => String, nullable: true })
-    accountId: string | null,
+    @Args('institutionLinkId', { type: () => String, nullable: true })
+    institutionLinkId: string | null,
   ) {
     const queriedFields = getQueriedFields<InvestmentRegimeSummary>(
       info,
@@ -177,7 +215,7 @@ export class InvestmentResolver {
 
     return this.investmentService.getInvestmentRegimes({
       userId: user?.id,
-      accountId,
+      institutionLinkId,
       queriedFields,
     });
   }
@@ -191,7 +229,8 @@ export class InvestmentResolver {
     return this.investmentService.getInvestmentEvolution({
       userId: user.id,
       accountId: args.accountId,
-      period: args.period || 'YEAR',
+      period: args.period as string,
+      regime: args.regime as string | undefined,
     });
   }
 
@@ -208,5 +247,14 @@ export class InvestmentResolver {
       userId: user.id,
       regime,
     });
+  }
+
+  @Auth()
+  @Query(() => [InvestmentChartDataPoint], { name: 'investmentChartData' })
+  async investmentChartData(
+    @Args('investmentId', { type: () => String }) investmentId: string,
+    @CurrentUser() user: UserModel,
+  ) {
+    return this.investmentService.getInvestmentChartData(investmentId, user.id);
   }
 }

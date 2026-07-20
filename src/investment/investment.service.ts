@@ -1,14 +1,19 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PaginationArgs } from '@/utils/args/pagination.args';
 import { OrderDirection } from '@/utils/args/ordenation.args';
 import {
-  AccountType,
   Investment,
   InvestmentTransactionRole,
+  Prisma,
   Regime as RegimePrisma,
   TransactionStatus,
   TransactionType,
+  InvestmentStatus,
 } from '@prisma/client';
 import { selectObject } from '@/utils/select-object';
 import {
@@ -18,10 +23,19 @@ import {
   InvestmentRegimeSummaryConnection,
   OrdenationInvestmentArgs,
   TotalInvestmentsModel,
+  InvestmentChartDataPoint,
 } from './investment.model';
-import { differenceInDays } from 'date-fns';
+import {
+  RegimeTaxesHistoryModel,
+  InvestmentTaxesHistoryModel,
+} from './investment-taxes.model';
+import { differenceInDays, format, parse } from 'date-fns';
 import { getIrpfTax } from './utils/get-irpf-tax';
-import { Regime, Transaction } from '@/lib/graphql/prisma-client';
+import {
+  Regime,
+  Transaction,
+  InvestmentType,
+} from '@/lib/graphql/prisma-client';
 import { RedisCacheService } from '@/lib/redis/redis-cache.service';
 import { IpeadataService } from '@/external/ipeadata/ipeadata.service';
 import { Cron } from '@nestjs/schedule';
@@ -29,6 +43,17 @@ import { BacenService } from '@/external/bacen/bacen.service';
 import { BacenCachedValue } from '@/external/bacen/bacen.types';
 import { IpeadataCachedValue } from '@/external/ipeadata/types/ipeadata-response';
 import { CreateInvestmentInput } from './input/create-investment.input';
+import { UpdateInvestmentInput } from './input/update-investment.input';
+import { TesouroTransparenteService } from '@/external/tesouro-transparente/tesouro-transparente.service';
+import { getBusinessDays } from './utils/get-business-days';
+import { getIofTax } from './utils/get-iof-tax';
+import {
+  InvestmentTaxesAndFees,
+  ApplicableTaxEnum,
+  SellFeasibility,
+  SellFeasibilityStatus,
+} from './investment.model';
+import { getSellFeasibility } from './utils/get-sell-feasibility';
 
 type CorrectInvestmentAmountReturn = {
   correctedAmount: number;
@@ -36,6 +61,8 @@ type CorrectInvestmentAmountReturn = {
   taxPercentage: number;
   taxedAmount: number;
   taxedVariation: number;
+  taxesAndFees: InvestmentTaxesAndFees;
+  sellFeasibility: SellFeasibility;
 };
 
 export type InvestmentCachedAmounts = {
@@ -44,6 +71,8 @@ export type InvestmentCachedAmounts = {
   lastDate: string;
 };
 
+import { getTaxesAndFeesDetails } from './utils/get-taxes-details';
+
 @Injectable()
 export class InvestmentService {
   constructor(
@@ -51,7 +80,209 @@ export class InvestmentService {
     private readonly redisCacheService: RedisCacheService,
     private readonly ipeadataService: IpeadataService,
     private readonly bacenService: BacenService,
+    private readonly tesouroTransparenteService: TesouroTransparenteService,
   ) {}
+
+  async enrichInvestment(
+    investment: any,
+    queriedFields: string[],
+    cdiLastDate?: string,
+    poupancaLastDate?: string,
+  ): Promise<any> {
+    const { correctedAmount, taxedAmount, taxesAndFees, sellFeasibility } =
+      queriedFields.includes('correctedAmount') ||
+      queriedFields.includes('taxedAmount') ||
+      queriedFields.includes('currentVariation') ||
+      queriedFields.includes('taxedVariation') ||
+      queriedFields.includes('taxPercentage') ||
+      queriedFields.includes('sellFeasibility') ||
+      queriedFields.some((f) => f.startsWith('taxesAndFees'))
+        ? await this.correctInvestmentAmount(
+            investment,
+            investment.regimeName === Regime.CDI
+              ? cdiLastDate
+              : poupancaLastDate,
+          )
+        : ({} as any);
+
+    const correctedVariation = correctedAmount
+      ? 100 * ((correctedAmount - investment.amount) / investment.amount)
+      : 0;
+
+    const taxedVariation = taxedAmount
+      ? 100 * ((taxedAmount - investment.amount) / investment.amount)
+      : 0;
+
+    const daysFromInitialDate = differenceInDays(
+      new Date(),
+      investment.startDate,
+    );
+    const isInvestmentFinished = daysFromInitialDate >= investment.duration;
+    const currentInvestmentDays = isInvestmentFinished
+      ? investment.duration
+      : daysFromInitialDate;
+    const taxPercentage = getIrpfTax(currentInvestmentDays);
+
+    let currentMarketRate: number | null = null;
+    if (
+      queriedFields.includes('currentMarketRate') &&
+      investment.type === InvestmentType.TREASURY &&
+      investment.maturityDate
+    ) {
+      let tipoTituloPrefix = '';
+      if (investment.regimeName === Regime.PREFIXED)
+        tipoTituloPrefix = 'Tesouro Prefixado';
+      else if (investment.regimeName === Regime.SELIC)
+        tipoTituloPrefix = 'Tesouro Selic';
+      else if (investment.regimeName === Regime.IPCA)
+        tipoTituloPrefix = 'Tesouro IPCA+';
+
+      if (tipoTituloPrefix) {
+        const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+        const bondHistory =
+          await this.tesouroTransparenteService.getHistoricalDataForBond(
+            tipoTituloPrefix,
+            maturityStr,
+          );
+        if (bondHistory && bondHistory.length > 0) {
+          const lastPoint = bondHistory[bondHistory.length - 1];
+          currentMarketRate = lastPoint.taxaVendaManha;
+        }
+      }
+    }
+
+    return {
+      ...investment,
+      currentMarketRate,
+      ...(correctedAmount && {
+        correctedAmount: correctedAmount,
+      }),
+      currentVariation: correctedVariation.toFixed(2).replace('.', ',') + '%',
+      taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
+      ...(taxedAmount && {
+        taxedAmount: taxedAmount,
+      }),
+      taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
+      regimeName: investment.regimeName as Regime,
+      taxesAndFees:
+        taxesAndFees ||
+        getTaxesAndFeesDetails(
+          investment,
+          {
+            irpfAmount:
+              (correctedAmount || investment.amount) -
+              (taxedAmount || investment.amount),
+            iofAmount: 0,
+            b3CustodyFeeAmount: 0,
+            brokerageFeeAmount: 0,
+          },
+          correctedAmount ? correctedAmount - investment.amount : 0,
+        ),
+      sellFeasibility:
+        sellFeasibility ||
+        getSellFeasibility(
+          investment.type,
+          correctedAmount || investment.amount,
+          investment.amount,
+        ),
+    };
+  }
+
+  async findOne(
+    id: string,
+    queriedFields: (keyof InvestmentModel)[],
+    userId: string,
+  ): Promise<InvestmentModel> {
+    const investment = await this.prismaService.investment.findFirst({
+      where: {
+        id,
+        institutionLink: { userId },
+      },
+      select: selectObject<Investment, InvestmentModel>(
+        queriedFields.filter(
+          (f) =>
+            !f.startsWith('taxesAndFees') &&
+            !f.startsWith('sellFeasibility') &&
+            f !== 'currentMarketRate',
+        ) as (keyof InvestmentModel)[],
+        {
+          currentVariation: ['amount'],
+          taxPercentage: ['amount'],
+          taxedVariation: ['amount'],
+          currentMarketRate: ['type', 'maturityDate', 'regimeName'],
+          institutionLink: [],
+          transactions: [],
+          taxesAndFees: [],
+          sellFeasibility: [],
+          ...((queriedFields.includes('correctedAmount') ||
+            queriedFields.includes('taxedAmount') ||
+            queriedFields.includes('currentVariation') ||
+            queriedFields.includes('taxedVariation') ||
+            queriedFields.includes('taxPercentage') ||
+            queriedFields.includes('sellFeasibility')) && {
+            DEFAULT: [
+              'id',
+              'amount',
+              'startDate',
+              'finishedAt',
+              'duration',
+              'regimeName',
+              'regimePercentage',
+              'type',
+              'fixedRate',
+              'brokerageFee',
+              'maturityDate',
+              'lastCorrectedAt',
+              'correctedAmount',
+              'taxedAmount',
+            ] satisfies (keyof Investment)[],
+          }),
+        },
+      ),
+    });
+
+    if (!investment) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    let cdiLastDate: string | undefined;
+    let poupancaLastDate: string | undefined;
+
+    if (investment.regimeName === Regime.CDI) {
+      cdiLastDate = await this.redisCacheService.get(
+        'external-ipeadata-cdi-last-date',
+        async () => {
+          const cdiValues = await this.ipeadataService.getCdiValues();
+          await this.redisCacheService.set(
+            'external-ipeadata-cdi-daily',
+            cdiValues,
+          );
+          return cdiValues?.[cdiValues?.length - 1]?.date;
+        },
+      );
+    }
+
+    if (investment.regimeName === Regime.POUPANCA) {
+      poupancaLastDate = await this.redisCacheService.get(
+        'external-bacen-poupanca-last-date',
+        async () => {
+          const poupancaValues = await this.bacenService.getPoupancaValues();
+          await this.redisCacheService.set(
+            'external-bacen-poupanca-daily',
+            poupancaValues,
+          );
+          return poupancaValues?.[poupancaValues?.length - 1]?.data;
+        },
+      );
+    }
+
+    return this.enrichInvestment(
+      investment,
+      queriedFields,
+      cdiLastDate,
+      poupancaLastDate,
+    );
+  }
 
   async findMany({
     queriedFields,
@@ -59,22 +290,39 @@ export class InvestmentService {
     ordenationArgs,
     userId,
     regime,
-    accountIds,
+    status,
+    institutionLinkIds,
   }: {
     queriedFields: (keyof InvestmentModel)[];
     paginationArgs: PaginationArgs;
     ordenationArgs: OrdenationInvestmentArgs;
     userId: string;
     regime: Regime | null;
-    accountIds?: string[] | null;
+    status?: InvestmentStatus | null;
+    institutionLinkIds?: string[] | null;
   }): Promise<InvestmentConnection> {
     const { after, before, first, last } = paginationArgs;
     const { orderBy, orderDirection = OrderDirection.Asc } = ordenationArgs;
 
-    const whereClause = {
-      userId,
-      ...(regime && { regimeName: regime }),
-      ...(accountIds && { accountId: { in: accountIds } }),
+    const userInstitutionLinks =
+      await this.prismaService.institutionLink.findMany({
+        where: {
+          userId,
+        },
+        select: { id: true },
+      });
+
+    const userInstitutionLinkIds = userInstitutionLinks.map((link) => link.id);
+
+    const whereClause: Prisma.InvestmentWhereInput = {
+      institutionLinkId: {
+        in: userInstitutionLinkIds,
+      },
+      regimeName: regime ?? undefined,
+      status: status ?? undefined,
+      ...(institutionLinkIds?.length && {
+        institutionLinkId: { in: institutionLinkIds },
+      }),
     };
 
     const unbufferedCursor = after
@@ -121,31 +369,47 @@ export class InvestmentService {
                 : OrderDirection.Desc,
           }
         : undefined,
-      select: selectObject<Investment, InvestmentModel>(queriedFields, {
-        currentVariation: ['amount'],
-        taxPercentage: ['amount'],
-        taxedVariation: ['amount'],
-        account: [],
-        transactions: [],
-        ...((queriedFields.includes('correctedAmount') ||
-          queriedFields.includes('taxedAmount') ||
-          queriedFields.includes('currentVariation') ||
-          queriedFields.includes('taxedVariation') ||
-          queriedFields.includes('taxPercentage')) && {
-          DEFAULT: [
-            'id',
-            'amount',
-            'startDate',
-            'finishedAt',
-            'duration',
-            'regimeName',
-            'regimePercentage',
-            'lastCorrectedAt',
-            'correctedAmount',
-            'taxedAmount',
-          ] satisfies (keyof Investment)[],
-        }),
-      }),
+      select: selectObject<Investment, InvestmentModel>(
+        queriedFields.filter(
+          (f) =>
+            !f.startsWith('taxesAndFees') &&
+            !f.startsWith('sellFeasibility') &&
+            f !== 'currentMarketRate',
+        ) as (keyof InvestmentModel)[],
+        {
+          currentVariation: ['amount'],
+          taxPercentage: ['amount'],
+          taxedVariation: ['amount'],
+          currentMarketRate: ['type', 'maturityDate', 'regimeName'],
+          institutionLink: [],
+          transactions: [],
+          taxesAndFees: [],
+          sellFeasibility: [],
+          ...((queriedFields.includes('correctedAmount') ||
+            queriedFields.includes('taxedAmount') ||
+            queriedFields.includes('currentVariation') ||
+            queriedFields.includes('taxedVariation') ||
+            queriedFields.includes('taxPercentage') ||
+            queriedFields.includes('sellFeasibility')) && {
+            DEFAULT: [
+              'id',
+              'amount',
+              'startDate',
+              'finishedAt',
+              'duration',
+              'regimeName',
+              'regimePercentage',
+              'type',
+              'fixedRate',
+              'brokerageFee',
+              'maturityDate',
+              'lastCorrectedAt',
+              'correctedAmount',
+              'taxedAmount',
+            ] satisfies (keyof Investment)[],
+          }),
+        },
+      ),
       where: whereClause,
     });
 
@@ -193,54 +457,14 @@ export class InvestmentService {
     }
 
     const investments = await Promise.all(
-      investmentsQuery.map(async (investment) => {
-        const { correctedAmount, taxedAmount } =
-          queriedFields.includes('correctedAmount') ||
-          queriedFields.includes('taxedAmount') ||
-          queriedFields.includes('currentVariation') ||
-          queriedFields.includes('taxedVariation') ||
-          queriedFields.includes('taxPercentage')
-            ? await this.correctInvestmentAmount(
-                investment,
-                investment.regimeName === Regime.CDI
-                  ? cdiLastDate
-                  : poupancaLastDate,
-              )
-            : {};
-
-        const correctedVariation = correctedAmount
-          ? 100 * ((correctedAmount - investment.amount) / investment.amount)
-          : 0;
-
-        const taxedVariation = taxedAmount
-          ? 100 * ((taxedAmount - investment.amount) / investment.amount)
-          : 0;
-
-        const daysFromInitialDate = differenceInDays(
-          new Date(),
-          investment.startDate,
-        );
-        const isInvestmentFinished = daysFromInitialDate >= investment.duration;
-        const currentInvestmentDays = isInvestmentFinished
-          ? investment.duration
-          : daysFromInitialDate;
-        const taxPercentage = getIrpfTax(currentInvestmentDays);
-
-        return {
-          ...investment,
-          ...(correctedAmount && {
-            correctedAmount: correctedAmount,
-          }),
-          currentVariation:
-            correctedVariation.toFixed(2).replace('.', ',') + '%',
-          taxPercentage: taxPercentage.toFixed(2).replace('.', ',') + '%',
-          ...(taxedAmount && {
-            taxedAmount: taxedAmount,
-          }),
-          taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
-          regimeName: investment.regimeName as Regime,
-        };
-      }),
+      investmentsQuery.map((investment) =>
+        this.enrichInvestment(
+          investment,
+          queriedFields,
+          cdiLastDate,
+          poupancaLastDate,
+        ),
+      ),
     );
 
     if (last) {
@@ -319,7 +543,9 @@ export class InvestmentService {
             id: true,
           },
           where: {
-            userId,
+            institutionLink: {
+              userId,
+            },
             regimeName: regime,
           },
         })
@@ -351,14 +577,13 @@ export class InvestmentService {
         duration: isPoupanca ? undefined : data.duration,
         regimeName: data.regimeName,
         regimePercentage: isPoupanca ? data.regimePercentage : 100,
-        account: {
+        type: data.type,
+        fixedRate: data.fixedRate,
+        brokerageFee: data.brokerageFee,
+        maturityDate: data.maturityDate,
+        institutionLink: {
           connect: {
-            id: data.accountId,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
+            id: data.institutionLinkId,
           },
         },
       },
@@ -378,11 +603,6 @@ export class InvestmentService {
               id: investment.id,
             },
           },
-          account: {
-            connect: {
-              id: data.accountId,
-            },
-          },
         },
       });
 
@@ -393,14 +613,69 @@ export class InvestmentService {
 
     return { investment, investmentTransaction };
   }
+  async update(data: UpdateInvestmentInput, userId: string) {
+    const isPoupanca = data.regimeName === Regime.POUPANCA;
 
+    const existingInvestment = await this.prismaService.investment.findFirst({
+      where: {
+        id: data.id,
+        institutionLink: {
+          userId,
+        },
+      },
+      include: {
+        transactions: {
+          where: { role: InvestmentTransactionRole.FUNDING },
+          take: 1,
+        },
+      },
+    });
+
+    if (!existingInvestment) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    const investment = await this.prismaService.investment.update({
+      where: { id: data.id },
+      data: {
+        amount: data.amount,
+        startDate: data.startDate,
+        duration: isPoupanca ? undefined : data.duration,
+        regimeName: data.regimeName,
+        regimePercentage: isPoupanca ? data.regimePercentage : 100,
+        type: data.type,
+        fixedRate: data.fixedRate,
+        brokerageFee: data.brokerageFee,
+        maturityDate: data.maturityDate,
+        ...(data.institutionLinkId
+          ? {
+              institutionLink: {
+                connect: { id: data.institutionLinkId },
+              },
+            }
+          : {}),
+      },
+    });
+
+    let investmentTransaction = existingInvestment.transactions[0];
+
+    if (data.amount && Number(investmentTransaction?.amount) !== data.amount) {
+      investmentTransaction =
+        await this.prismaService.investmentTransaction.update({
+          where: { id: investmentTransaction.id },
+          data: { amount: data.amount },
+        });
+    }
+
+    return { investment, investmentTransaction };
+  }
   async delete(id: string, userId: string) {
     const investmentFoundAndFromUser =
-      await this.prismaService.investment.findUnique({
+      await this.prismaService.investment.findFirst({
         where: {
           id,
-          user: {
-            id: userId,
+          institutionLink: {
+            userId,
           },
         },
       });
@@ -420,36 +695,119 @@ export class InvestmentService {
     };
   }
 
-  async getInvestmentRegimes({
-    userId,
-    accountId,
-    queriedFields,
-  }: {
-    userId: string;
-    accountId?: string | null;
-    queriedFields: (keyof InvestmentRegimeSummary)[];
-  }): Promise<InvestmentRegimeSummaryConnection> {
-    const whereClause = {
-      userId,
-      ...(accountId && { accountId }),
-    };
-
-    // Get all investments grouped by regime
-    const investmentsByRegime = await this.prismaService.investment.groupBy({
-      by: ['regimeName'],
-      where: whereClause,
-      _sum: {
-        amount: true,
-      },
-      _count: {
-        id: true,
-      },
-      orderBy: {
-        _count: {
-          id: 'desc',
+  async redeem(investmentId: string, userId: string, finishedAt?: Date) {
+    const investment = await this.prismaService.investment.findFirst({
+      where: {
+        id: investmentId,
+        institutionLink: {
+          userId,
         },
       },
     });
+
+    if (!investment) {
+      throw new NotFoundException('Investment not found');
+    }
+
+    if (investment.status === 'CLOSED') {
+      throw new BadRequestException('Investment is already redeemed');
+    }
+
+    const redeemDate = finishedAt || new Date();
+
+    // Get the latest corrected amounts
+    let lastDate: string;
+    if (investment.regimeName === Regime.CDI) {
+      lastDate = await this.redisCacheService.get(
+        'external-ipeadata-cdi-last-date',
+        async () => {
+          const cdiValues = await this.ipeadataService.getCdiValues();
+          return cdiValues?.[cdiValues?.length - 1]?.date;
+        },
+      );
+    } else {
+      lastDate = await this.redisCacheService.get(
+        'external-bacen-poupanca-last-date',
+        async () => {
+          const poupancaValues = await this.bacenService.getPoupancaValues();
+          return poupancaValues?.[poupancaValues?.length - 1]?.data;
+        },
+      );
+    }
+
+    const correctionResult = await this.correctInvestmentAmount(
+      investment,
+      lastDate,
+    );
+
+    const taxedAmount = correctionResult.taxedAmount;
+
+    const [updatedInvestment, redemptionTransaction] =
+      await this.prismaService.$transaction(async (tx) => {
+        const inv = await tx.investment.update({
+          where: { id: investmentId },
+          data: {
+            status: 'CLOSED',
+            finishedAt: redeemDate,
+            correctedAmount: correctionResult.correctedAmount,
+            taxedAmount: correctionResult.taxedAmount,
+          },
+        });
+
+        // 1. Transaction: REDEMPTION (Gross Amount = marketValue)
+        const redemption = await tx.investmentTransaction.create({
+          data: {
+            amount: correctionResult.correctedAmount,
+            role: InvestmentTransactionRole.REDEMPTION,
+            investment: { connect: { id: investmentId } },
+          },
+        });
+
+        const taxes = correctionResult.taxesAndFees;
+        if (taxes && taxes.details) {
+          for (const tax of taxes.details) {
+            if (tax.amount > 0) {
+              await tx.investmentTransaction.create({
+                data: {
+                  amount: tax.amount,
+                  role: InvestmentTransactionRole.FEE,
+                  investment: { connect: { id: investmentId } },
+                },
+              });
+            }
+          }
+        }
+
+        return [inv, redemption];
+      });
+
+    return { investment: updatedInvestment, redemptionTransaction };
+  }
+
+  async getInvestmentRegimes({
+    userId,
+    institutionLinkId,
+    queriedFields,
+  }: {
+    userId: string;
+    institutionLinkId?: string | null;
+    queriedFields: (keyof InvestmentRegimeSummary)[];
+  }): Promise<InvestmentRegimeSummaryConnection> {
+    const institutionLinks = await this.prismaService.institutionLink.findMany({
+      where: {
+        userId,
+        ...(institutionLinkId && { id: institutionLinkId }),
+      },
+      select: { id: true },
+    });
+
+    const institutionLinkIds = institutionLinks.map((link) => link.id);
+
+    const whereClause: Prisma.InvestmentWhereInput = {
+      institutionLinkId: {
+        in: institutionLinkIds,
+      },
+    };
 
     // Get all investments with their corrected and taxed amounts
     const allInvestments = await this.prismaService.investment.findMany({
@@ -469,11 +827,15 @@ export class InvestmentService {
       0,
     );
 
+    const allRegimesNames = Object.values(RegimePrisma);
+
     // Process each regime
-    const regimeSummaries = investmentsByRegime.map((regimeGroup, index) => {
+    const regimeSummariesUnsorted = allRegimesNames.map((regimeName) => {
       const regimeInvestments = allInvestments.filter(
-        (inv) => inv.regimeName === regimeGroup.regimeName,
+        (inv) => inv.regimeName === regimeName,
       );
+
+      const quantity = regimeInvestments.length;
 
       const currentInvested = regimeInvestments.reduce(
         (sum, inv) => sum + (Number(inv.correctedAmount) || Number(inv.amount)),
@@ -485,14 +847,17 @@ export class InvestmentService {
         0,
       );
 
-      const regimeTotalInvested = Number(regimeGroup._sum.amount || 0);
+      const regimeTotalInvested = regimeInvestments.reduce(
+        (sum, inv) => sum + Number(inv.amount),
+        0,
+      );
 
       const summary: InvestmentRegimeSummary = {
         ...(queriedFields.includes('name') && {
-          name: regimeGroup.regimeName,
+          name: regimeName,
         }),
         ...(queriedFields.includes('quantity') && {
-          quantity: regimeGroup._count.id,
+          quantity,
         }),
         ...(queriedFields.includes('totalInvested') && {
           totalInvested: regimeTotalInvested,
@@ -502,8 +867,10 @@ export class InvestmentService {
         }),
         ...(queriedFields.includes('currentInvestedPercentage') && {
           currentInvestedPercentage:
-            totalInvested > 0
-              ? ((currentInvested / totalInvested) * 100 - 100).toFixed(2) + '%'
+            totalInvested > 0 && regimeTotalInvested > 0
+              ? ((currentInvested / regimeTotalInvested) * 100 - 100)
+                  .toFixed(2)
+                  .replace('.', ',') + '%'
               : '0%',
         }),
         ...(queriedFields.includes('taxedInvested') && {
@@ -511,12 +878,29 @@ export class InvestmentService {
         }),
         ...(queriedFields.includes('taxedInvestedPercentage') && {
           taxedInvestedPercentage:
-            totalInvested > 0
-              ? ((taxedInvested / totalInvested) * 100 - 100).toFixed(2) + '%'
+            totalInvested > 0 && regimeTotalInvested > 0
+              ? ((taxedInvested / regimeTotalInvested) * 100 - 100)
+                  .toFixed(2)
+                  .replace('.', ',') + '%'
               : '0%',
         }),
       };
 
+      return summary;
+    });
+
+    regimeSummariesUnsorted.sort((a, b) => {
+      const aTaxed = Number(a.taxedInvested || 0);
+      const bTaxed = Number(b.taxedInvested || 0);
+      if (aTaxed !== bTaxed) {
+        return bTaxed - aTaxed;
+      }
+      const aQty = Number(a.quantity || 0);
+      const bQty = Number(b.quantity || 0);
+      return bQty - aQty;
+    });
+
+    const regimeSummaries = regimeSummariesUnsorted.map((summary, index) => {
       return {
         cursor: Buffer.from(index.toString()).toString('base64').split('=')[0],
         node: summary,
@@ -560,13 +944,75 @@ export class InvestmentService {
         correctedAmount: true,
         taxedAmount: true,
       },
-      where: { userId },
+      where: {
+        institutionLinkId: {
+          in: (
+            await this.prismaService.institutionLink.findMany({
+              where: { userId },
+              select: { id: true },
+            })
+          ).map((link) => link.id),
+        },
+      },
     });
 
     // Default to 0 when there are no investments
     const totalInitialAmount = rawTotalInitialAmount ?? 0;
     const totalCurrentAmount = rawTotalCurrentAmount ?? 0;
     const totalTaxedAmount = rawTotalTaxedAmount ?? 0;
+
+    let totalRealAmount = totalInitialAmount;
+
+    if (queriedFields.includes('realVariation') && totalInitialAmount > 0) {
+      const allInvestments = await this.prismaService.investment.findMany({
+        where: {
+          institutionLinkId: {
+            in: (
+              await this.prismaService.institutionLink.findMany({
+                where: { userId },
+                select: { id: true },
+              })
+            ).map((link) => link.id),
+          },
+        },
+        select: { amount: true, startDate: true },
+      });
+
+      const ipcaValues = await this.redisCacheService.get(
+        'external-bacen-ipca-monthly',
+        async () => await this.bacenService.getIpcaValues(),
+      );
+
+      if (ipcaValues && ipcaValues.length > 0) {
+        const ipcaMap = new Map<string, number>();
+        for (const ipca of ipcaValues) {
+          ipcaMap.set(ipca.data.substring(0, 7), ipca.valor);
+        }
+
+        let calculatedRealAmount = 0;
+        const endDate = new Date();
+        const { eachMonthOfInterval } = await import('date-fns');
+
+        for (const inv of allInvestments) {
+          const startDate = inv.startDate;
+          let currentPrincipal = inv.amount;
+
+          if (startDate < endDate) {
+            const months = eachMonthOfInterval({
+              start: startDate,
+              end: endDate,
+            });
+            for (const month of months) {
+              const monthKey = format(month, 'yyyy-MM');
+              const ipca = ipcaMap.get(monthKey) || 0;
+              currentPrincipal *= 1 + ipca;
+            }
+          }
+          calculatedRealAmount += currentPrincipal;
+        }
+        totalRealAmount = calculatedRealAmount;
+      }
+    }
 
     const currentVariation =
       queriedFields.includes('currentVariation') && totalInitialAmount > 0
@@ -576,6 +1022,11 @@ export class InvestmentService {
     const taxedVariation =
       queriedFields.includes('taxedVariation') && totalInitialAmount > 0
         ? 100 * ((totalTaxedAmount - totalInitialAmount) / totalInitialAmount)
+        : 0;
+
+    const realVariation =
+      queriedFields.includes('realVariation') && totalRealAmount > 0
+        ? 100 * (totalTaxedAmount / totalRealAmount - 1)
         : 0;
 
     return {
@@ -594,6 +1045,12 @@ export class InvestmentService {
       ...(queriedFields.includes('taxedVariation') && {
         taxedVariation: taxedVariation.toFixed(2).replace('.', ',') + '%',
       }),
+      ...(queriedFields.includes('realVariation') && {
+        realVariation:
+          (realVariation > 0 ? '+' : '') +
+          realVariation.toFixed(2).replace('.', ',') +
+          '%',
+      }),
     };
   }
 
@@ -607,6 +1064,10 @@ export class InvestmentService {
       | 'duration'
       | 'regimeName'
       | 'regimePercentage'
+      | 'type'
+      | 'fixedRate'
+      | 'brokerageFee'
+      | 'maturityDate'
       | 'lastCorrectedAt'
       | 'correctedAmount'
       | 'taxedAmount'
@@ -629,10 +1090,70 @@ export class InvestmentService {
         ? investment.duration
         : daysFromInitialDate;
 
+      let theoreticalAmount = investment.amount;
+      if (
+        investment.type === 'TREASURY' &&
+        investment.regimeName !== Regime.SELIC
+      ) {
+        const rate = investment.fixedRate ? investment.fixedRate / 100 : 0;
+        const businessDays = getBusinessDays(investment.startDate, new Date());
+        theoreticalAmount =
+          investment.amount * Math.pow(1 + rate, businessDays / 252);
+      } else if (
+        investment.type === 'TREASURY' &&
+        investment.regimeName === Regime.SELIC
+      ) {
+        // Fallback for SELIC cache
+        theoreticalAmount = investment.correctedAmount;
+      }
+
       const irpfTax =
         investment.regimeName === Regime.CDI
           ? getIrpfTax(currentInvestmentDays)
           : 0;
+
+      const profit = Math.max(
+        0,
+        investment.correctedAmount - investment.amount,
+      );
+      const daysHeld = differenceInDays(new Date(), investment.startDate);
+
+      let iofAmount = 0;
+      let b3CustodyFeeAmount = 0;
+      let brokerageFeeAmount = 0;
+
+      if (investment.type === 'TREASURY') {
+        const iofRate = getIofTax(daysHeld);
+        iofAmount = profit * iofRate;
+        const businessDays = getBusinessDays(investment.startDate, new Date());
+        const b3ExemptionThreshold = 10000;
+        let b3Basis = investment.correctedAmount;
+        if (
+          investment.regimeName === Regime.SELIC &&
+          investment.correctedAmount <= b3ExemptionThreshold
+        ) {
+          b3Basis = 0;
+        } else if (
+          investment.regimeName === Regime.SELIC &&
+          investment.correctedAmount > b3ExemptionThreshold
+        ) {
+          b3Basis = investment.correctedAmount - b3ExemptionThreshold;
+        }
+        b3CustodyFeeAmount = 0.002 * (businessDays / 252) * b3Basis;
+
+        if (investment.brokerageFee) {
+          brokerageFeeAmount =
+            (investment.brokerageFee / 100) *
+            (businessDays / 252) *
+            investment.correctedAmount;
+        }
+      } else {
+        const iofRate = getIofTax(daysHeld);
+        iofAmount = profit * iofRate;
+      }
+
+      const remainingProfit = Math.max(0, profit - iofAmount);
+      const irpfAmount = remainingProfit * (irpfTax / 100);
 
       return {
         correctedAmount: investment.correctedAmount,
@@ -645,6 +1166,21 @@ export class InvestmentService {
         taxedVariation:
           100 *
           ((investment.taxedAmount - investment.amount) / investment.amount),
+        taxesAndFees: getTaxesAndFeesDetails(
+          investment,
+          {
+            irpfAmount,
+            iofAmount,
+            b3CustodyFeeAmount,
+            brokerageFeeAmount,
+          },
+          profit,
+        ),
+        sellFeasibility: getSellFeasibility(
+          investment.type,
+          investment.correctedAmount,
+          theoreticalAmount,
+        ),
       };
     }
 
@@ -660,6 +1196,7 @@ export class InvestmentService {
       : daysFromInitialDate;
 
     let amount = investment.amount;
+    let theoreticalAmount = investment.amount;
 
     if (investment.regimeName === Regime.CDI) {
       const cdiValues = await this.redisCacheService.get(
@@ -677,6 +1214,20 @@ export class InvestmentService {
           taxedAmount: investment.amount,
           taxedVariation: 0,
           lastDate: lastDate || '',
+          taxesAndFees: getTaxesAndFeesDetails(
+            investment,
+            {
+              irpfAmount: 0,
+              iofAmount: 0,
+              b3CustodyFeeAmount: 0,
+              brokerageFeeAmount: 0,
+            },
+            0,
+          ),
+          sellFeasibility: {
+            status: SellFeasibilityStatus.NOT_APPLICABLE,
+            message: 'Não aplicável para este tipo de investimento.',
+          },
         };
 
         await this.prismaService.investment.update({
@@ -703,6 +1254,20 @@ export class InvestmentService {
           taxPercentage: 0,
           taxedVariation: 0,
           lastDate: lastDate || '',
+          taxesAndFees: getTaxesAndFeesDetails(
+            investment,
+            {
+              irpfAmount: 0,
+              iofAmount: 0,
+              b3CustodyFeeAmount: 0,
+              brokerageFeeAmount: 0,
+            },
+            0,
+          ),
+          sellFeasibility: {
+            status: SellFeasibilityStatus.NOT_APPLICABLE,
+            message: 'Não aplicável para este tipo de investimento.',
+          },
         };
 
         await this.prismaService.investment.update({
@@ -821,13 +1386,112 @@ export class InvestmentService {
       }
     }
 
-    const irpfTax =
-      investment.regimeName === Regime.CDI
-        ? getIrpfTax(currentInvestmentDays)
-        : 0;
+    if (investment.type === InvestmentType.TREASURY) {
+      const businessDays = getBusinessDays(investment.startDate, new Date());
+      let selicValues;
+      if (investment.regimeName === Regime.SELIC) {
+        selicValues = await this.redisCacheService.get(
+          'external-bacen-selic-daily',
+          async () => await this.bacenService.getSelicValues(),
+        );
+      }
 
-    const taxedAmount =
-      investment.amount + (amount - investment.amount) * (1 - irpfTax / 100);
+      let ipcaValues;
+      if (investment.regimeName === Regime.IPCA) {
+        ipcaValues = await this.redisCacheService.get(
+          'external-bacen-ipca-monthly',
+          async () => await this.bacenService.getIpcaValues(),
+        );
+      }
+
+      let historicalData: any[] = [];
+      if (investment.maturityDate) {
+        let tipoTituloPrefix = '';
+        if (investment.regimeName === Regime.PREFIXED)
+          tipoTituloPrefix = 'Tesouro Prefixado';
+        else if (investment.regimeName === Regime.SELIC)
+          tipoTituloPrefix = 'Tesouro Selic';
+        else if (investment.regimeName === Regime.IPCA)
+          tipoTituloPrefix = 'Tesouro IPCA+';
+
+        if (tipoTituloPrefix) {
+          const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+          historicalData =
+            await this.tesouroTransparenteService.getHistoricalDataForBond(
+              tipoTituloPrefix,
+              maturityStr,
+            );
+        }
+      }
+
+      const importedCalculate = await import('./utils/tesouro-direto-math');
+      const calcResult = importedCalculate.calculateTesouroTheoreticalValue({
+        amount: investment.amount,
+        fixedRate: investment.fixedRate,
+        regimeName: investment.regimeName,
+        businessDays,
+        selicValues,
+        ipcaValues,
+        startDate: investment.startDate,
+        maturityDate: investment.maturityDate,
+        historicalData,
+      });
+      amount = calcResult.marketValue;
+      theoreticalAmount = calcResult.theoreticalValue;
+    }
+
+    const isTreasury = investment.type === InvestmentType.TREASURY;
+
+    let iofAmount = 0;
+    let b3CustodyFeeAmount = 0;
+    let brokerageFeeAmount = 0;
+    let irpfTax = 0;
+    let irpfAmount = 0;
+
+    if (isTreasury) {
+      const businessDays = getBusinessDays(investment.startDate, new Date());
+      const daysHeld = differenceInDays(new Date(), investment.startDate);
+      const profit = Math.max(0, amount - investment.amount);
+
+      const iofRate = getIofTax(daysHeld);
+      iofAmount = profit * iofRate;
+
+      const remainingProfit = Math.max(0, profit - iofAmount);
+      irpfTax = getIrpfTax(daysHeld);
+      irpfAmount = remainingProfit * (irpfTax / 100);
+
+      const b3ExemptionThreshold = 10000;
+      let b3Basis = amount;
+      if (
+        investment.regimeName === Regime.SELIC &&
+        amount <= b3ExemptionThreshold
+      ) {
+        b3Basis = 0;
+      } else if (
+        investment.regimeName === Regime.SELIC &&
+        amount > b3ExemptionThreshold
+      ) {
+        b3Basis = amount - b3ExemptionThreshold;
+      }
+
+      b3CustodyFeeAmount = 0.002 * (businessDays / 252) * b3Basis;
+
+      if (investment.brokerageFee) {
+        brokerageFeeAmount =
+          (investment.brokerageFee / 100) * (businessDays / 252) * amount;
+      }
+    } else {
+      irpfTax =
+        investment.regimeName === Regime.CDI
+          ? getIrpfTax(currentInvestmentDays)
+          : 0;
+      const profit = Math.max(0, amount - investment.amount);
+      irpfAmount = profit * (irpfTax / 100);
+    }
+
+    const totalTaxesAndFees =
+      iofAmount + irpfAmount + b3CustodyFeeAmount + brokerageFeeAmount;
+    const taxedAmount = amount - totalTaxesAndFees;
 
     const result = {
       correctedAmount: amount,
@@ -837,7 +1501,21 @@ export class InvestmentService {
       taxedAmount,
       taxedVariation:
         100 * ((taxedAmount - investment.amount) / investment.amount),
-      lastDate: lastDate || '',
+      taxesAndFees: getTaxesAndFeesDetails(
+        investment,
+        {
+          irpfAmount,
+          iofAmount,
+          b3CustodyFeeAmount,
+          brokerageFeeAmount,
+        },
+        amount - investment.amount,
+      ),
+      sellFeasibility: getSellFeasibility(
+        investment.type,
+        amount,
+        theoreticalAmount,
+      ),
     };
 
     await this.prismaService.investment.update({
@@ -866,6 +1544,10 @@ export class InvestmentService {
         duration: true,
         regimeName: true,
         regimePercentage: true,
+        type: true,
+        fixedRate: true,
+        brokerageFee: true,
+        maturityDate: true,
         lastCorrectedAt: true,
         correctedAmount: true,
         taxedAmount: true,
@@ -966,10 +1648,12 @@ export class InvestmentService {
     userId,
     accountId,
     period,
+    regime,
   }: {
     userId: string;
     accountId?: string;
     period: string;
+    regime?: string;
   }) {
     // Calcular data de início baseado no período
     const now = new Date();
@@ -1013,8 +1697,11 @@ export class InvestmentService {
     // Buscar investimentos do usuário
     const investments = await this.prismaService.investment.findMany({
       where: {
-        userId,
+        institutionLink: {
+          userId,
+        },
         ...(accountId && { accountId }),
+        ...(regime && { regimeName: regime as any }),
       },
       select: {
         id: true,
@@ -1156,14 +1843,9 @@ export class InvestmentService {
     userId: string;
     regime: RegimePrisma;
   }) {
-    // Determine account type based on regime
-    const accountType =
-      regime === 'POUPANCA' ? AccountType.SAVINGS : AccountType.INVESTMENT;
-
-    const accounts = await this.prismaService.account.findMany({
+    const accounts = await this.prismaService.institutionLink.findMany({
       where: {
         userId,
-        type: accountType,
       },
       include: {
         institution: true,
@@ -1178,16 +1860,369 @@ export class InvestmentService {
         },
       },
       orderBy: {
-        name: 'asc',
+        institution: {
+          name: 'asc',
+        },
       },
     });
 
     return accounts.map((account) => ({
       id: account.id,
-      name: account.name,
-      institutionName: account.institution?.name,
+      name: account.institution?.name,
       institutionLogoUrl: account.institution?.logoUrl,
       investmentCount: account._count.investments,
     }));
+  }
+
+  async getAvailableTreasuryBonds(regime: Regime): Promise<string[]> {
+    let tipoTituloPrefix = '';
+    if (regime === Regime.PREFIXED) tipoTituloPrefix = 'Tesouro Prefixado';
+    else if (regime === Regime.SELIC) tipoTituloPrefix = 'Tesouro Selic';
+    else if (regime === Regime.IPCA) tipoTituloPrefix = 'Tesouro IPCA+';
+
+    if (!tipoTituloPrefix) return [];
+
+    return await this.tesouroTransparenteService.getAvailableBonds(
+      tipoTituloPrefix,
+    );
+  }
+
+  async getInvestmentChartData(
+    investmentId: string,
+    userId: string,
+  ): Promise<InvestmentChartDataPoint[]> {
+    const investment = await this.prismaService.investment.findFirst({
+      where: {
+        id: investmentId,
+        institutionLink: { userId },
+      },
+      select: {
+        amount: true,
+        startDate: true,
+        type: true,
+        fixedRate: true,
+        regimeName: true,
+        maturityDate: true,
+        regimePercentage: true,
+      },
+    });
+
+    if (!investment) throw new NotFoundException('Investment not found');
+
+    const points: InvestmentChartDataPoint[] = [];
+
+    // Simplification for other types
+    if (
+      investment.type !== InvestmentType.TREASURY &&
+      investment.regimeName !== Regime.CDI
+    ) {
+      return points;
+    }
+
+    let selicValues;
+    if (investment.regimeName === Regime.SELIC) {
+      selicValues = await this.redisCacheService.get(
+        'external-bacen-selic-daily',
+        async () => await this.bacenService.getSelicValues(),
+      );
+    }
+
+    const { calculateTesouroTheoreticalValue } = await import(
+      './utils/tesouro-direto-math'
+    );
+    const { eachDayOfInterval, isWeekend } = await import('date-fns');
+    const Holidays = (await import('date-holidays')).default;
+    const hd = new Holidays('BR');
+
+    const days = eachDayOfInterval({
+      start: investment.startDate,
+      end: new Date(),
+    });
+    let historicalData: any[] = [];
+    if (investment.maturityDate) {
+      let tipoTituloPrefix = '';
+      if (investment.regimeName === Regime.PREFIXED)
+        tipoTituloPrefix = 'Tesouro Prefixado';
+      else if (investment.regimeName === Regime.SELIC)
+        tipoTituloPrefix = 'Tesouro Selic';
+      else if (investment.regimeName === Regime.IPCA)
+        tipoTituloPrefix = 'Tesouro IPCA+';
+
+      if (tipoTituloPrefix) {
+        const maturityStr = format(investment.maturityDate, 'dd/MM/yyyy');
+        historicalData =
+          await this.tesouroTransparenteService.getHistoricalDataForBond(
+            tipoTituloPrefix,
+            maturityStr,
+          );
+      }
+    }
+
+    if (investment.regimeName === Regime.CDI) {
+      const cdiValues = await this.redisCacheService.get(
+        'external-ipeadata-cdi-daily',
+        async () => {
+          return await this.ipeadataService.getCdiValues();
+        },
+      );
+
+      const cdiDateMap = new Map<string, number>();
+      if (cdiValues) {
+        cdiValues.forEach((val: any) => cdiDateMap.set(val.date, val.value));
+      }
+
+      let amount = investment.amount;
+      for (let i = 0; i < days.length; i++) {
+        const day = days[i];
+        const dayStr = day.toISOString().split('T')[0];
+
+        if (i > 0 && !isWeekend(day) && !hd.isHoliday(day)) {
+          const rate = cdiDateMap.get(dayStr);
+          if (rate !== undefined && investment.regimePercentage) {
+            amount *= 1 + (rate * (investment.regimePercentage / 100)) / 100;
+          }
+        }
+
+        points.push({
+          date: dayStr,
+          theoreticalValue: amount,
+          marketValue: null,
+        });
+      }
+      return points;
+    }
+
+    let businessDays = 0;
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+      const dayStr = day.toISOString().split('T')[0];
+      if (i > 0 && !isWeekend(day) && !hd.isHoliday(day)) {
+        businessDays++;
+      }
+
+      // Compute value at this point in time
+      const value = calculateTesouroTheoreticalValue({
+        amount: investment.amount,
+        fixedRate: investment.fixedRate,
+        regimeName: investment.regimeName,
+        businessDays,
+        selicValues,
+        startDate: investment.startDate,
+        maturityDate: investment.maturityDate,
+        historicalData,
+        targetDate: day,
+      });
+
+      points.push({
+        date: dayStr,
+        theoreticalValue: value.theoreticalValue,
+        marketValue: value.marketValue,
+      });
+    }
+
+    return points;
+  }
+
+  async getRegimeTaxesHistory(regime: Regime): Promise<RegimeTaxesHistoryModel> {
+    if (regime === Regime.CDI) {
+      let cdiData = await this.redisCacheService.get('external-ipeadata-cdi-daily');
+      if (!cdiData || cdiData.length === 0) {
+        await this.ipeadataService.cacheCdiValues();
+        cdiData = await this.redisCacheService.get('external-ipeadata-cdi-daily');
+      }
+      return {
+        dataPoints: (cdiData || []).map((item) => ({
+          date: item.date,
+          value: item.value,
+        })),
+      };
+    }
+
+    if (regime === Regime.POUPANCA) {
+      let poupancaData = await this.redisCacheService.get('external-bacen-poupanca-daily');
+      if (!poupancaData || poupancaData.length === 0) {
+        await this.bacenService.cachePoupancaValues();
+        poupancaData = await this.redisCacheService.get('external-bacen-poupanca-daily');
+      }
+      return {
+        dataPoints: (poupancaData || []).map((item) => {
+          return {
+            date: item.data, // Already in yyyy-MM-dd format
+            value: item.valor,
+          };
+        }),
+      };
+    }
+
+    const isTreasuryRegime = [Regime.SELIC, Regime.IPCA, Regime.PREFIXED].includes(regime);
+    if (isTreasuryRegime) {
+      let selicData = await this.redisCacheService.get('external-bacen-selic-daily');
+      if (!selicData || selicData.length === 0) {
+        await this.bacenService.cacheSelicValues();
+        selicData = await this.redisCacheService.get('external-bacen-selic-daily');
+      }
+
+      let ipcaData = await this.redisCacheService.get('external-bacen-ipca-monthly');
+      if (!ipcaData || ipcaData.length === 0) {
+        await this.bacenService.cacheIpcaValues();
+        ipcaData = await this.redisCacheService.get('external-bacen-ipca-monthly');
+      }
+
+      const pointsMap = new Map<string, any>();
+      
+      if (selicData) {
+        selicData.forEach(s => {
+          const [y, m, d] = s.data.split('-');
+          const date = `${y}-${m}-${d}`;
+          // Multiply by 100 to convert from decimal (0.0004) to percentage (0.04)
+          pointsMap.set(date, { date, component1: s.valor * 100, component2: null });
+        });
+      }
+      
+      if (ipcaData) {
+        ipcaData.forEach(i => {
+          const [y, m] = i.data.split('-');
+          const date = `${y}-${m}-01`;
+          if (pointsMap.has(date)) {
+            pointsMap.get(date)!.component2 = i.valor * 100;
+          } else {
+            pointsMap.set(date, { date, component1: null, component2: i.valor * 100 });
+          }
+        });
+      }
+
+      // To make the graph continuous, we will forward-fill IPCA for all daily points
+      const dataPoints = Array.from(pointsMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      let lastIpca = null;
+      for (const pt of dataPoints) {
+        if (pt.component2 !== null) {
+          lastIpca = pt.component2;
+        } else if (lastIpca !== null) {
+          pt.component2 = lastIpca;
+        }
+        
+        pt.total = (pt.component1 || 0) + (pt.component2 || 0);
+        pt.value = pt.total;
+      }
+
+      return { dataPoints };
+    }
+
+    return { dataPoints: [] };
+  }
+
+  async getInvestmentTaxesHistory(investmentId: string, userId: string): Promise<InvestmentTaxesHistoryModel> {
+    const investment = await this.prismaService.investment.findUnique({
+      where: { id: investmentId },
+      include: { institutionLink: true },
+    });
+
+    const isTreasury = investment?.regimeName === RegimePrisma.SELIC || investment?.regimeName === RegimePrisma.IPCA || investment?.regimeName === RegimePrisma.PREFIXED;
+    if (!investment || investment.institutionLink?.userId !== userId || !isTreasury) {
+      return { dataPoints: [] };
+    }
+
+    // Example investment.type: "Tesouro IPCA+ 2035" -> "Tesouro IPCA+", "2035"
+    // Also we need to get the exact maturity date. Fortunately, investment.maturityDate holds the maturity date for Treasury bonds.
+    const dueDate = investment.maturityDate;
+    if (!dueDate) return { dataPoints: [] };
+
+    // Format dueDate to DD/MM/YYYY safely ignoring local timezone shifts
+    const [year, month, day] = dueDate.toISOString().substring(0, 10).split('-');
+    const dueDateStr = `${day}/${month}/${year}`;
+    
+    let prefix = 'Tesouro Selic';
+    if (investment.regimeName === RegimePrisma.IPCA) {
+      prefix = 'Tesouro IPCA+';
+      if (investment.type.includes('Semestral')) prefix = 'Tesouro IPCA+ com Juros Semestrais';
+    } else if (investment.regimeName === RegimePrisma.PREFIXED) {
+      prefix = 'Tesouro Prefixado';
+      if (investment.type.includes('Semestral')) prefix = 'Tesouro Prefixado com Juros Semestrais';
+    } else {
+      const match = investment.type.match(/(.*?)\s+\d{4}$/);
+      if (match) prefix = match[1];
+    }
+
+    const history = await this.tesouroTransparenteService.getHistoricalDataForBond(prefix, dueDateStr);
+    
+    // IPCA or Selic data
+    let benchmarkData: BacenCachedValue[] = [];
+    if (investment.regimeName === RegimePrisma.IPCA) {
+      benchmarkData = (await this.redisCacheService.get('external-bacen-ipca-monthly')) || [];
+      if (benchmarkData.length === 0) {
+        await this.bacenService.cacheIpcaValues();
+        benchmarkData = (await this.redisCacheService.get('external-bacen-ipca-monthly')) || [];
+      }
+    } else if (investment.regimeName === RegimePrisma.SELIC) {
+      benchmarkData = (await this.redisCacheService.get('external-bacen-selic-daily')) || [];
+      if (benchmarkData.length === 0) {
+        await this.bacenService.cacheSelicValues();
+        benchmarkData = (await this.redisCacheService.get('external-bacen-selic-daily')) || [];
+      }
+    }
+
+    const benchmarkMap = new Map<string, number>();
+    if (benchmarkData) {
+      benchmarkData.forEach(b => {
+      const [y, m, d] = b.data.split('-');
+      let key = `${y}-${m}-${d}`;
+      if (investment.regimeName === RegimePrisma.IPCA) {
+        key = `${y}-${m}`; // month level for IPCA
+      }
+      // Multiply by 100 to match the percentage scale of Tesouro Transparente (e.g. 6.0)
+      benchmarkMap.set(key, b.valor * 100);
+      });
+    }
+
+    let lastIpca: number | null = null;
+    
+    if (investment.regimeName === RegimePrisma.IPCA && benchmarkData.length > 0) {
+      const startYearMonth = `${investment.startDate.getFullYear()}-${String(investment.startDate.getMonth() + 1).padStart(2, '0')}`;
+      let closestIpca = benchmarkData[0].valor * 100;
+      for (const b of benchmarkData) {
+        const [y, m] = b.data.split('-');
+        if (`${y}-${m}` <= startYearMonth) {
+          closestIpca = b.valor * 100;
+        } else {
+          break;
+        }
+      }
+      lastIpca = closestIpca;
+    }
+    
+    const dataPoints = history
+      .filter(h => {
+        // Only return data points after or on the investment start date
+        const [d, m, y] = h.dataBase.split('/');
+        return new Date(`${y}-${m}-${d}`) >= investment.startDate;
+      })
+      .map(h => {
+        const [d, m, y] = h.dataBase.split('/');
+        const dateStr = `${y}-${m}-${d}`;
+        let component1 = h.taxaCompraManha;
+        let component2 = null;
+        let total = component1;
+
+        if (investment.regimeName === RegimePrisma.IPCA) {
+          const monthKey = `${y}-${m}`;
+          if (benchmarkMap.has(monthKey)) lastIpca = benchmarkMap.get(monthKey)!;
+          component2 = lastIpca;
+          total = component1 + component2;
+        } else if (investment.regimeName === RegimePrisma.SELIC) {
+          component2 = benchmarkMap.get(dateStr) || 0;
+          total = component1 + component2;
+        }
+
+        return {
+          date: dateStr,
+          component1,
+          component2,
+          total
+        };
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return { dataPoints };
   }
 }

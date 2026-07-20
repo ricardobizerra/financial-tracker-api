@@ -113,4 +113,50 @@ export class BacenService {
       `Cron: Cached ${poupancaValues?.length || 0} poupanca values`,
     );
   }
+
+  async getSelicValues(
+    range: BacenApiRange = {
+      initialDate: sub(new Date(), { years: 10 }),
+      finalDate: new Date(),
+    },
+  ): Promise<BacenCachedValue[]> {
+    const values = await this.getDataByCode('11', range);
+
+    return values?.map((item) => ({
+      data: this.correctBacenDateFormat(item.data),
+      valor: Number(item.valor) / 100, // Selic is returned as a percentage (e.g. 0.04), we want 0.0004
+    }));
+  }
+
+  @Cron('0 5 8-12 * * *')
+  async cacheSelicValues() {
+    this.logger.log('Cron: Starting selic values cache update');
+    const selicValues = await this.getSelicValues();
+
+    await this.redisCacheService.set('external-bacen-selic-daily', selicValues);
+    this.logger.log(`Cron: Cached ${selicValues?.length || 0} selic values`);
+  }
+
+  async getIpcaValues(
+    range: BacenApiRange = {
+      initialDate: sub(new Date(), { years: 10 }),
+      finalDate: new Date(),
+    },
+  ): Promise<BacenCachedValue[]> {
+    const values = await this.getDataByCode('433', range);
+
+    return values?.map((item) => ({
+      data: this.correctBacenDateFormat(item.data),
+      valor: Number(item.valor) / 100, // IPCA is returned as a percentage (e.g. 0.21), we want 0.0021
+    }));
+  }
+
+  @Cron('0 10 8-12 * * *')
+  async cacheIpcaValues() {
+    this.logger.log('Cron: Starting ipca values cache update');
+    const ipcaValues = await this.getIpcaValues();
+
+    await this.redisCacheService.set('external-bacen-ipca-monthly', ipcaValues);
+    this.logger.log(`Cron: Cached ${ipcaValues?.length || 0} ipca values`);
+  }
 }

@@ -1,4 +1,4 @@
-import { AccountType, Institution } from '@/lib/graphql/prisma-client';
+import { InstitutionType, Institution } from '@/lib/graphql/prisma-client';
 import { Ordenation } from '@/utils/args/ordenation.args';
 import { Connection } from '@/utils/models/connection.model';
 import { ObjectType, OmitType, ArgsType, Field } from '@nestjs/graphql';
@@ -16,6 +16,6 @@ export class OrdenationInstitutionArgs extends Ordenation(InstitutionModel) {}
 
 @ArgsType()
 export class InstitutionFilterArgs {
-  @Field(() => [AccountType!], { nullable: true })
+  @Field(() => [InstitutionType!], { nullable: true })
   types?: InstitutionModel['types'];
 }

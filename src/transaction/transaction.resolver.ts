@@ -20,10 +20,10 @@ import { UserModel } from '@/user/models/user.model';
 import { TransactionFilterArgs } from './transaction.model';
 import {
   Account,
-  AccountType,
   CardBillingStatus,
   CardType,
   PaymentMethod,
+  RecurrenceFrequency,
   TransactionStatus,
   TransactionType,
 } from '@prisma/client';
@@ -35,6 +35,8 @@ import {
   UpdateRecurringTransactionsInput,
   UpdateRecurringScope,
 } from './input/update-recurring-transactions.input';
+import { BulkUpdateTransactionsInput } from './input/bulk-update-transactions.input';
+import { BulkDeleteTransactionsInput } from './input/bulk-delete-transactions.input';
 import { AccountService } from '@/account/account.service';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { CardService } from '@/card/card.service';
@@ -53,6 +55,8 @@ import {
   FinancialAgendaArgs,
 } from './financial-agenda.model';
 import { TransactionGroupModel } from './transaction-group.model';
+import { Card } from '@/lib/graphql/prisma-client';
+import { SimulateBalanceForecastInput } from './input/simulation.input';
 
 @Resolver(() => TransactionModel)
 export class TransactionResolver {
@@ -63,20 +67,79 @@ export class TransactionResolver {
     private readonly prismaService: PrismaService,
   ) {}
 
+  private distributeInstallmentAmounts(
+    totalAmount: number,
+    totalInstallments: number,
+  ): number[] {
+    const totalCents = Math.round(totalAmount);
+    const baseCents = Math.floor(totalCents / totalInstallments);
+    const remainder = totalCents % totalInstallments;
+
+    return Array.from({ length: totalInstallments }, (_, i) => {
+      const cents = baseCents + (i < remainder ? 1 : 0);
+      return cents;
+    });
+  }
+
+  @Auth()
+  @Mutation(() => [TransactionModel], { name: 'bulkUpdateTransactions' })
+  async bulkUpdateTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: BulkUpdateTransactionsInput,
+  ): Promise<TransactionModel[]> {
+    const updatedTransactions: TransactionModel[] = [];
+
+    // Processar sequencialmente para evitar condições de corrida (ex: recálculo de faturas simultâneas)
+    for (const id of data.ids) {
+      const result = await this.updateTransaction(
+        {
+          id,
+          category: data.category,
+          status: data.status,
+          sourceAccountId: data.sourceAccountId,
+          date: data.date,
+          paymentMethod: data.paymentMethod,
+        },
+        user,
+      );
+      updatedTransactions.push(result as any);
+    }
+
+    return updatedTransactions;
+  }
+
+  @Auth()
+  @Mutation(() => [TransactionModel], { name: 'bulkDeleteTransactions' })
+  async bulkDeleteTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('data') data: BulkDeleteTransactionsInput,
+  ): Promise<TransactionModel[]> {
+    const deletedTransactions: TransactionModel[] = [];
+
+    // Processar sequencialmente para evitar condições de corrida no cardBilling
+    for (const id of data.ids) {
+      const result = await this.deleteTransaction(user, id);
+      deletedTransactions.push(result as any);
+    }
+
+    return deletedTransactions;
+  }
+
   @Auth()
   @Mutation(() => TransactionModel, { name: 'createTransaction' })
   async createTransaction(
     @Args('data') data: CreateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
+    // Calcular datas para comparação
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const transactionDate = new Date(data.date);
+    transactionDate.setHours(0, 0, 0, 0);
+
     // Calcular status baseado na data se não foi informado
     let calculatedStatus = data.status;
     if (!calculatedStatus) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const transactionDate = new Date(data.date);
-      transactionDate.setHours(0, 0, 0, 0);
-
       if (transactionDate > today) {
         // Data futura -> PLANNED
         calculatedStatus = TransactionStatus.PLANNED;
@@ -97,18 +160,40 @@ export class TransactionResolver {
       );
     }
 
-    if (data.type === TransactionType.INCOME && !data.destinyAccountId) {
+    // Rejeitar COMPLETED para datas futuras e PLANNED para datas passadas
+    if (
+      calculatedStatus === TransactionStatus.COMPLETED &&
+      transactionDate > today
+    ) {
+      throw new Error(
+        'Transactions with future dates cannot be marked as COMPLETED.',
+      );
+    }
+
+    if (
+      calculatedStatus === TransactionStatus.PLANNED &&
+      transactionDate < today
+    ) {
+      throw new Error(
+        'Transactions with past dates cannot be marked as PLANNED.',
+      );
+    }
+
+    const hasDestiny = !!data.destinyAccountId;
+    const hasSource = !!data.sourceAccountId || !!data.sourceCardId;
+
+    if (data.type === TransactionType.INCOME && !hasDestiny) {
       throw new Error('Destiny account is mandatory for income transactions');
     }
 
-    if (data.type === TransactionType.EXPENSE && !data.sourceAccountId) {
+    if (data.type === TransactionType.EXPENSE && !hasSource) {
       throw new Error('Source account is mandatory for expense transactions');
     }
 
     if (
       data.type === TransactionType.BETWEEN_ACCOUNTS &&
-      !data.sourceAccountId &&
-      !data.destinyAccountId
+      !hasSource &&
+      !hasDestiny
     ) {
       throw new Error(
         'Source and destiny accounts are mandatory for transactions between accounts',
@@ -128,66 +213,34 @@ export class TransactionResolver {
       if (!destinyAccount) {
         throw new Error('Destiny account not found');
       }
-
-      // Prevent income transactions to credit card accounts
-      if (
-        data.type === TransactionType.INCOME &&
-        destinyAccount.type === AccountType.CREDIT_CARD
-      ) {
-        throw new Error(
-          'Income transactions cannot be assigned to credit card accounts',
-        );
-      }
-
-      // Prevent income transactions to investment or savings accounts
-      if (
-        data.type === TransactionType.INCOME &&
-        (destinyAccount.type === AccountType.INVESTMENT ||
-          destinyAccount.type === AccountType.SAVINGS)
-      ) {
-        throw new Error(
-          'Contas de investimento e poupança não podem receber receitas. Use uma transferência entre contas.',
-        );
-      }
     }
 
     let sourceAccount: Account | null = null;
+    let sourceCard: Card | null = null;
 
     if (
       data.type === TransactionType.EXPENSE ||
       data.type === TransactionType.BETWEEN_ACCOUNTS
     ) {
-      sourceAccount = await this.accountService.find({
-        id: data.sourceAccountId,
-      });
-
-      if (!sourceAccount) {
-        throw new Error('Source account not found');
+      if (data.sourceAccountId) {
+        sourceAccount = await this.accountService.find({
+          id: data.sourceAccountId,
+        });
+      } else if (data.sourceCardId) {
+        sourceCard = await this.cardService.find({
+          id: data.sourceCardId,
+        });
       }
 
-      // Prevent expense transactions from investment or savings accounts
-      if (
-        data.type === TransactionType.EXPENSE &&
-        (sourceAccount.type === AccountType.INVESTMENT ||
-          sourceAccount.type === AccountType.SAVINGS)
-      ) {
-        throw new Error(
-          'Contas de investimento e poupança não podem ter despesas. Use uma transferência entre contas.',
-        );
+      if (!sourceAccount && !sourceCard) {
+        throw new Error('Source account or card not found');
       }
 
       // Prevent card accounts from between-accounts transactions
-      if (data.type === TransactionType.BETWEEN_ACCOUNTS) {
-        if (sourceAccount.type === AccountType.CREDIT_CARD) {
-          throw new Error(
-            'Contas de cartão não podem participar de transferências entre contas.',
-          );
-        }
-        if (destinyAccount?.type === AccountType.CREDIT_CARD) {
-          throw new Error(
-            'Contas de cartão não podem participar de transferências entre contas.',
-          );
-        }
+      if (data.type === TransactionType.BETWEEN_ACCOUNTS && sourceCard) {
+        throw new Error(
+          'Cards cannot be used in between-accounts transactions.',
+        );
       }
     }
 
@@ -196,11 +249,10 @@ export class TransactionResolver {
     let isDebitCard = false;
 
     if (!calculatedPaymentMethod) {
-      const relevantAccount = sourceAccount || destinyAccount;
-      if (relevantAccount?.type === AccountType.CREDIT_CARD) {
+      if (sourceCard) {
         // Para contas de cartão, buscar o tipo do cartão (credit/debit)
         const card = await this.cardService.find({
-          accountId: relevantAccount.id,
+          id: sourceCard.id,
         });
 
         if (card?.type === CardType.DEBIT) {
@@ -226,86 +278,28 @@ export class TransactionResolver {
       calculatedPaymentMethod === PaymentMethod.CREDIT_CARD ||
       calculatedPaymentMethod === PaymentMethod.DEBIT_CARD;
 
-    if (isCardPaymentMethod) {
-      const relevantAccount = sourceAccount || destinyAccount;
-      if (relevantAccount && relevantAccount.type !== AccountType.CREDIT_CARD) {
-        throw new Error(
-          'Credit card and debit card payment methods can only be used with card-type accounts.',
-        );
-      }
+    if (isCardPaymentMethod && !sourceCard) {
+      throw new Error(
+        'Credit card and debit card payment methods can only be used with card-type accounts.',
+      );
     }
 
     let cardBillingId: string | null = null;
 
-    // Cartões de débito não usam billing/fatura - débito é imediato na conta
+    // Despesas no cartão de crédito devem ser associadas à fatura do ciclo da data da transação
     if (
       data.type === TransactionType.EXPENSE &&
-      sourceAccount.type === AccountType.CREDIT_CARD &&
-      !isDebitCard
+      sourceCard &&
+      calculatedPaymentMethod === PaymentMethod.CREDIT_CARD
     ) {
-      const card = await this.cardService.find({
-        accountId: sourceAccount.id,
+      const billing = await this.cardService.findOrCreateBillingForDate({
+        cardId: sourceCard.id,
+        billingCycleDay: sourceCard.billingCycleDay,
+        billingPaymentDay: sourceCard.billingPaymentDay,
+        limit: sourceCard.defaultLimit,
+        date: new Date(data.date),
       });
-
-      if (!card) {
-        throw new Error('Card not found');
-      }
-
-      const billing = await this.prismaService.cardBilling.findFirst({
-        where: {
-          accountCard: {
-            id: card.id,
-          },
-          periodStart: {
-            lte: data.date,
-          },
-          status: CardBillingStatus.PENDING,
-        },
-        orderBy: {
-          periodStart: 'desc',
-        },
-      });
-
-      if (billing) {
-        cardBillingId = billing.id;
-      } else {
-        const billing = await this.prismaService.cardBilling.findFirst({
-          where: {
-            accountCard: {
-              id: card.id,
-            },
-            periodStart: {
-              gte: data.date,
-            },
-            status: CardBillingStatus.PENDING,
-          },
-        });
-
-        if (billing) {
-          cardBillingId = billing.id;
-        } else {
-          const lastBilling = await this.prismaService.cardBilling.findFirst({
-            where: {
-              accountCard: {
-                id: card.id,
-              },
-            },
-            orderBy: {
-              periodEnd: 'desc',
-            },
-          });
-
-          const billing = await this.cardService.createBilling({
-            cardId: card.id,
-            cardBillingCycleDay: card.billingCycleDay,
-            cardBillingPaymentDay: card.billingPaymentDay,
-            periodStart: lastBilling?.periodEnd,
-            limit: card.defaultLimit,
-          });
-
-          cardBillingId = billing.id;
-        }
-      }
+      cardBillingId = billing.id;
     }
 
     const transaction = await this.transactionService.create({
@@ -317,13 +311,22 @@ export class TransactionResolver {
       paymentMethod: calculatedPaymentMethod,
       category: data.category,
       ...((data.type === TransactionType.EXPENSE ||
-        data.type === TransactionType.BETWEEN_ACCOUNTS) && {
-        sourceAccount: {
-          connect: {
-            id: data.sourceAccountId,
+        data.type === TransactionType.BETWEEN_ACCOUNTS) &&
+        data.sourceAccountId && {
+          sourceAccount: {
+            connect: {
+              id: data.sourceAccountId,
+            },
           },
-        },
-      }),
+        }),
+      ...(data.type === TransactionType.EXPENSE &&
+        data.sourceCardId && {
+          sourceCard: {
+            connect: {
+              id: data.sourceCardId,
+            },
+          },
+        }),
       ...((data.type === TransactionType.INCOME ||
         data.type === TransactionType.BETWEEN_ACCOUNTS) && {
         destinyAccount: {
@@ -360,23 +363,8 @@ export class TransactionResolver {
     @CurrentUser() user: UserModel,
   ): Promise<TransactionModel> {
     // Validar conta de origem (deve ser cartão de crédito)
-    const sourceAccount = await this.accountService.find({
-      id: data.sourceAccountId,
-    });
-
-    if (!sourceAccount) {
-      throw new Error('Conta de origem não encontrada');
-    }
-
-    if (sourceAccount.type !== AccountType.CREDIT_CARD) {
-      throw new Error(
-        'Transações parceladas só podem ser feitas com cartão de crédito',
-      );
-    }
-
-    // Buscar cartão
     const card = await this.cardService.find({
-      accountId: sourceAccount.id,
+      id: data.sourceCardId,
     });
 
     if (!card) {
@@ -390,20 +378,22 @@ export class TransactionResolver {
       );
     }
 
-    // Calcular valor de cada parcela
-    const totalAmount = data.totalAmount;
-    const installmentAmount = Number(data.totalAmount) / data.totalInstallments;
+    const totalAmount = Number(data.totalAmount);
+    const installmentAmounts = this.distributeInstallmentAmounts(
+      totalAmount,
+      data.totalInstallments,
+    );
 
     // Criar a transação pai com status COMPLETED (compras parceladas são efetivadas)
     const transaction = await this.transactionService.create({
-      amount: totalAmount,
+      amount: data.totalAmount,
       description: data.description,
       date: data.startDate,
       status: TransactionStatus.COMPLETED,
       type: TransactionType.EXPENSE,
       paymentMethod: PaymentMethod.CREDIT_CARD,
-      sourceAccount: {
-        connect: { id: data.sourceAccountId },
+      sourceCard: {
+        connect: { id: data.sourceCardId },
       },
       user: {
         connect: { id: user.id },
@@ -413,71 +403,25 @@ export class TransactionResolver {
     // Criar parcelas
     const billingIdsToUpdate = new Set<string>();
 
-    // Buscar a primeira fatura existente no banco para este cartão
-    const firstBilling = await this.prismaService.cardBilling.findFirst({
-      where: { accountCardId: card.id },
-      orderBy: { periodStart: 'asc' },
-    });
-
     for (let i = 0; i < data.totalInstallments; i++) {
       const installmentNumber = i + 1;
 
       // Calcular data da parcela
       const installmentDate = new Date(data.startDate);
       installmentDate.setMonth(installmentDate.getMonth() + i);
-
-      // Se a data da parcela é anterior à primeira fatura existente, não atribuir a nenhuma fatura
-      if (firstBilling && installmentDate < firstBilling.periodStart) {
-        // Criar TransactionInstallment sem fatura
-        await this.prismaService.transactionInstallment.create({
-          data: {
-            installmentNumber,
-            amount: installmentAmount,
-            transactionId: transaction.id,
-            cardBillingId: null,
-          },
-        });
-        continue;
-      }
-
-      // Encontrar ou criar fatura para esta data
-      let billing = await this.prismaService.cardBilling.findFirst({
-        where: {
-          accountCardId: card.id,
-          periodStart: { lte: installmentDate },
-          OR: [{ periodEnd: { gte: installmentDate } }, { periodEnd: null }],
-        },
+      const billing = await this.cardService.findOrCreateBillingForDate({
+        cardId: card.id,
+        billingCycleDay: card.billingCycleDay,
+        billingPaymentDay: card.billingPaymentDay,
+        limit: card.defaultLimit,
+        date: installmentDate,
       });
-
-      if (!billing) {
-        // Buscar última fatura para criar a próxima
-        const lastBilling = await this.prismaService.cardBilling.findFirst({
-          where: { accountCardId: card.id },
-          orderBy: { periodEnd: 'desc' },
-        });
-
-        // Para criar o próximo billing, usar o dia seguinte ao periodEnd do último billing
-        // Isso garante que o novo billing seja para o próximo ciclo
-        let nextBillingStartDate = installmentDate;
-        if (lastBilling?.periodEnd) {
-          nextBillingStartDate = new Date(lastBilling.periodEnd);
-          nextBillingStartDate.setDate(nextBillingStartDate.getDate() + 1);
-        }
-
-        billing = await this.cardService.createBilling({
-          cardId: card.id,
-          cardBillingCycleDay: card.billingCycleDay,
-          cardBillingPaymentDay: card.billingPaymentDay,
-          periodStart: nextBillingStartDate,
-          limit: card.defaultLimit,
-        });
-      }
 
       // Criar TransactionInstallment
       await this.prismaService.transactionInstallment.create({
         data: {
           installmentNumber,
-          amount: installmentAmount,
+          amount: installmentAmounts[i],
           transactionId: transaction.id,
           cardBillingId: billing.id,
         },
@@ -486,6 +430,10 @@ export class TransactionResolver {
       billingIdsToUpdate.add(billing.id);
     }
 
+    await this.cardService.syncParentTransactionBillingFromFirstInstallment(
+      transaction.id,
+    );
+
     // Recalcular saldo de todas as faturas afetadas
     await Promise.all(
       Array.from(billingIdsToUpdate).map(async (billingId) => {
@@ -493,7 +441,7 @@ export class TransactionResolver {
       }),
     );
 
-    return transaction;
+    return transaction as any;
   }
 
   @Auth()
@@ -502,12 +450,16 @@ export class TransactionResolver {
     @Args('data') data: UpdateTransactionInput,
     @CurrentUser() user: UserModel,
   ) {
-    // Buscar transação existente com installments
+    // Buscar transação existente com installments e sourceCard
     const existingTransaction = await this.prismaService.transaction.findUnique(
       {
         where: { id: data.id },
         include: {
           cardBilling: true,
+          billingPayment: {
+            select: { id: true, status: true },
+          },
+          sourceCard: true,
           installments: {
             include: {
               cardBilling: { select: { id: true, status: true } },
@@ -527,30 +479,102 @@ export class TransactionResolver {
       throw new Error('Transaction does not belong to user');
     }
 
-    const isCanceled =
-      existingTransaction.status === TransactionStatus.CANCELED;
-    const hasInstallments = existingTransaction.installments.length > 0;
+    let hasInstallments = existingTransaction.installments.length > 0;
+    const billingIdsToUpdate = new Set<string>();
 
-    // Única regra de bloqueio: transações CANCELED só podem ter descrição editada
-    if (isCanceled) {
-      if (
-        data.amount !== undefined ||
-        data.date !== undefined ||
-        data.paymentMethod !== undefined ||
-        data.status !== undefined
-      ) {
-        throw new Error(
-          'Transações canceladas só podem ter a descrição editada',
-        );
+    // Determinar datas e métodos de pagamento
+    const oldDate = new Date(existingTransaction.date);
+    const newDateObj = data.date ? new Date(data.date) : oldDate;
+    const dateChanged = data.date !== undefined && oldDate.getTime() !== newDateObj.getTime();
+
+    const oldMethod = existingTransaction.paymentMethod;
+    const newMethod = data.paymentMethod !== undefined ? data.paymentMethod : oldMethod;
+    const methodChanged = data.paymentMethod !== undefined && oldMethod !== newMethod;
+
+    let cardBillingIdToSet: string | null | undefined = undefined;
+
+    // Se o método de pagamento mudou de CREDIT_CARD para outro
+    if (methodChanged && oldMethod === PaymentMethod.CREDIT_CARD && newMethod !== PaymentMethod.CREDIT_CARD) {
+      cardBillingIdToSet = null;
+      if (existingTransaction.cardBillingId) {
+        billingIdsToUpdate.add(existingTransaction.cardBillingId);
       }
+      if (hasInstallments) {
+        existingTransaction.installments.forEach(i => {
+          if (i.cardBillingId) {
+            billingIdsToUpdate.add(i.cardBillingId);
+          }
+        });
+        await this.prismaService.transactionInstallment.deleteMany({
+          where: { transactionId: existingTransaction.id },
+        });
+        existingTransaction.installments = [];
+        hasInstallments = false;
+      }
+    }
 
-      const updatedTransaction = await this.transactionService.update(data.id, {
-        ...(data.description !== undefined && {
-          description: data.description,
-        }),
-      });
+    // Se o método mudou para CREDIT_CARD, ou se já era CREDIT_CARD e a data mudou
+    if (newMethod === PaymentMethod.CREDIT_CARD) {
+      const card = existingTransaction.sourceCard;
+      if (card) {
+        if (hasInstallments) {
+          if (dateChanged || methodChanged) {
+            // Reposicionar faturas de todas as parcelas
+            for (const [idx, installment] of existingTransaction.installments.entries()) {
+              const instDate = new Date(newDateObj);
+              instDate.setMonth(instDate.getMonth() + idx);
+              const billing = await this.cardService.findOrCreateBillingForDate({
+                cardId: card.id,
+                billingCycleDay: card.billingCycleDay,
+                billingPaymentDay: card.billingPaymentDay,
+                limit: card.defaultLimit,
+                date: instDate,
+              });
 
-      return updatedTransaction;
+              if (installment.cardBillingId !== billing.id) {
+                await this.prismaService.transactionInstallment.update({
+                  where: { id: installment.id },
+                  data: { cardBillingId: billing.id },
+                });
+                if (installment.cardBillingId) {
+                  billingIdsToUpdate.add(installment.cardBillingId);
+                }
+                billingIdsToUpdate.add(billing.id);
+              }
+            }
+
+            // Sync parent transaction to first installment's billing
+            const firstBilling = await this.cardService.findOrCreateBillingForDate({
+              cardId: card.id,
+              billingCycleDay: card.billingCycleDay,
+              billingPaymentDay: card.billingPaymentDay,
+              limit: card.defaultLimit,
+              date: newDateObj,
+            });
+            cardBillingIdToSet = firstBilling.id;
+            billingIdsToUpdate.add(firstBilling.id);
+            if (existingTransaction.cardBillingId) {
+              billingIdsToUpdate.add(existingTransaction.cardBillingId);
+            }
+          }
+        } else {
+          // Transação simples (sem parcelas)
+          if (dateChanged || methodChanged) {
+            const billing = await this.cardService.findOrCreateBillingForDate({
+              cardId: card.id,
+              billingCycleDay: card.billingCycleDay,
+              billingPaymentDay: card.billingPaymentDay,
+              limit: card.defaultLimit,
+              date: newDateObj,
+            });
+            cardBillingIdToSet = billing.id;
+            billingIdsToUpdate.add(billing.id);
+            if (existingTransaction.cardBillingId) {
+              billingIdsToUpdate.add(existingTransaction.cardBillingId);
+            }
+          }
+        }
+      }
     }
 
     // Calcular novo status baseado na data (transição automática)
@@ -559,25 +583,41 @@ export class TransactionResolver {
       | undefined;
     const newDate = data.date ?? existingTransaction.date;
 
-    // Normalizar datas para comparação (apenas data, sem horário)
+    // Normalizar datas para comparação (apenas data, sem horário, em GMT-3)
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(today.getUTCHours() - 3);
+    today.setUTCHours(0, 0, 0, 0);
+
     const transactionDate = new Date(newDate);
-    transactionDate.setHours(0, 0, 0, 0);
+    transactionDate.setUTCHours(transactionDate.getUTCHours() - 3);
+    transactionDate.setUTCHours(0, 0, 0, 0);
 
     // Transição automática de status se a data for alterada
     if (data.date !== undefined) {
-      if (transactionDate <= today) {
-        // Data passada ou hoje -> COMPLETED
+      if (transactionDate < today) {
+        // Data passada -> COMPLETED
         if (
           existingTransaction.status === TransactionStatus.PLANNED ||
           existingTransaction.status === TransactionStatus.OVERDUE
         ) {
           newStatus = TransactionStatus.COMPLETED;
         }
+      } else if (transactionDate.getTime() === today.getTime()) {
+        // Data é hoje -> depende do isCompleted enviado pelo usuário
+        if (
+          existingTransaction.status === TransactionStatus.PLANNED ||
+          existingTransaction.status === TransactionStatus.OVERDUE
+        ) {
+          newStatus = data.isCompleted
+            ? TransactionStatus.COMPLETED
+            : TransactionStatus.PLANNED;
+        }
       } else {
         // Data futura -> PLANNED
-        if (existingTransaction.status === TransactionStatus.COMPLETED) {
+        if (
+          existingTransaction.status === TransactionStatus.COMPLETED ||
+          existingTransaction.status === TransactionStatus.OVERDUE
+        ) {
           newStatus = TransactionStatus.PLANNED;
         }
       }
@@ -592,13 +632,36 @@ export class TransactionResolver {
         paymentMethod: data.paymentMethod as PaymentMethod,
       }),
       ...(data.category !== undefined && { category: data.category }),
+      ...(data.sourceAccountId !== undefined && {
+        sourceAccountId: data.sourceAccountId,
+      }),
+      ...(data.destinyAccountId !== undefined && {
+        destinyAccountId: data.destinyAccountId,
+      }),
       ...(newStatus !== undefined && {
         status: newStatus,
       }),
+      ...(cardBillingIdToSet !== undefined && {
+        cardBillingId: cardBillingIdToSet,
+      }),
     });
 
-    // Coletar billings para recalcular
-    const billingIdsToUpdate = new Set<string>();
+    // Se esta transação é o pagamento de uma fatura e acabou de virar COMPLETED,
+    // marcar a fatura como PAID imediatamente (sem esperar o cron de meia-noite).
+    const wasJustCompleted =
+      newStatus === TransactionStatus.COMPLETED &&
+      existingTransaction.status !== TransactionStatus.COMPLETED;
+
+    if (
+      wasJustCompleted &&
+      existingTransaction.billingPayment &&
+      (existingTransaction.billingPayment.status === CardBillingStatus.CLOSED ||
+        existingTransaction.billingPayment.status === CardBillingStatus.OVERDUE)
+    ) {
+      await this.cardService.markBillingPaid(
+        existingTransaction.billingPayment.id,
+      );
+    }
 
     // Se o valor foi alterado e há parcelas, recalcular os valores das parcelas
     if (
@@ -606,14 +669,19 @@ export class TransactionResolver {
       hasInstallments &&
       Number(data.amount) !== Number(existingTransaction.amount)
     ) {
-      const newInstallmentAmount =
-        Number(data.amount) / existingTransaction.installments.length;
+      const redistributedAmounts = this.distributeInstallmentAmounts(
+        Number(data.amount),
+        existingTransaction.installments.length,
+      );
 
       // Atualizar cada parcela
-      for (const installment of existingTransaction.installments) {
+      for (const [
+        idx,
+        installment,
+      ] of existingTransaction.installments.entries()) {
         await this.prismaService.transactionInstallment.update({
           where: { id: installment.id },
-          data: { amount: newInstallmentAmount },
+          data: { amount: redistributedAmounts[idx] },
         });
 
         if (installment.cardBillingId) {
@@ -644,18 +712,14 @@ export class TransactionResolver {
   }
 
   @Auth()
-  @Mutation(() => TransactionModel, { name: 'cancelTransaction' })
-  async cancelTransaction(
+  @Mutation(() => TransactionModel, { name: 'deleteTransaction' })
+  async deleteTransaction(
     @CurrentUser() user: UserModel,
     @Args('id') id: string,
   ): Promise<TransactionModel> {
-    // Buscar transação com cardBilling e dados de parcela
+    // Buscar transação com dados de parcela
     const transaction = await this.prismaService.transaction.findUnique({
       where: { id },
-      include: {
-        cardBilling: { select: { status: true } },
-        sourceAccount: { select: { type: true } },
-      },
     });
 
     if (!transaction) {
@@ -666,38 +730,15 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
-    // Não permite cancelar transação já cancelada
-    if (transaction.status === TransactionStatus.CANCELED) {
-      throw new Error('Transação já está cancelada');
-    }
-
-    // Se é uma transação parcelada (tem installments associados)
+    // Verificar se é uma transação parcelada (tem installments associados)
     const installments =
       await this.prismaService.transactionInstallment.findMany({
         where: { transactionId: id },
-        include: { cardBilling: { select: { id: true, status: true } } },
+        include: { cardBilling: { select: { id: true } } },
         orderBy: { installmentNumber: 'asc' },
       });
 
     if (installments.length > 0) {
-      // Verificar se a primeira parcela está em fatura fechada
-      const firstInstallment = installments.find(
-        (i) => i.installmentNumber === 1,
-      );
-
-      if (firstInstallment?.cardBilling) {
-        const closedStatuses: CardBillingStatus[] = [
-          CardBillingStatus.PAID,
-          CardBillingStatus.CLOSED,
-          CardBillingStatus.COMPLETED,
-        ];
-        if (closedStatuses.includes(firstInstallment.cardBilling.status)) {
-          throw new Error(
-            'Não é possível cancelar este parcelamento pois a primeira parcela está em uma fatura fechada ou paga',
-          );
-        }
-      }
-
       // Coletar billing IDs para recalcular
       const billingIdsToUpdate = new Set<string>();
       installments.forEach((i) => {
@@ -706,10 +747,10 @@ export class TransactionResolver {
         }
       });
 
-      // Cancelar a transação pai
+      // Marcar a transação pai como excluída
       await this.transactionService.update(id, {
-        status: TransactionStatus.CANCELED,
-      });
+        deletedAt: new Date(),
+      } as any);
 
       // Recalcular saldo de todas as faturas afetadas
       await Promise.all(
@@ -721,29 +762,13 @@ export class TransactionResolver {
       // Retornar a transação atualizada
       return this.prismaService.transaction.findUnique({
         where: { id },
-      });
+      }) as any;
     }
 
     // Transação única (não-parcela)
-
-    // Validar cardBilling se existir
-    if (transaction.cardBilling) {
-      const closedStatuses: CardBillingStatus[] = [
-        CardBillingStatus.PAID,
-        CardBillingStatus.CLOSED,
-        CardBillingStatus.COMPLETED,
-      ];
-      if (closedStatuses.includes(transaction.cardBilling.status)) {
-        throw new Error(
-          'Não é possível cancelar transação de fatura fechada ou paga',
-        );
-      }
-    }
-
-    // Atualizar transação
     const updatedTransaction = await this.transactionService.update(id, {
-      status: TransactionStatus.CANCELED,
-    });
+      deletedAt: new Date(),
+    } as any);
 
     // Recalcular saldo da fatura se a transação estava vinculada a uma
     if (transaction.cardBillingId) {
@@ -752,7 +777,7 @@ export class TransactionResolver {
       );
     }
 
-    return updatedTransaction;
+    return updatedTransaction as any;
   }
 
   @Auth()
@@ -784,7 +809,84 @@ export class TransactionResolver {
       date: data.newDate,
     });
 
-    return updatedTransaction;
+    return updatedTransaction as any;
+  }
+
+  @Auth()
+  @Mutation(() => TransactionModel, { name: 'deleteRecurringTransactions' })
+  async deleteRecurringTransactions(
+    @CurrentUser() user: UserModel,
+    @Args('transactionId') transactionId: string,
+    @Args('scope', { type: () => UpdateRecurringScope }) scope: UpdateRecurringScope,
+  ): Promise<TransactionModel> {
+    const transaction = await this.prismaService.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new Error('Transação não pertence ao usuário');
+    }
+
+    if (!transaction.recurringTransactionId) {
+      throw new Error('Transação não faz parte de uma recorrência');
+    }
+
+    if (scope === UpdateRecurringScope.THIS_ONLY) {
+      const deletedTransaction = await this.deleteTransaction(user, transactionId);
+      return deletedTransaction as any;
+    }
+
+    const transactionsToDelete = await this.prismaService.transaction.findMany({
+      where: {
+        recurringTransactionId: transaction.recurringTransactionId,
+        userId: user.id,
+        status: TransactionStatus.PLANNED,
+        ...(scope === UpdateRecurringScope.THIS_AND_FUTURE ? { date: { gte: transaction.date } } : {}),
+      },
+      select: { id: true, cardBillingId: true },
+    });
+
+    if (transactionsToDelete.length === 0) {
+      return transaction as any;
+    }
+
+    const ids = transactionsToDelete.map(t => t.id);
+    const billingIds = new Set(transactionsToDelete.filter(t => t.cardBillingId).map(t => t.cardBillingId as string));
+
+    await this.prismaService.transaction.updateMany({
+      where: { id: { in: ids } },
+      data: { deletedAt: new Date() } as any,
+    });
+
+    await Promise.all(
+      Array.from(billingIds).map(async (billingId) => {
+        await this.cardService.updatePaymentTransaction(billingId);
+      }),
+    );
+
+    // Update endDate of the RecurringTransaction so it stops generating if applicable
+    if (scope === UpdateRecurringScope.THIS_AND_FUTURE) {
+      const yesterday = new Date(transaction.date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      await this.prismaService.recurringTransaction.update({
+        where: { id: transaction.recurringTransactionId },
+        data: { endDate: yesterday },
+      });
+    } else if (scope === UpdateRecurringScope.ALL_PLANNED) {
+      await this.prismaService.recurringTransaction.update({
+        where: { id: transaction.recurringTransactionId },
+        data: { endDate: new Date() },
+      });
+    }
+
+    return this.prismaService.transaction.findUnique({
+      where: { id: transactionId },
+    }) as any;
   }
 
   @Auth()
@@ -806,6 +908,11 @@ export class TransactionResolver {
       throw new Error('Transação não pertence ao usuário');
     }
 
+    // Verificar se é transação recorrente
+    if (!transaction.recurringTransactionId) {
+      throw new Error('Transação não faz parte de uma recorrência');
+    }
+
     // THIS_ONLY: usa updateTransaction existente
     if (data.scope === UpdateRecurringScope.THIS_ONLY) {
       const updatedTransaction = await this.transactionService.update(
@@ -820,12 +927,7 @@ export class TransactionResolver {
           }),
         },
       );
-      return updatedTransaction;
-    }
-
-    // Verificar se é transação recorrente
-    if (!transaction.recurringTransactionId) {
-      throw new Error('Transação não faz parte de uma recorrência');
+      return updatedTransaction as any;
     }
 
     // Construir dados de atualização
@@ -887,7 +989,7 @@ export class TransactionResolver {
       where: { id: data.transactionId },
     });
 
-    return updatedTransaction as TransactionModel;
+    return updatedTransaction as any;
   }
 
   @Auth()
@@ -989,22 +1091,337 @@ export class TransactionResolver {
         endDate.setDate(endDate.getDate() + 90);
     }
 
-    // Obter saldo inicial da conta (se especificada)
-    let initialBalance = 0;
-    if (args.accountId) {
-      const account = await this.accountService.find({ id: args.accountId });
-      if (account) {
-        initialBalance = Number(account.initialBalance || 0);
+    // Obter todas as contas relevantes com saldo inicial e data de início
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        institutionLink: { userId: user.id },
+        ...(args.accountId && { id: args.accountId }),
+      },
+      select: {
+        id: true,
+        name: true,
+        initialBalance: true,
+        startDate: true,
+        institutionLink: {
+          select: {
+            institution: {
+              select: { color: true },
+            },
+          },
+        },
+      },
+    });
+
+    const accountBalances = accounts.map((a) => ({
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    // Query investment transactions (FUNDING/REDEMPTION) for balance forecast
+    const investmentTransactions =
+      await this.prismaService.investmentTransaction.findMany({
+        where: {
+          role: { in: ['FUNDING', 'REDEMPTION'] },
+          investment: {
+            institutionLink: {
+              userId: user.id,
+              ...(args.accountId && { account: { id: args.accountId } }),
+            },
+          },
+        },
+        select: {
+          amount: true,
+          role: true,
+          investment: {
+            select: {
+              startDate: true,
+              finishedAt: true,
+              institutionLink: {
+                select: {
+                  account: {
+                    select: { id: true, startDate: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+    // Map investment transactions into balance events
+    const investmentEvents = investmentTransactions
+      .filter((tx) => {
+        // Only include investments whose startDate >= account startDate
+        const accountStart = tx.investment.institutionLink?.account?.startDate;
+        if (!accountStart) return false;
+        return new Date(tx.investment.startDate) >= new Date(accountStart);
+      })
+
+      .map((tx) => ({
+        accountId: tx.investment.institutionLink!.account!.id,
+        date:
+          tx.role === 'FUNDING'
+            ? new Date(tx.investment.startDate)
+            : tx.investment.finishedAt
+              ? new Date(tx.investment.finishedAt)
+              : null,
+        amount: Number(tx.amount),
+        type: tx.role as 'FUNDING' | 'REDEMPTION',
+      }))
+      .filter(
+        (
+          event,
+        ): event is {
+          accountId: string;
+          date: Date;
+          amount: number;
+          type: 'FUNDING' | 'REDEMPTION';
+        } => event.date !== null,
+      );
+    const accountsList = accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      color: a.institutionLink?.institution?.color ?? null,
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    const forecastResult = await this.transactionService.getBalanceForecast({
+      userId: user.id,
+      accountId: args.accountId,
+      accounts: accountsList,
+      startDate,
+      endDate,
+      investmentEvents,
+    });
+
+    return {
+      accountSeries: forecastResult.accountSeries,
+      startDate: forecastResult.startDate,
+      endDate: forecastResult.endDate,
+    };
+  }
+
+  @Auth()
+  @Query(() => BalanceForecastModel, { name: 'simulateBalanceForecast' })
+  async simulateBalanceForecast(
+    @Args('input') input: SimulateBalanceForecastInput,
+    @CurrentUser() user: UserModel,
+  ) {
+    const startDate = input.startDate;
+    const endDate = input.endDate;
+
+    // Fetch real accounts (same as getBalanceForecast)
+    const accounts = await this.prismaService.account.findMany({
+      where: {
+        institutionLink: { userId: user.id },
+        ...(input.accountId && { id: input.accountId }),
+      },
+      select: {
+        id: true,
+        name: true,
+        initialBalance: true,
+        startDate: true,
+        institutionLink: {
+          select: {
+            institution: { select: { color: true } },
+          },
+        },
+      },
+    });
+
+    const accountBalances = accounts.map((a) => ({
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    // Fetch real investment transactions (same as getBalanceForecast)
+    const investmentTransactions =
+      await this.prismaService.investmentTransaction.findMany({
+        where: {
+          role: { in: ['FUNDING', 'REDEMPTION'] },
+          investment: {
+            institutionLink: {
+              userId: user.id,
+              ...(input.accountId && {
+                account: { id: input.accountId },
+              }),
+            },
+          },
+        },
+        select: {
+          amount: true,
+          role: true,
+          investment: {
+            select: {
+              startDate: true,
+              finishedAt: true,
+              institutionLink: {
+                select: { account: { select: { id: true, startDate: true } } },
+              },
+            },
+          },
+        },
+      });
+
+    const investmentEvents = investmentTransactions
+      .filter((tx) => {
+        const accountStart = tx.investment.institutionLink?.account?.startDate;
+        if (!accountStart) return false;
+        return new Date(tx.investment.startDate) >= new Date(accountStart);
+      })
+      .map((tx) => ({
+        accountId: tx.investment.institutionLink!.account!.id,
+        date:
+          tx.role === 'FUNDING'
+            ? new Date(tx.investment.startDate)
+            : tx.investment.finishedAt
+              ? new Date(tx.investment.finishedAt)
+              : null,
+        amount: Number(tx.amount),
+        type: tx.role as 'FUNDING' | 'REDEMPTION',
+      }))
+      .filter(
+        (
+          event,
+        ): event is {
+          accountId: string;
+          date: Date;
+          amount: number;
+          type: 'FUNDING' | 'REDEMPTION';
+        } => event.date !== null,
+      );
+
+    // Expand simulated transactions (one-offs + recurring expanded across date range)
+    const expandedSimTxs: {
+      description: string;
+      amount: number;
+      type: TransactionType;
+      date: Date;
+      isIncome: boolean;
+      isSimulated: true;
+      accountId?: string | null;
+    }[] = [];
+
+    const pushSimTx = (
+      simTx: (typeof input.simulatedTransactions)[0],
+      targetDate: Date,
+    ) => {
+      if (simTx.type === TransactionType.BETWEEN_ACCOUNTS) {
+        expandedSimTxs.push({
+          description: simTx.description,
+          amount: simTx.amount,
+          type: simTx.type,
+          date: targetDate,
+          isIncome: false,
+          isSimulated: true,
+          accountId: simTx.accountId,
+        });
+        if (simTx.destinyAccountId) {
+          expandedSimTxs.push({
+            description: simTx.description,
+            amount: simTx.amount,
+            type: simTx.type,
+            date: targetDate,
+            isIncome: true,
+            isSimulated: true,
+            accountId: simTx.destinyAccountId,
+          });
+        }
+      } else {
+        expandedSimTxs.push({
+          description: simTx.description,
+          amount: simTx.amount,
+          type: simTx.type,
+          date: targetDate,
+          isIncome: simTx.type === TransactionType.INCOME,
+          isSimulated: true,
+          accountId: simTx.accountId,
+        });
+      }
+    };
+
+    for (const simTx of input.simulatedTransactions) {
+      if (!simTx.isRecurring) {
+        if (simTx.date >= startDate && simTx.date <= endDate) {
+          pushSimTx(simTx, simTx.date);
+        }
+      } else if (simTx.recurrenceFrequency) {
+        const recEndDate = simTx.recurrenceEndDate
+          ? new Date(
+              Math.min(
+                new Date(simTx.recurrenceEndDate).getTime(),
+                endDate.getTime(),
+              ),
+            )
+          : endDate;
+
+        const occurrenceDate = new Date(simTx.date);
+        while (occurrenceDate <= recEndDate) {
+          if (occurrenceDate >= startDate) {
+            pushSimTx(simTx, new Date(occurrenceDate));
+          }
+
+          switch (simTx.recurrenceFrequency) {
+            case RecurrenceFrequency.WEEKLY:
+              occurrenceDate.setDate(occurrenceDate.getDate() + 7);
+              break;
+            case RecurrenceFrequency.BI_WEEKLY:
+              occurrenceDate.setDate(occurrenceDate.getDate() + 14);
+              break;
+            case RecurrenceFrequency.MONTHLY:
+              occurrenceDate.setMonth(occurrenceDate.getMonth() + 1);
+              break;
+            case RecurrenceFrequency.YEARLY:
+              occurrenceDate.setFullYear(occurrenceDate.getFullYear() + 1);
+              break;
+            default:
+              occurrenceDate.setMonth(occurrenceDate.getMonth() + 1);
+          }
+        }
       }
     }
 
-    return this.transactionService.getBalanceForecast({
-      userId: user.id,
-      accountId: args.accountId,
-      startDate,
-      endDate,
-      initialBalance,
-    });
+    // Add simulated investments as expense events (capital outflow)
+    for (const simInv of input.simulatedInvestments) {
+      const invDate = new Date(simInv.startDate);
+      if (invDate >= startDate && invDate <= endDate) {
+        expandedSimTxs.push({
+          description: `Investimento: ${simInv.description}`,
+          amount: simInv.initialAmount,
+          type: TransactionType.EXPENSE,
+          date: invDate,
+          isIncome: false,
+          isSimulated: true,
+          accountId: simInv.accountId,
+        });
+      }
+    }
+
+    const accountsList = accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      color: a.institutionLink?.institution?.color ?? null,
+      initialBalance: Number(a.initialBalance || 0),
+      startDate: a.startDate ? new Date(a.startDate) : null,
+    }));
+
+    const forecastResult =
+      await this.transactionService.simulateBalanceForecast({
+        userId: user.id,
+        accountId: input.accountId,
+        accounts: accountsList,
+        startDate,
+        endDate,
+        investmentEvents,
+        simulatedTransactions: expandedSimTxs,
+      });
+
+    return {
+      accountSeries: forecastResult.accountSeries,
+      startDate: forecastResult.startDate,
+      endDate: forecastResult.endDate,
+    };
   }
 
   @Auth()

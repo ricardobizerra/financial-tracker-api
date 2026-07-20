@@ -14,6 +14,7 @@ export class CreateTransactionInput extends OmitType(
     'updatedAt',
     'destinyAccount',
     'sourceAccount',
+    'sourceCard',
     'cardBilling',
     'status', // Excluir status - será calculado pelo backend
   ] as const,
@@ -40,4 +41,9 @@ export class CreateTransactionInput extends OmitType(
     nullable: true,
   })
   destinyAccountId?: string;
+
+  @Field(() => ID, {
+    nullable: true,
+  })
+  sourceCardId?: string;
 }

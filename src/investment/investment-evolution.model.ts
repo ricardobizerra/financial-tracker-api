@@ -6,6 +6,8 @@ import {
   ObjectType,
   registerEnumType,
 } from '@nestjs/graphql';
+import { Regime } from '@/lib/graphql/prisma-client';
+
 
 export enum InvestmentEvolutionPeriod {
   MONTH = 'MONTH',
@@ -67,4 +69,8 @@ export class InvestmentEvolutionArgs {
 
   @Field(() => String, { nullable: true })
   accountId?: string;
+
+  @Field(() => Regime, { nullable: true })
+  regime?: Regime;
 }
+

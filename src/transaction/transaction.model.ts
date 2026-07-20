@@ -16,11 +16,11 @@ import { Ordenation } from '@/utils/args/ordenation.args';
 import { TransactionInstallmentModel } from './transaction-installment.model';
 
 /**
- * Informações pré-computadas sobre cancelamento de uma transação.
+ * Informações pré-computadas sobre exclusão de uma transação.
  * Usado internamente no service para evitar N+1 queries.
  */
-export interface CancelCheckInfo {
-  canCancel: boolean;
+export interface DeleteCheckInfo {
+  canDelete: boolean;
   reason: string | null;
   warningMessage: string | null;
 }
@@ -31,13 +31,13 @@ export class TransactionModel extends OmitType(Transaction, [
   'userId',
 ] as const) {
   @Field(() => Boolean, { nullable: true })
-  canCancel?: boolean;
+  canDelete?: boolean;
 
   @Field(() => String, { nullable: true })
-  cancelReason?: string;
+  deleteReason?: string;
 
   @Field(() => String, { nullable: true })
-  cancelWarningMessage?: string;
+  deleteWarningMessage?: string;
 
   @Field(() => Date, { nullable: true })
   installmentStartDate?: Date;
@@ -64,6 +64,9 @@ export class OrdenationTransactionArgs extends Ordenation(TransactionModel, [
 export class TransactionFilterArgs {
   @Field(() => ID, { nullable: true })
   accountId?: string;
+
+  @Field(() => ID, { nullable: true })
+  cardId?: string;
 
   @Field(() => ID, { nullable: true })
   cardBillingId?: string;
