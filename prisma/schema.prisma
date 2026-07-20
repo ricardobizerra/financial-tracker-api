@@ -332,6 +332,7 @@ enum CardType {
 }
 
 enum CardBillingStatus {
+  FUTURE
   PENDING
   CLOSED
   PAID

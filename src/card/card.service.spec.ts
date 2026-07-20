@@ -333,6 +333,36 @@ describe('CardService', () => {
         },
       });
     });
+
+    it('should create billing with FUTURE status when start date is in the future', async () => {
+      const periodStart = new Date();
+      periodStart.setMonth(periodStart.getMonth() + 2); // 2 months in the future
+
+      mockPrisma.cardBilling.create.mockImplementation(({ data }: any) => ({
+        id: 'billing-1',
+        ...data,
+        card: {
+          institutionLink: { institution: {}, user: {} },
+        },
+      }));
+      mockPrisma.cardBillingHistory.create.mockResolvedValue({});
+
+      const result = await service.createBilling({
+        cardId: 'card-1',
+        cardBillingCycleDay: 15,
+        cardBillingPaymentDay: 25,
+        periodStart,
+        limit: new Decimal(5000),
+      });
+
+      expect(result.status).toBe(CardBillingStatus.FUTURE);
+      expect(mockPrisma.cardBillingHistory.create).toHaveBeenCalledWith({
+        data: {
+          cardBilling: { connect: { id: 'billing-1' } },
+          status: CardBillingStatus.FUTURE,
+        },
+      });
+    });
   });
 
   describe('updatePaymentTransaction', () => {
@@ -762,6 +792,7 @@ describe('CardService', () => {
   describe('checkBillingStatuses (cron)', () => {
     it('should mark CLOSED/OVERDUE billings with COMPLETED payment as PAID', async () => {
       mockPrisma.cardBilling.findMany
+        .mockResolvedValueOnce([]) // startedFutureBillings
         .mockResolvedValueOnce([]) // expiredPendingBillings
         .mockResolvedValueOnce([
           // billingsToPay
@@ -778,11 +809,12 @@ describe('CardService', () => {
 
       await service.checkBillingStatuses();
 
-      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(3);
+      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(4);
     });
 
     it('should mark CLOSED billings with past paymentDate as OVERDUE', async () => {
       mockPrisma.cardBilling.findMany
+        .mockResolvedValueOnce([]) // startedFutureBillings
         .mockResolvedValueOnce([]) // expiredPendingBillings
         .mockResolvedValueOnce([]) // billingsToPay
         .mockResolvedValueOnce([
@@ -796,7 +828,38 @@ describe('CardService', () => {
 
       await service.checkBillingStatuses();
 
-      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(3);
+      expect(mockPrisma.cardBilling.findMany).toHaveBeenCalledTimes(4);
+    });
+
+    it('should transition FUTURE billings to PENDING when periodStart <= today', async () => {
+      mockPrisma.cardBilling.findMany
+        .mockResolvedValueOnce([
+          // startedFutureBillings
+          {
+            id: 'billing-future-1',
+            status: CardBillingStatus.FUTURE,
+          },
+        ])
+        .mockResolvedValueOnce([]) // expiredPendingBillings
+        .mockResolvedValueOnce([]) // billingsToPay
+        .mockResolvedValueOnce([]); // overdueBillings
+
+      mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
+      mockPrisma.cardBilling.update.mockResolvedValue({});
+      mockPrisma.cardBillingHistory.create.mockResolvedValue({});
+
+      await service.checkBillingStatuses();
+
+      expect(mockPrisma.cardBilling.update).toHaveBeenCalledWith({
+        where: { id: 'billing-future-1' },
+        data: { status: CardBillingStatus.PENDING },
+      });
+      expect(mockPrisma.cardBillingHistory.create).toHaveBeenCalledWith({
+        data: {
+          cardBilling: { connect: { id: 'billing-future-1' } },
+          status: CardBillingStatus.PENDING,
+        },
+      });
     });
   });
 
@@ -840,6 +903,54 @@ describe('CardService', () => {
           where: { id: 'billing-1' },
         }),
       );
+    });
+
+    it('should recalculate status to FUTURE if periodStart is in the future', async () => {
+      const futureStart = new Date();
+      futureStart.setDate(futureStart.getDate() + 5);
+
+      const billing = {
+        id: 'billing-1',
+        cardId: 'card-1',
+        periodStart: futureStart,
+        periodEnd: new Date(futureStart.getTime() + 30 * 24 * 60 * 60 * 1000),
+        paymentDate: new Date(futureStart.getTime() + 40 * 24 * 60 * 60 * 1000),
+        status: CardBillingStatus.PENDING,
+        transactions: [],
+        installments: [],
+        card: {
+          defaultLimit: new Decimal(5000),
+          billingCycleDay: 8,
+          billingPaymentDay: 20,
+        },
+      };
+
+      mockPrisma.cardBilling.findUnique.mockResolvedValue(billing);
+      mockPrisma.cardBilling.findFirst
+        .mockResolvedValueOnce(billing)
+        .mockResolvedValueOnce(null);
+      mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
+      mockPrisma.cardBilling.update.mockResolvedValue({
+        ...billing,
+        status: CardBillingStatus.FUTURE,
+      });
+
+      const result = await service.changeBillingDates({
+        billingId: 'billing-1',
+        userId: 'user-1',
+        closingDate: billing.periodEnd,
+        paymentDate: billing.paymentDate,
+      });
+
+      expect(mockPrisma.cardBilling.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'billing-1' },
+          data: expect.objectContaining({
+            status: CardBillingStatus.FUTURE,
+          }),
+        }),
+      );
+      expect(result.status).toBe(CardBillingStatus.FUTURE);
     });
   });
 
@@ -943,7 +1054,7 @@ describe('CardService', () => {
       expect(mockPrisma.cardBilling.updateMany).toHaveBeenCalledWith({
         where: {
           cardId: card.id,
-          status: CardBillingStatus.PENDING,
+          status: { in: [CardBillingStatus.PENDING, CardBillingStatus.FUTURE] },
         },
         data: {
           limit: new Decimal(2000),

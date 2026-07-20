@@ -347,7 +347,7 @@ export class CardService implements OnApplicationBootstrap {
         await tx.cardBilling.updateMany({
           where: {
             cardId,
-            status: CardBillingStatus.PENDING,
+            status: { in: [CardBillingStatus.PENDING, CardBillingStatus.FUTURE] },
           },
           data: {
             limit: defaultLimit,
@@ -1200,6 +1200,12 @@ export class CardService implements OnApplicationBootstrap {
     paymentDate.setDate(cardBillingPaymentDay);
     paymentDate.setUTCHours(3, 0, 0, 0);
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const initialStatus = calculatedPeriodStart > today
+      ? CardBillingStatus.FUTURE
+      : CardBillingStatus.PENDING;
+
     const billing = await transactionClient.cardBilling.create({
       data: {
         card: {
@@ -1210,7 +1216,7 @@ export class CardService implements OnApplicationBootstrap {
         periodStart: calculatedPeriodStart,
         periodEnd,
         paymentDate,
-        status: CardBillingStatus.PENDING,
+        status: initialStatus,
         limit,
       },
       include: {
@@ -1237,7 +1243,7 @@ export class CardService implements OnApplicationBootstrap {
             id: billing.id,
           },
         },
-        status: CardBillingStatus.PENDING,
+        status: initialStatus,
       },
     });
 
@@ -1620,7 +1626,9 @@ export class CardService implements OnApplicationBootstrap {
       const finalPaymentDate = updateData.paymentDate ? new Date(updateData.paymentDate as Date) : (billing.paymentDate ? new Date(billing.paymentDate) : null);
 
       let newStatus: CardBillingStatus = CardBillingStatus.PENDING;
-      if (finalClosingDate < today) {
+      if (billing.periodStart > today) {
+        newStatus = CardBillingStatus.FUTURE;
+      } else if (finalClosingDate < today) {
         if (finalPaymentDate && finalPaymentDate < today) {
           newStatus = CardBillingStatus.OVERDUE;
         } else {
@@ -1778,6 +1786,33 @@ export class CardService implements OnApplicationBootstrap {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // 0.0. Transition FUTURE billings that have started (periodStart <= today) -> PENDING
+    const startedFutureBillings = await this.prisma.cardBilling.findMany({
+      where: {
+        status: CardBillingStatus.FUTURE,
+        periodStart: { lte: today },
+      },
+    });
+
+    for (const b of startedFutureBillings) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.cardBilling.update({
+            where: { id: b.id },
+            data: { status: CardBillingStatus.PENDING },
+          });
+          await tx.cardBillingHistory.create({
+            data: {
+              cardBilling: { connect: { id: b.id } },
+              status: CardBillingStatus.PENDING,
+            },
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to transition future billing ${b.id} to pending:`, err);
+      }
+    }
+
     // 0. Auto-close PENDING billings that have expired (periodEnd < today)
     const expiredPendingBillings = await this.prisma.cardBilling.findMany({
       where: {
@@ -1852,6 +1887,7 @@ export class CardService implements OnApplicationBootstrap {
         cardBilling: {
           status: {
             in: [
+              CardBillingStatus.FUTURE,
               CardBillingStatus.PENDING,
               CardBillingStatus.CLOSED,
               CardBillingStatus.OVERDUE,
@@ -1877,6 +1913,7 @@ export class CardService implements OnApplicationBootstrap {
         cardBilling: {
           status: {
             in: [
+              CardBillingStatus.FUTURE,
               CardBillingStatus.PENDING,
               CardBillingStatus.CLOSED,
               CardBillingStatus.OVERDUE,

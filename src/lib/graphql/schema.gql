@@ -246,6 +246,7 @@ type CardBillingMaxAggregate {
 }
 
 enum CardBillingStatus {
+  FUTURE
   PENDING
   CLOSED
   PAID
